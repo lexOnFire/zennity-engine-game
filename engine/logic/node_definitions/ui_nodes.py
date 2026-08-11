@@ -18,7 +18,7 @@ class BindUIToBlackboardNode(NodeDefinition):
             PinDefinition(id="variable", label_key="Variável", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -37,7 +37,7 @@ class SetUIProgressBarNode(NodeDefinition):
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.FLOAT, default_value=0.5),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -56,7 +56,7 @@ class SetUITextNode(NodeDefinition):
             PinDefinition(id="text", label_key="Texto", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -75,6 +75,6 @@ class SetUIVisibleNode(NodeDefinition):
             PinDefinition(id="visible", label_key="Visível", pin_type=PinType.BOOL, default_value=True),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )

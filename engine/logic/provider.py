@@ -8,7 +8,6 @@ class LogicProvider(EngineProvider):
         pass
         
     def boot(self, context: EngineContext) -> None:
-        print("LogicProvider.boot EXECUTADO!")
         # Força o carregamento dos decorators
         import engine.logic.runtime.nodes.actions_nodes
         import engine.logic.runtime.nodes.components_nodes
@@ -38,7 +37,7 @@ class LogicProvider(EngineProvider):
 
         # Actions
         from engine.logic.node_definitions.actions_nodes import (
-            PlayAnimationNode, PlayAnimationAssetNode, StopAnimationNode,
+            PlayAnimationAssetNode,
             PlaySoundNode, SetSpriteNode, StartTextureScrollNode,
             StopTextureScrollNode, SetPositionNode, RotateNode,
             SetActiveNode, DestroyObjectNode, DestroyAfterTimeNode,
@@ -47,7 +46,10 @@ class LogicProvider(EngineProvider):
 
         # Animation
         from engine.logic.node_definitions.animation_nodes import (
-            AnimateValueNode, WaitUntilConditionNode
+            AnimateValueNode, WaitUntilConditionNode,
+            # Phase 9.5B Stage 1: canonical home of play/stop animation.  These
+            # used to be defined twice, with incompatible port contracts.
+            PlayAnimationNode, StopAnimationNode,
         )
 
         # Audio Advanced
@@ -155,9 +157,7 @@ class LogicProvider(EngineProvider):
         manager = context.services.get_optional(MetadataManager)
         if manager:
             # Actions
-            manager.register(PlayAnimationNode.__node_definition__)
             manager.register(PlayAnimationAssetNode.__node_definition__)
-            manager.register(StopAnimationNode.__node_definition__)
             manager.register(PlaySoundNode.__node_definition__)
             manager.register(SetSpriteNode.__node_definition__)
             manager.register(StartTextureScrollNode.__node_definition__)
@@ -171,6 +171,8 @@ class LogicProvider(EngineProvider):
             manager.register(StartBehaviorTreeNode.__node_definition__)
 
             # Animation
+            manager.register(PlayAnimationNode.__node_definition__)
+            manager.register(StopAnimationNode.__node_definition__)
             manager.register(AnimateValueNode.__node_definition__)
             manager.register(WaitUntilConditionNode.__node_definition__)
 
@@ -303,3 +305,8 @@ class LogicProvider(EngineProvider):
                 print(f"ERROR registering update_ui_binding: {e}")
 
         sync_logic_registry_to_metadata(context)
+
+        # Phase 9.5B Stage 1: never let the editor start on a corrupt catalogue.
+        # Duplicate ids raise; contract errors are logged loudly.
+        from engine.logic.boot_validation import validate_catalogue_at_boot
+        validate_catalogue_at_boot()

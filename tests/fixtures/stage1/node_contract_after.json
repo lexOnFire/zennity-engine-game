@@ -1,0 +1,91 @@
+{
+  "totals": {
+    "definitions": 175,
+    "declarative": 147,
+    "legacy": 175,
+    "executors": 133,
+    "evaluators": 64,
+    "pure_data": 36,
+    "flow": 123,
+    "event": 16,
+    "violations": 2
+  },
+  "violations": [
+    {
+      "node": "animate_value",
+      "kind": "DEPRECATED_NO_RUNTIME",
+      "detail": "deprecated node with no runtime; hidden from the palette"
+    },
+    {
+      "node": "wait_until_condition",
+      "kind": "DEPRECATED_NO_RUNTIME",
+      "detail": "deprecated node with no runtime; hidden from the palette"
+    }
+  ],
+  "categories": {
+    "Events": 11,
+    "Objects": 10,
+    "Condition": 2,
+    "Movement": 10,
+    "Values": 4,
+    "UI": 11,
+    "Action": 12,
+    "Math": 7,
+    "Logic": 5,
+    "Text": 2,
+    "Scene": 2,
+    "Graphs": 3,
+    "Animation": 6,
+    "Animation/Getters": 6,
+    "Animation/Events": 2,
+    "Flow": 6,
+    "Audio": 4,
+    "Camera": 5,
+    "Components": 13,
+    "Dialog": 4,
+    "Logic/UI Dynamic": 6,
+    "Physics": 4,
+    "Input": 7,
+    "Variables": 2,
+    "Particles": 3,
+    "Navigation": 4,
+    "Physics/Getters": 6,
+    "Physics/Events": 4,
+    "Physics/Queries": 1,
+    "Physics/Layers": 4,
+    "Persistence": 4,
+    "StateManagement": 5
+  },
+  "duplicate_executors": {},
+  "duplicate_evaluators": {},
+  "duplicate_titles": {
+    "on collision enter": [
+      "event_collision_enter",
+      "on_collision_enter"
+    ],
+    "on collision exit": [
+      "event_collision_exit",
+      "on_collision_exit"
+    ],
+    "on trigger enter": [
+      "event_trigger_enter",
+      "on_trigger_enter"
+    ],
+    "on trigger exit": [
+      "event_trigger_exit",
+      "on_trigger_exit"
+    ]
+  },
+  "missing_from_init": [
+    "audio_advanced_nodes",
+    "camera_nodes",
+    "dialog_nodes",
+    "input_advanced_nodes",
+    "particle_nodes",
+    "pathfinding_nodes",
+    "save_load_nodes",
+    "state_machine_nodes",
+    "ui_binding_nodes"
+  ],
+  "import_errors": {}
+}

@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 import ast
+import logging
+import sys
 import math
 import re
 from copy import deepcopy
 from typing import Any, Callable, Iterator, Mapping
+
+from engine.diagnostics import get_logger, swallow
+from engine.logic.port_aliases import canonical_exec_port
 
 from .registry import registry
 from .output_evaluator import evaluate_output
 from .debug import LogicGraphDebugMixin
 from .motion import LogicGraphMotionMixin
 from . import nodes
+
+_log = get_logger("logic")
 
 # ``_execute`` runs for every node of every graph on every frame. It used to
 # re-import these three there, which cost four import lookups per node per frame
@@ -147,12 +154,13 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
             self._registered_animation_handler = True
 
         # CRITICAL: Subscribe to global UI event dispatcher for Play Mode
-        try:
+        # O dispatcher pode não existir no runtime exportado, então a falha
+        # continua não-fatal -- mas agora fica registrada (Phase 9.5B Stage 0).
+        with swallow(_log, "subscribe the Logic Graph to the global UI event dispatcher",
+                     level=logging.WARNING):
             from engine.runtime.ui_event_dispatcher import get_ui_event_dispatcher
             dispatcher = get_ui_event_dispatcher()
             dispatcher.subscribe("ui.button_clicked", lambda payload: self._handle_global_ui_button_clicked(payload))
-        except (ImportError, Exception):
-            pass  # Dispatcher may not be available in all contexts
 
     def _handle_global_ui_button_clicked(self, payload: dict[str, Any]) -> None:
         """Handle global UI button click event from dispatcher (Play Mode)."""
@@ -176,24 +184,28 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         """Phase 5B.2: Explicit cleanup of physics event handlers.
         Phase 6B.3: Also cleanup animation event handlers."""
         if self._registered_physics_handler:
-            try:
+            # Failing here leaks a handler into the module-level registry and
+            # makes the next Play session double-dispatch, so it must be visible.
+            with swallow(_log, "unregister the physics event handler on Logic Graph stop",
+                         level=logging.WARNING):
                 from ..physics_event_dispatch import unregister_physics_event_handler
                 unregister_physics_event_handler(self._handle_physics_event)
                 self._registered_physics_handler = False
-            except Exception:
-                pass
 
         # Phase 6B.3: Cleanup animation event handler
         if self._registered_animation_handler:
-            try:
+            with swallow(_log, "unregister the animation event handler on Logic Graph stop",
+                         level=logging.WARNING):
                 from ..animation_event_dispatch import unregister_animation_event_handler
                 unregister_animation_event_handler(self._dispatch_animation_event)
                 self._registered_animation_handler = False
-            except Exception:
-                pass
 
     def __del__(self) -> None:
         """Phase 5B.2: Cleanup physics event handler on destruction (fallback)."""
+        if sys.meta_path is None:
+            # Interpreter is tearing down: the imports stop() needs cannot run,
+            # and the process is exiting anyway, so there is nothing to leak.
+            return
         self.stop()
 
     def run_subgraph(self, game: Any, dt: float, inputs: Mapping[str, Any]) -> dict[str, Any]:
@@ -550,8 +562,12 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         if budget[0] <= 0:
             raise RuntimeError("Logic Graph exceeded execution limit; check for loops in the graph.")
         for edge in self.outgoing.get(node_id, []):
-            if str(edge.get("from_port", "next")) != port:
-                continue
+            # Fast path inline: graphs are normalised at load time, so an exact
+            # match is the overwhelmingly common case and must not pay for a
+            # method call.  _edge_matches_port only runs when it misses.
+            if edge.get("from_port", "next") != port:
+                if not self._edge_matches_port(edge, port, node_id):
+                    continue
             target_id = str(edge["to_node"])
             if target_id in branch:
                 raise RuntimeError("Logic Graph contains an infinite execution loop.")
@@ -601,6 +617,30 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
             self.executed_nodes.append(node_id)
         self._follow(node_id, "next", game, dt, budget or [self.MAX_STEPS], set())
 
+    def _edge_matches_port(self, edge: Mapping[str, Any], port: str, node_id: str) -> bool:
+        """Does this edge leave ``node_id`` through ``port``?
+
+        Phase 9.5B Stage 1: graphs are normalised to canonical ports at LOAD
+        time, so the fast path is a plain string compare and costs nothing extra
+        per traversal.  The alias fallback exists only for graphs handed to the
+        runtime without going through ``normalize_logic_graph`` (unit tests,
+        hot-reload payloads, exported runtimes).  It logs at DEBUG so real usage
+        can be measured before the compatibility layer is dropped.
+        """
+        saved = str(edge.get("from_port", "next"))
+        if saved == port:
+            return True
+        node = self.nodes.get(node_id) or {}
+        resolved = canonical_exec_port(saved, str(node.get("type", "")))
+        if resolved == port:
+            _log.debug(
+                "Legacy port alias resolved at runtime: node=%s type=%s %s -> %s "
+                "(graph was not normalised)",
+                node_id, node.get("type", "?"), saved, resolved,
+            )
+            return True
+        return False
+
     def _follow(
         self,
         node_id: str,
@@ -613,8 +653,12 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin):
         if budget[0] <= 0:
             raise RuntimeError("Logic Graph exceeded execution limit; check for loops in the graph.")
         for edge in self.outgoing.get(node_id, []):
-            if str(edge.get("from_port", "next")) != port:
-                continue
+            # Fast path inline: graphs are normalised at load time, so an exact
+            # match is the overwhelmingly common case and must not pay for a
+            # method call.  _edge_matches_port only runs when it misses.
+            if edge.get("from_port", "next") != port:
+                if not self._edge_matches_port(edge, port, node_id):
+                    continue
             target_id = str(edge["to_node"])
             if target_id in branch:
                 raise RuntimeError("Logic Graph contains an infinite execution loop.")

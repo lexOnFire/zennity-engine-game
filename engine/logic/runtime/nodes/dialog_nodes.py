@@ -115,7 +115,7 @@ def execute_set_dialog_choice(runtime, node: Mapping[str, Any], game: Any, dt: f
 
         manager = get_dialogue_manager()
         success = manager.choose(dialog_id, choice_index, owner_id=owner_id)
-        return ["exec_success" if success else "exec_failure"]
+        return ["next" if success else "exec_failure"]
 
     except Exception as e:
         print(f"Erro em set_dialog_choice: {e}")
@@ -141,7 +141,7 @@ def execute_close_dialog(runtime, node: Mapping[str, Any], game: Any, dt: float)
         manager = get_dialogue_manager()
         success = manager.close(dialog_id, owner_id=owner_id)
 
-        return ["exec_success" if success else "exec_failure"]
+        return ["next" if success else "exec_failure"]
     except Exception as e:
         print(f"Erro em close_dialog: {e}")
         return ["exec_failure"]

@@ -88,3 +88,6 @@ resultado.txt
 
 # Test artifacts
 teste.zscene
+
+# Phase 9.5B Stage 1: relatório da auditoria regenerado a cada rodada de teste
+tests/fixtures/stage1/_audit_current.json

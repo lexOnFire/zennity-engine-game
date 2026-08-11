@@ -17,7 +17,7 @@ class AddComponentNode(NodeDefinition):
             PinDefinition(id="component_type", label_key="Tipo", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -35,6 +35,6 @@ class RemoveComponentNode(NodeDefinition):
             PinDefinition(id="component_type", label_key="Tipo", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )

@@ -192,6 +192,13 @@ class ViewportRuntimeInitializer:
             project_blackboard = {}
         self.logic_blackboard = BlackboardStore(scene_blackboard, project_blackboard)
         self.logic_event_bus = LogicEventBus()
+        # Phase 9.5B Stage 1: hand the live bus to the DialogueManager so
+        # dialogue events actually reach Logic Graphs.  Previously it looked for
+        # a LogicEventBus.get_instance() that does not exist.
+        with swallow(log, "bind the LogicEventBus to the DialogueManager",
+                     level=logging.WARNING):
+            from engine.dialogue.manager import get_dialogue_manager
+            get_dialogue_manager().bind_event_bus(self.logic_event_bus)
 
     def _hydrate(self, selected: dict[str, dict[str, Any]]) -> None:
         for hydrator in self.hydrators:

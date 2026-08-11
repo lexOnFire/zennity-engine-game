@@ -104,7 +104,10 @@ def execute_destroy_object(runtime, node: Mapping[str, Any], game: Any, dt: floa
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
     target = runtime._read_target(node_id, game, dt, set())
     target.destroy()
-    return []
+    # Stage 1: the definition has always advertised a continuation pin and
+    # destroy_after_time already returns "next"; destroying a *target* and
+    # carrying on is a legitimate pattern.
+    return ["next"]
 
 @registry.register_executor('destroy_after_time')
 def execute_destroy_after_time(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:

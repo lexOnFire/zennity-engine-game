@@ -19,6 +19,7 @@ class IfElseNode(NodeDefinition):
         outputs=[
             PinDefinition(id="true", label_key="Verdadeiro", pin_type=PinType.EXEC),
             PinDefinition(id="false", label_key="Falso", pin_type=PinType.EXEC),
+            PinDefinition(id="value", label_key="Condição", pin_type=PinType.BOOL),
         ]
     )
 
@@ -28,6 +29,7 @@ class RestartSceneNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="restart_scene",
+        execution_model="terminal",
         title_key="Reiniciar Cena",
         category_key="Flow",
         description_key="Reinicia a cena atual",
@@ -35,7 +37,6 @@ class RestartSceneNode(NodeDefinition):
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 

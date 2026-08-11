@@ -44,7 +44,7 @@ def execute_set_volume(runtime, node: Mapping[str, Any], game: Any, dt: float) -
         if hasattr(game, "set_volume"):
             game.set_volume(volume, channel)
             runtime._store(node_id, "volume", volume)
-            return ["exec_success"]
+            return ["next"]
 
         return ["exec_failure"]
     except Exception as e:
@@ -64,7 +64,7 @@ def execute_set_pitch(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         if hasattr(game, "set_pitch"):
             game.set_pitch(pitch)
             runtime._store(node_id, "pitch", pitch)
-            return ["exec_success"]
+            return ["next"]
 
         return ["exec_failure"]
     except Exception as e:
@@ -78,7 +78,7 @@ def execute_stop_all_sounds(runtime, node: Mapping[str, Any], game: Any, dt: flo
     try:
         if hasattr(game, "stop_all_sounds"):
             game.stop_all_sounds()
-        return ["exec_success"]
+        return ["next"]
     except Exception as e:
         print(f"Erro em stop_all_sounds: {e}")
         return ["exec_failure"]

@@ -17,9 +17,11 @@ class CreateObjectNode(NodeDefinition):
             PinDefinition(id="prefab_path", label_key="Caminho Prefab", pin_type=PinType.STRING, default_value=""),
             PinDefinition(id="x", label_key="X", pin_type=PinType.FLOAT, default_value=0.0),
             PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="source", label_key="Origem", pin_type=PinType.OBJECT),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="limit_reached", label_key="Limite Atingido", pin_type=PinType.EXEC),
             PinDefinition(id="object", label_key="Objeto", pin_type=PinType.OBJECT),
         ]
     )
@@ -40,8 +42,10 @@ class CreatePrefabNode(NodeDefinition):
             PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
-            PinDefinition(id="instance", label_key="Instância", pin_type=PinType.OBJECT),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="limit_reached", label_key="Limite Atingido", pin_type=PinType.EXEC),
+            PinDefinition(id="object", label_key="Instância", pin_type=PinType.OBJECT),
+            PinDefinition(id="parameters", label_key="Parâmetros", pin_type=PinType.STRING),
         ]
     )
 
@@ -58,9 +62,11 @@ class CloneObjectNode(NodeDefinition):
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="x", label_key="X", pin_type=PinType.FLOAT, default_value=0.0),
             PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="name", label_key="Nome", pin_type=PinType.STRING),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
-            PinDefinition(id="clone", label_key="Clone", pin_type=PinType.OBJECT),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="limit_reached", label_key="Limite Atingido", pin_type=PinType.EXEC),
+            PinDefinition(id="object", label_key="Clone", pin_type=PinType.OBJECT),
         ]
     )

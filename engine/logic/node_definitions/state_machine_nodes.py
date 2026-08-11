@@ -21,8 +21,8 @@ class CreateStateMachineNode(NodeDefinition):
         outputs=[
             PinDefinition(id="exec_created", label_key="Criado", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
-            PinDefinition(id="machine_id_out", label_key="ID da Máquina", pin_type=PinType.STRING),
-            PinDefinition(id="initial_state_out", label_key="Estado Inicial", pin_type=PinType.STRING),
+            PinDefinition(id="machine_id", label_key="ID da Máquina", pin_type=PinType.STRING),
+            PinDefinition(id="current_state", label_key="Estado Inicial", pin_type=PinType.STRING),
         ]
     )
 
@@ -44,7 +44,7 @@ class AddTransitionNode(NodeDefinition):
             PinDefinition(id="condition", label_key="Condição", pin_type=PinType.STRING, default_value="always"),  # always, on_key, on_event
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )

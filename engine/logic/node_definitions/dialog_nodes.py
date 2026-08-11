@@ -23,7 +23,7 @@ class ShowDialogNode(NodeDefinition):
         outputs=[
             PinDefinition(id="exec_showing", label_key="Mostrando", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
-            PinDefinition(id="dialog_id_out", label_key="ID", pin_type=PinType.STRING),
+            PinDefinition(id="dialog_id", label_key="ID", pin_type=PinType.STRING),
             PinDefinition(id="is_showing", label_key="Exibindo?", pin_type=PinType.BOOL),
         ]
     )
@@ -67,7 +67,7 @@ class SetDialogChoiceNode(NodeDefinition):
             PinDefinition(id="choice_index", label_key="Índice", pin_type=PinType.INT, default_value=0),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
@@ -87,7 +87,7 @@ class CloseDialogNode(NodeDefinition):
             PinDefinition(id="dialog_id", label_key="ID do Diálogo", pin_type=PinType.STRING, default_value="dialog_1"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )

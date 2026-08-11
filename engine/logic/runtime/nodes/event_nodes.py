@@ -18,7 +18,7 @@ def execute_key_pressed(runtime, node: Mapping[str, Any], game: Any, dt: float) 
     node_type = str(node.get('type'))
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
     pressed = bool(runtime._evaluate_output(node_id, "value", game, dt, set()))
-    return ["true" if pressed else "false"]
+    return ["exec_pressed" if pressed else "exec_not_pressed"]
 
 @registry.register_executor('key_held')
 def execute_key_held(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
@@ -26,7 +26,7 @@ def execute_key_held(runtime, node: Mapping[str, Any], game: Any, dt: float) -> 
     node_type = str(node.get('type'))
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
     pressed = bool(runtime._evaluate_output(node_id, "value", game, dt, set()))
-    return ["true" if pressed else "false"]
+    return ["held" if pressed else "released"]
 
 @registry.register_executor('is_grounded')
 def execute_is_grounded(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
@@ -34,7 +34,7 @@ def execute_is_grounded(runtime, node: Mapping[str, Any], game: Any, dt: float) 
     node_type = str(node.get('type'))
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
     grounded = bool(runtime._evaluate_output(node_id, "value", game, dt, set()))
-    return ["true" if grounded else "false"]
+    return ["grounded" if grounded else "airborne"]
 
 @registry.register_executor('compare_number')
 def execute_compare_number(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:

@@ -42,9 +42,9 @@ class SetVolumeNode(NodeDefinition):
             PinDefinition(id="channel", label_key="Canal", pin_type=PinType.STRING, default_value="master"),  # master, sfx, music
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
-            PinDefinition(id="current_volume", label_key="Volume Atual", pin_type=PinType.FLOAT),
+            PinDefinition(id="volume", label_key="Volume Atual", pin_type=PinType.FLOAT),
         ]
     )
 
@@ -63,9 +63,9 @@ class SetPitchNode(NodeDefinition):
             PinDefinition(id="pitch", label_key="Pitch", pin_type=PinType.FLOAT, default_value=1.0),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
-            PinDefinition(id="current_pitch", label_key="Pitch Atual", pin_type=PinType.FLOAT),
+            PinDefinition(id="pitch", label_key="Pitch Atual", pin_type=PinType.FLOAT),
         ]
     )
 
@@ -83,7 +83,7 @@ class StopAllSoundsNode(NodeDefinition):
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )

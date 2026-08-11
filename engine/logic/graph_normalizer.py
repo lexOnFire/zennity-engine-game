@@ -7,6 +7,35 @@ from collections.abc import Mapping
 from copy import deepcopy
 from typing import Any
 
+from engine.diagnostics import get_logger
+from engine.logic.port_aliases import canonical_exec_port, canonical_node_id
+
+_log = get_logger("logic")
+
+
+def _canonical_from_port(raw_port: str, node_type: str) -> str:
+    """Resolve a saved ``from_port`` to its canonical spelling.
+
+    Only rewrites **exec** ports.  Data pins may legitimately be called ``out``
+    or ``value``; folding those into ``next`` would corrupt data edges, so the
+    alias is applied only when the node's definition really declares the
+    resolved name as a flow output.
+    """
+    candidate = canonical_exec_port(raw_port, node_type)
+    if candidate == raw_port:
+        return raw_port
+    definition = NODE_DEFINITIONS.get(node_type, {})
+    flow_outputs = {
+        str(pin[0])
+        for pin in definition.get("outputs", []) or []
+        if isinstance(pin, (tuple, list)) and len(pin) >= 2 and str(pin[1]) == "flow"
+    }
+    if not definition:
+        # Unknown node type (custom/plugin): trust the alias table, since the
+        # legacy names it maps are exec-only by construction.
+        return candidate
+    return candidate if candidate in flow_outputs else raw_port
+
 try:
     from engine.logic.graph_asset import (
         LOGIC_GRAPH_FORMAT, LOGIC_GRAPH_VERSION, NODE_DEFINITIONS,
@@ -117,17 +146,26 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
 
     nodes: list[dict[str, Any]] = []
     node_ids: set[str] = set()
+    node_types: dict[str, str] = {}
     raw_nodes = source.get("nodes", [])
     if isinstance(raw_nodes, list):
         for index, raw_node in enumerate(raw_nodes):
             if not isinstance(raw_node, Mapping):
                 continue
             node_type = str(raw_node.get("type", "custom")).strip() or "custom"
+            # Phase 9.5B Stage 1: legacy spellings (scene_load, quit_game, ...)
+            # resolve to the id that owns the definition, so downstream only
+            # ever sees canonical node types.
+            canonical_type = canonical_node_id(node_type)
+            if canonical_type != node_type:
+                _log.debug("Legacy node id: %s -> %s", node_type, canonical_type)
+                node_type = canonical_type
             definition = NODE_DEFINITIONS.get(node_type, {})
             node_id = str(raw_node.get("id", "")).strip() or uuid.uuid4().hex
             if node_id in node_ids:
                 node_id = uuid.uuid4().hex
             node_ids.add(node_id)
+            node_types[node_id] = node_type
             position = raw_node.get("position", [80.0 + (index % 4) * 230.0, 80.0 + (index // 4) * 130.0])
             if not isinstance(position, (list, tuple)) or len(position) < 2:
                 position = [80.0, 80.0]
@@ -197,10 +235,19 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             target_node = str(raw_edge.get("to_node", raw_edge.get("to", "")))
             if source_node not in node_ids or target_node not in node_ids or source_node == target_node:
                 continue
+            # Phase 9.5B Stage 1: normalisation is where legacy exec ports are
+            # resolved, ONCE, at load time -- never per edge traversal in the
+            # frame loop.  After this the runtime only sees canonical ports.
+            raw_port = str(raw_edge.get("from_port", raw_edge.get("from_pin", "next")))
+            owner_type = node_types.get(source_node, "")
+            from_port = _canonical_from_port(raw_port, owner_type)
+            if from_port != raw_port:
+                _log.debug("Legacy port alias: node=%s (%s) %s -> %s",
+                           source_node, owner_type or "?", raw_port, from_port)
             edges.append({
                 "id": str(raw_edge.get("id", "")).strip() or uuid.uuid4().hex,
                 "from_node": source_node,
-                "from_port": str(raw_edge.get("from_port", raw_edge.get("from_pin", "next"))),
+                "from_port": from_port,
                 "to_node": target_node,
                 "to_port": str(raw_edge.get("to_port", raw_edge.get("to_pin", "in"))),
                 "kind": str(raw_edge.get("kind", "flow")),

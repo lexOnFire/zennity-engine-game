@@ -184,6 +184,17 @@ def evaluate_self_object(runtime, node_id: str, port: str, node: Mapping[str, An
     value = game
     return value
 
+@registry.register_executor('find_tag')
+def execute_find_tag(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Phase 9.5B Stage 1: ``find_tag`` declares an exec in/out pin but only had
+    an evaluator, so a flow edge leaving it never fired -- one project asset has
+    exactly such a dangling ``next`` edge.  Resolve the object and continue."""
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    value = game.find(str(properties.get("tag", "Player")))
+    runtime._store(node_id, "object", value)
+    return ["next"]
+
 @registry.register_evaluator('find_tag')
 def evaluate_find_tag(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
     node_type = str(node.get('type'))

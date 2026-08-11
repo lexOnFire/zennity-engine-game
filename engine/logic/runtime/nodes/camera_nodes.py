@@ -55,7 +55,7 @@ def execute_camera_stop_follow(runtime, node: Mapping[str, Any], game: Any, dt: 
     try:
         if hasattr(game, "camera_stop_follow"):
             game.camera_stop_follow()
-        return ["exec_success"]
+        return ["next"]
     except Exception as e:
         print(f"Erro em camera_stop_follow: {e}")
         return ["exec_failure"]
@@ -95,7 +95,7 @@ def execute_camera_set_zoom(runtime, node: Mapping[str, Any], game: Any, dt: flo
         if hasattr(game, "camera_set_zoom"):
             game.camera_set_zoom(zoom, duration)
             runtime._store(node_id, "zoom", zoom)
-            return ["exec_success"]
+            return ["next"]
 
         return ["exec_failure"]
     except Exception as e:

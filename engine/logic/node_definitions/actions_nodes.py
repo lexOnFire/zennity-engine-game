@@ -4,22 +4,6 @@ from __future__ import annotations
 from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
-class PlayAnimationNode(NodeDefinition):
-    """Reproduz animação por nome."""
-
-    __node_definition__ = NodeDefinition(
-        id="play_animation",
-        title_key="Tocar Animação",
-        category_key="Actions",
-        description_key="Reproduz uma animação pelo nome do estado",
-        inputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
-            PinDefinition(id="state", label_key="Estado", pin_type=PinType.STRING, default_value="Idle"),
-        ],
-        outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
-        ]
-    )
 
 
 class PlayAnimationAssetNode(NodeDefinition):
@@ -35,26 +19,11 @@ class PlayAnimationAssetNode(NodeDefinition):
             PinDefinition(id="path", label_key="Caminho", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
 
-class StopAnimationNode(NodeDefinition):
-    """Para a animação atual."""
-
-    __node_definition__ = NodeDefinition(
-        id="stop_animation",
-        title_key="Parar Animação",
-        category_key="Actions",
-        description_key="Para a animação atualmente reproduzindo",
-        inputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
-        ],
-        outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
-        ]
-    )
 
 
 class PlaySoundNode(NodeDefinition):
@@ -70,7 +39,7 @@ class PlaySoundNode(NodeDefinition):
             PinDefinition(id="path", label_key="Caminho", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -88,7 +57,7 @@ class SetSpriteNode(NodeDefinition):
             PinDefinition(id="path", label_key="Caminho", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -108,7 +77,7 @@ class StartTextureScrollNode(NodeDefinition):
             PinDefinition(id="speed_y", label_key="Velocidade Y", pin_type=PinType.FLOAT, default_value=80.0),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -125,7 +94,7 @@ class StopTextureScrollNode(NodeDefinition):
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -144,7 +113,7 @@ class SetPositionNode(NodeDefinition):
             PinDefinition(id="y", label_key="Y", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -162,7 +131,7 @@ class RotateNode(NodeDefinition):
             PinDefinition(id="degrees", label_key="Graus", pin_type=PinType.FLOAT, default_value=90.0),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -180,7 +149,7 @@ class SetActiveNode(NodeDefinition):
             PinDefinition(id="active", label_key="Ativo", pin_type=PinType.BOOL, default_value=True),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -197,7 +166,7 @@ class DestroyObjectNode(NodeDefinition):
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -215,7 +184,7 @@ class DestroyAfterTimeNode(NodeDefinition):
             PinDefinition(id="seconds", label_key="Segundos", pin_type=PinType.FLOAT, default_value=1.0),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -231,9 +200,10 @@ class LogMessageNode(NodeDefinition):
         inputs=[
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="message", label_key="Mensagem", pin_type=PinType.STRING, default_value=""),
+            PinDefinition(id="text", label_key="Texto", pin_type=PinType.STRING),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -251,7 +221,6 @@ class StartBehaviorTreeNode(NodeDefinition):
             PinDefinition(id="path", label_key="Caminho", pin_type=PinType.STRING, default_value=""),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
-            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )

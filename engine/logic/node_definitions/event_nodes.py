@@ -38,6 +38,7 @@ class CompareTextNode(NodeDefinition):
             PinDefinition(id="a", label_key="A", pin_type=PinType.STRING, default_value=""),
             PinDefinition(id="b", label_key="B", pin_type=PinType.STRING, default_value=""),
             PinDefinition(id="operation", label_key="Operação", pin_type=PinType.STRING, default_value="=="),
+            PinDefinition(id="other", label_key="Outro", pin_type=PinType.STRING),
         ],
         outputs=[
             PinDefinition(id="true", label_key="Verdadeiro", pin_type=PinType.EXEC),
@@ -60,6 +61,7 @@ class KeyPressedNode(NodeDefinition):
         ],
         outputs=[
             PinDefinition(id="exec_pressed", label_key="Pressionado", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_not_pressed", label_key="Não Pressionado", pin_type=PinType.EXEC),
         ]
     )
 
@@ -114,7 +116,7 @@ class InputAxisNode(NodeDefinition):
             PinDefinition(id="axis", label_key="Eixo", pin_type=PinType.STRING, default_value="horizontal"),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.FLOAT),
         ]
     )
@@ -134,7 +136,7 @@ class ReadKeyAxisNode(NodeDefinition):
             PinDefinition(id="negative_key", label_key="Tecla Negativa", pin_type=PinType.STRING, default_value="a"),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.FLOAT),
         ]
     )

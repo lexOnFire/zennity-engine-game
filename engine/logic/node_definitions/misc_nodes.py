@@ -17,7 +17,7 @@ class SetVariableNode(NodeDefinition):
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING, default_value=None),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
         ]
     )
@@ -35,7 +35,7 @@ class GetVariableNode(NodeDefinition):
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
         ]
     )
@@ -53,8 +53,7 @@ class CallSubgraphNode(NodeDefinition):
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
-            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -64,6 +63,7 @@ class SubgraphReturnNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="subgraph_return",
+        execution_model="terminal",
         title_key="Retornar Subgrafo",
         category_key="Graphs",
         description_key="Retorna um valor do subgrafo para o chamador",
@@ -72,7 +72,6 @@ class SubgraphReturnNode(NodeDefinition):
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING, default_value=None),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
         ]
     )
@@ -83,6 +82,7 @@ class SequenceNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="sequence",
+        dynamic_exec_prefixes=("then_",),
         title_key="Sequência",
         category_key="Flow",
         description_key="Executa múltiplas ramos um após o outro",
@@ -110,7 +110,7 @@ class SetHudNode(NodeDefinition):
             PinDefinition(id="text", label_key="Texto", pin_type=PinType.STRING, default_value="Texto"),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )
 
@@ -128,6 +128,6 @@ class EmitEventNode(NodeDefinition):
             PinDefinition(id="payload", label_key="Dados", pin_type=PinType.STRING, default_value=None),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
         ]
     )

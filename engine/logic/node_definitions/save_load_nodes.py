@@ -21,7 +21,7 @@ class SaveGameNode(NodeDefinition):
         outputs=[
             PinDefinition(id="exec_saved", label_key="Salvo", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
-            PinDefinition(id="slot_name_out", label_key="Slot", pin_type=PinType.STRING),
+            PinDefinition(id="slot_name", label_key="Slot", pin_type=PinType.STRING),
             PinDefinition(id="saved", label_key="Foi Salvo?", pin_type=PinType.BOOL),
         ]
     )
@@ -44,7 +44,7 @@ class LoadGameNode(NodeDefinition):
             PinDefinition(id="exec_loaded", label_key="Carregado", pin_type=PinType.EXEC),
             PinDefinition(id="exec_no_save", label_key="Sem Save", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
-            PinDefinition(id="slot_name_out", label_key="Slot", pin_type=PinType.STRING),
+            PinDefinition(id="slot_name", label_key="Slot", pin_type=PinType.STRING),
             PinDefinition(id="loaded", label_key="Foi Carregado?", pin_type=PinType.BOOL),
         ]
     )

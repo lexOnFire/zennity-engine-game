@@ -2,7 +2,12 @@
 from __future__ import annotations
 
 from typing import Any, Mapping
+
+from engine.diagnostics import get_logger, report_error
+
 from ..registry import registry
+
+_log = get_logger("ui")
 
 
 @registry.register_executor('create_ui_label')
@@ -241,10 +246,12 @@ def execute_get_ui_widget_property(runtime, node: Mapping[str, Any], game: Any, 
                                 runtime.set_parameter(f"{widget_name}_{property_name}", value)
                             return ["next"]
 
-        return []
-    except Exception as e:
-        print(f"Erro ao ler propriedade: {e}")
-        return []
+        # Stage 1: the definition declares exec_failure; returning [] here made
+        # a missing widget indistinguishable from a dead graph.
+        return ["exec_failure"]
+    except Exception as exc:
+        report_error(_log, f"read UI widget property on node {node_id!r}", exc)
+        return ["exec_failure"]
 
 
 def _find_ui_widget_in_tree(ui_dict: dict[str, Any], widget_name: str) -> dict[str, Any] | None:

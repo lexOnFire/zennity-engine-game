@@ -59,7 +59,7 @@ def execute_bind_ui_to_variable(runtime, node: Mapping[str, Any], game: Any, dt:
 
         _write_runtime_variable(runtime, variable_name, val)
         runtime._store(node_id, "value", val)
-        return ["exec_success"]
+        return ["next"]
 
     except Exception as e:
         print(f"Erro em bind_ui_to_variable: {e}")
@@ -83,7 +83,7 @@ def execute_update_ui_binding(runtime, node: Mapping[str, Any], game: Any, dt: f
 
         _write_runtime_variable(runtime, variable_name, val)
         runtime._store(node_id, "value", val)
-        return ["exec_success"]
+        return ["next"]
 
     except Exception as e:
         print(f"Erro em update_ui_binding: {e}")

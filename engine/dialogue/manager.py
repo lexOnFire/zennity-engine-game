@@ -18,8 +18,13 @@ Architecture:
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any, Dict, Optional, Callable
+
+from engine.diagnostics import get_logger, report_error
+
+_log = get_logger("dialogue")
 
 try:
     from engine.dialogue.runtime import DialogueSession
@@ -44,6 +49,13 @@ class DialogueManager:
         self._owner_sessions: Dict[str, tuple[str, str]] = {}  # owner_id → (owner_id, session_id)
         self._choice_callbacks: Dict[tuple[str, str], Callable[[int], None]] = {}
         self._session_counter = 0  # For generating unique session IDs
+        # Phase 9.5B Stage 1: the LogicEventBus is created per Play session by
+        # ViewportRuntimeInitializer._create_logic_services and injected here.
+        # It is deliberately NOT a singleton -- the previous code called a
+        # LogicEventBus.get_instance() that never existed, so every dialogue
+        # event raised AttributeError into a broad handler and dialogue never
+        # reached Logic Graphs.
+        self._event_bus: Any = None
 
     def start_inline(
         self,
@@ -321,12 +333,17 @@ class DialogueManager:
         Composite key: (owner_id, session_id)
         """
         owner_id, session_id = composite_key
-        try:
-            # Try to dispatch via LogicEventBus
-            from engine.logic.event_bus import LogicEventBus
-            bus = LogicEventBus.get_instance()
+        bus = self._event_bus
+        if bus is None:
+            # No Play session bound (editor preview, unit test): nothing to
+            # route to.  Logged at DEBUG because it is expected, not a failure.
+            _log.debug(
+                "Dialogue event %r dropped: no LogicEventBus bound "
+                "(owner=%s, session=%s)", event_name, owner_id, session_id,
+            )
+            return
 
-            # Emit event with owner context
+        try:
             event_data = {
                 "owner_id": owner_id,
                 "session_id": session_id,
@@ -335,11 +352,27 @@ class DialogueManager:
             }
             bus.emit(f"dialogue:{event_name}", event_data)
 
-        except ImportError:
-            # LogicEventBus not available, just log
-            print(f"[DialogueManager] Event: {event_name} (owner={owner_id}, session={session_id})")
-        except Exception as e:
-            print(f"[DialogueManager._handle_dialogue_event] Error: {e}")
+        except ImportError as exc:
+            report_error(
+                _log,
+                f"import LogicEventBus to route dialogue event {event_name!r} "
+                f"(owner={owner_id}, session={session_id})",
+                exc,
+                level=logging.WARNING,
+            )
+        except Exception as exc:
+            # KNOWN DEFECT (Phase 9.5A, crash audit S5): LogicEventBus has no
+            # get_instance(), so this raises AttributeError on every dialogue
+            # event and dialogue has never reached Logic Graphs.  Stage 0 only
+            # makes the failure visible; the functional fix belongs to Stage 1.
+            # tests/diagnostics/test_dialogue_dead_bridge.py locks in that this
+            # stays observable.
+            report_error(
+                _log,
+                f"route dialogue event {event_name!r} to the LogicEventBus "
+                f"(owner={owner_id}, session={session_id})",
+                exc,
+            )
 
     def set_variable(
         self,
@@ -406,6 +439,14 @@ class DialogueManager:
         except Exception as e:
             print(f"[DialogueManager.close_owner] Error: {e}")
 
+    def bind_event_bus(self, event_bus: Any) -> None:
+        """Attach the Play session's LogicEventBus (Phase 9.5B Stage 1)."""
+        self._event_bus = event_bus
+
+    @property
+    def event_bus(self) -> Any:
+        return self._event_bus
+
     def reset(self) -> None:
         """
         Reset all dialogue state.
@@ -418,6 +459,7 @@ class DialogueManager:
             self._owner_sessions.clear()
             self._choice_callbacks.clear()
             self._session_counter = 0
+            self._event_bus = None
         except Exception as e:
             print(f"[DialogueManager.reset] Error: {e}")
 

@@ -116,7 +116,7 @@ def execute_pause_animation(runtime, node: Mapping[str, Any], game: Any, dt: flo
     try:
         animator.pause()
         runtime._store(node_id, "paused", True)
-        return ["exec_success"]
+        return ["next"]
 
     except (ValueError, TypeError, AttributeError):
         return ["exec_failure"]
@@ -198,7 +198,7 @@ def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: 
 
             controller.set_parameter(parameter_name, value)
             runtime._store(node_id, parameter_name, value)
-            return ["exec_success"]
+            return ["next"]
 
         except (ValueError, TypeError, AttributeError):
             return ["exec_failure"]
@@ -217,7 +217,7 @@ def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: 
                     value = value_str.lower() in ("true", "1", "yes")
 
             runtime._store(node_id, parameter_name, value)
-            return ["exec_success"]
+            return ["next"]
 
         except (ValueError, TypeError):
             return ["exec_failure"]
@@ -244,7 +244,7 @@ def execute_animator_set_trigger(runtime, node: Mapping[str, Any], game: Any, dt
         # Set trigger to True (will be consumed by controller on next update)
         controller.set_parameter(trigger_name, True)
         runtime._store(node_id, trigger_name, True)
-        return ["exec_success"]
+        return ["next"]
 
     except (ValueError, TypeError, AttributeError):
         return ["exec_failure"]

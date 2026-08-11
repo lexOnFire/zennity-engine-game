@@ -174,7 +174,7 @@ class GetUIWidgetPropertyNode:
             PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="text"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
         ]
@@ -195,9 +195,7 @@ class GetProgressBarValueNode:
             PinDefinition(id="widget_name", label_key="Nome da ProgressBar", pin_type=PinType.STRING, default_value="progress"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
-            PinDefinition(id="exec_not_found", label_key="Não Encontrado", pin_type=PinType.EXEC),
-            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="value", label_key="Valor", pin_type=PinType.FLOAT),
         ]
     )

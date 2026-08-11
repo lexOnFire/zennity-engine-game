@@ -18,7 +18,7 @@ class ModifyRigidbodyNode:
             PinDefinition(id="value", label_key="Novo Valor", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
@@ -40,7 +40,7 @@ class ModifyColliderNode:
             PinDefinition(id="value", label_key="Novo Valor", pin_type=PinType.STRING, default_value="true"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
@@ -63,8 +63,9 @@ class ApplyForceNode:
             PinDefinition(id="force_mode", label_key="Modo", pin_type=PinType.STRING, default_value="impulse"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="force_applied", label_key="Força Aplicada", pin_type=PinType.BOOL),
         ]
     )
 
@@ -184,6 +185,7 @@ class OnCollisionEnterNode:
 
     __node_definition__ = NodeDefinition(
         id="on_collision_enter",
+        execution_model="event_source",
         title_key="On Collision Enter",
         category_key="Physics/Events",
         description_key="Fires when collision starts",
@@ -191,7 +193,7 @@ class OnCollisionEnterNode:
         inputs=[],
 
         outputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="self_object", label_key="Self Object", pin_type=PinType.OBJECT),
             PinDefinition(id="other_object", label_key="Other Object", pin_type=PinType.OBJECT),
             PinDefinition(id="self_collider", label_key="Self Collider", pin_type=PinType.OBJECT),
@@ -205,6 +207,7 @@ class OnCollisionExitNode:
 
     __node_definition__ = NodeDefinition(
         id="on_collision_exit",
+        execution_model="event_source",
         title_key="On Collision Exit",
         category_key="Physics/Events",
         description_key="Fires when collision ends",
@@ -212,7 +215,7 @@ class OnCollisionExitNode:
         inputs=[],
 
         outputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="self_object", label_key="Self Object", pin_type=PinType.OBJECT),
             PinDefinition(id="other_object", label_key="Other Object", pin_type=PinType.OBJECT),
             PinDefinition(id="self_collider", label_key="Self Collider", pin_type=PinType.OBJECT),
@@ -226,6 +229,7 @@ class OnTriggerEnterNode:
 
     __node_definition__ = NodeDefinition(
         id="on_trigger_enter",
+        execution_model="event_source",
         title_key="On Trigger Enter",
         category_key="Physics/Events",
         description_key="Fires when trigger is entered",
@@ -233,7 +237,7 @@ class OnTriggerEnterNode:
         inputs=[],
 
         outputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="self_object", label_key="Self Object", pin_type=PinType.OBJECT),
             PinDefinition(id="other_object", label_key="Other Object", pin_type=PinType.OBJECT),
             PinDefinition(id="self_collider", label_key="Self Collider", pin_type=PinType.OBJECT),
@@ -247,6 +251,7 @@ class OnTriggerExitNode:
 
     __node_definition__ = NodeDefinition(
         id="on_trigger_exit",
+        execution_model="event_source",
         title_key="On Trigger Exit",
         category_key="Physics/Events",
         description_key="Fires when trigger is exited",
@@ -254,7 +259,7 @@ class OnTriggerExitNode:
         inputs=[],
 
         outputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="self_object", label_key="Self Object", pin_type=PinType.OBJECT),
             PinDefinition(id="other_object", label_key="Other Object", pin_type=PinType.OBJECT),
             PinDefinition(id="self_collider", label_key="Self Collider", pin_type=PinType.OBJECT),
@@ -289,6 +294,13 @@ class RaycastNode:
         outputs=[
             PinDefinition(id="exec_hit", label_key="Hit", pin_type=PinType.EXEC),
             PinDefinition(id="exec_no_hit", label_key="No Hit", pin_type=PinType.EXEC),
+            # Stage 1: the executor also stores the composite results.  The
+            # scalar hit_point_x/y and hit_normal_x/y pins below were declared
+            # but the vector forms the runtime writes were not, so they could
+            # never be read from a graph.
+            PinDefinition(id="hit", label_key="Hit", pin_type=PinType.BOOL),
+            PinDefinition(id="hit_point", label_key="Hit Point", pin_type=PinType.VECTOR2),
+            PinDefinition(id="hit_normal", label_key="Hit Normal", pin_type=PinType.VECTOR2),
             PinDefinition(id="hit_object", label_key="Hit Object", pin_type=PinType.OBJECT),
             PinDefinition(id="hit_point_x", label_key="Hit Point X", pin_type=PinType.FLOAT),
             PinDefinition(id="hit_point_y", label_key="Hit Point Y", pin_type=PinType.FLOAT),
@@ -354,8 +366,9 @@ class SetCollisionLayerNode:
         ],
 
         outputs=[
-            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Success", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+            PinDefinition(id="layer", label_key="Camada", pin_type=PinType.INT),
         ]
     )
 
@@ -376,7 +389,8 @@ class SetCollisionMaskNode:
         ],
 
         outputs=[
-            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Success", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+            PinDefinition(id="mask", label_key="Máscara", pin_type=PinType.INT),
         ]
     )

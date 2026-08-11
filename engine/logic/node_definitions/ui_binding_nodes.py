@@ -15,10 +15,11 @@ BindUIToVariableNode_def = NodeDefinition(
         PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="value"),
     ],
     outputs=[
-        PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+        PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
         PinDefinition(id="exec_not_found", label_key="Não Encontrado", pin_type=PinType.EXEC),
         PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
-    ]
+        PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
+        ]
 )
 
 
@@ -35,8 +36,9 @@ UpdateUIBindingNode_def = NodeDefinition(
         PinDefinition(id="property", label_key="Propriedade", pin_type=PinType.STRING, default_value="value"),
     ],
     outputs=[
-        PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+        PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
         PinDefinition(id="exec_not_found", label_key="Não Encontrado", pin_type=PinType.EXEC),
         PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
-    ]
+        PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
+        ]
 )

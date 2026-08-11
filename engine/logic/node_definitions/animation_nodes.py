@@ -15,12 +15,13 @@ class PlayAnimationNode:
         inputs=[
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
-            PinDefinition(id="animation_name", label_key="Animation", pin_type=PinType.STRING, default_value="idle"),
+            PinDefinition(id="state", label_key="Estado", pin_type=PinType.STRING, default_value="Idle"),
             PinDefinition(id="force", label_key="Force", pin_type=PinType.BOOL, default_value=False),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Success", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+            PinDefinition(id="animation", label_key="Animação", pin_type=PinType.STRING),
         ]
     )
 
@@ -39,8 +40,9 @@ class PauseAnimationNode:
             PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Success", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+            PinDefinition(id="paused", label_key="Pausada", pin_type=PinType.BOOL),
         ]
     )
 
@@ -59,8 +61,9 @@ class StopAnimationNode:
             PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Success", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+            PinDefinition(id="stopped", label_key="Parada", pin_type=PinType.BOOL),
         ]
     )
 
@@ -156,7 +159,7 @@ class AnimatorParameterNode:
             PinDefinition(id="value", label_key="Value", pin_type=PinType.STRING, default_value="1.0"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Success", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
         ]
     )
@@ -168,6 +171,7 @@ class AnimateValueNode:
 
     __node_definition__ = NodeDefinition(
         id="animate_value",
+        deprecated=True,
         title_key="Animar Valor (Lerp)",
         category_key="Animation",
         description_key="Anima uma propriedade de A para B com duração e easing",
@@ -207,7 +211,7 @@ class AnimatorSetTriggerNode:
             PinDefinition(id="trigger_name", label_key="Trigger", pin_type=PinType.STRING, default_value="attack"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Success", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
         ]
     )
@@ -256,13 +260,14 @@ class OnAnimationEventNode:
 
     __node_definition__ = NodeDefinition(
         id="on_animation_event",
+        execution_model="event_source",
         title_key="On Animation Event",
         category_key="Animation/Events",
         description_key="Dispara quando uma animação atinge um evento nomeado",
 
         inputs=[],  # No exec input
         outputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="owner_object", label_key="Owner", pin_type=PinType.STRING),
             PinDefinition(id="animation_name", label_key="Animation", pin_type=PinType.STRING),
             PinDefinition(id="event_name", label_key="Event Name", pin_type=PinType.STRING),
@@ -277,13 +282,14 @@ class OnAnimationFinishedNode:
 
     __node_definition__ = NodeDefinition(
         id="on_animation_finished",
+        execution_model="event_source",
         title_key="On Animation Finished",
         category_key="Animation/Events",
         description_key="Dispara quando uma animação não-loop chega ao fim",
 
         inputs=[],  # No exec input
         outputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="owner_object", label_key="Owner", pin_type=PinType.STRING),
             PinDefinition(id="animation_name", label_key="Animation", pin_type=PinType.STRING),
             PinDefinition(id="elapsed_time", label_key="Time", pin_type=PinType.FLOAT),
@@ -296,6 +302,7 @@ class WaitUntilConditionNode:
 
     __node_definition__ = NodeDefinition(
         id="wait_until_condition",
+        deprecated=True,
         title_key="Aguardar Até Condição",
         category_key="Flow",
         description_key="Pausa execução até condição ser verdadeira ou timeout",
@@ -311,7 +318,7 @@ class WaitUntilConditionNode:
             PinDefinition(id="timeout", label_key="Timeout (s)", pin_type=PinType.FLOAT, default_value=30.0),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_timeout", label_key="Timeout", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
             PinDefinition(id="exec_waiting", label_key="Aguardando", pin_type=PinType.EXEC),

@@ -61,7 +61,7 @@ def execute_add_transition(runtime, node: Mapping[str, Any], game: Any, dt: floa
             "condition": condition
         })
 
-        return ["exec_success"]
+        return ["next"]
     except Exception as e:
         print(f"Erro em add_transition: {e}")
         return ["exec_failure"]

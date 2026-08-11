@@ -1,0 +1,913 @@
+{
+  "totals": {
+    "definitions": 154,
+    "declarative": 126,
+    "legacy": 154,
+    "executors": 132,
+    "evaluators": 64,
+    "pure_data": 20,
+    "flow": 118,
+    "event": 16,
+    "violations": 167
+  },
+  "violations": [
+    {
+      "node": "animate_value",
+      "kind": "NO_RUNTIME",
+      "detail": "definition exists but no executor and no evaluator"
+    },
+    {
+      "node": "event_key_pressed",
+      "kind": "NO_RUNTIME",
+      "detail": "definition exists but no executor and no evaluator"
+    },
+    {
+      "node": "event_object_created",
+      "kind": "NO_RUNTIME",
+      "detail": "definition exists but no executor and no evaluator"
+    },
+    {
+      "node": "event_start",
+      "kind": "NO_RUNTIME",
+      "detail": "definition exists but no executor and no evaluator"
+    },
+    {
+      "node": "event_timer",
+      "kind": "NO_RUNTIME",
+      "detail": "definition exists but no executor and no evaluator"
+    },
+    {
+      "node": "event_update",
+      "kind": "NO_RUNTIME",
+      "detail": "definition exists but no executor and no evaluator"
+    },
+    {
+      "node": "wait_until_condition",
+      "kind": "NO_RUNTIME",
+      "detail": "definition exists but no executor and no evaluator"
+    },
+    {
+      "node": "absolute_number",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "add_number",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "and",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "app.quit",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "button_clicked",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "clamp_number",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "delta_time",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "divide_number",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "exit_game",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "find_nearest_object",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "game.has_save",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "game.load_game",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "get_object_name",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "get_position",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "join_text",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "load_scene",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "multiply_number",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "not",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "on_ui_click",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "open_scene",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "or",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "quit_game",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "random_number",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "scene.load",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "scene.load_scene",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "scene_load",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "set_ui_enabled",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "subgraph_input",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "subtract_number",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "to_text",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "ui.button_clicked",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "ui.set_widget_enabled",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "variables.set",
+      "kind": "NO_DEFINITION",
+      "detail": "runtime handler exists but no node definition"
+    },
+    {
+      "node": "add_component",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "add_component",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "apply_force",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['force_applied'] not declared in outputs ['exec_failure', 'exec_success']"
+    },
+    {
+      "node": "bind_ui_to_blackboard",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "bind_ui_to_blackboard",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "bind_ui_to_variable",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['value'] not declared in outputs ['exec_failure', 'exec_not_found', 'exec_success']"
+    },
+    {
+      "node": "call_subgraph",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done', 'exec_failure']"
+    },
+    {
+      "node": "call_subgraph",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done', 'exec_failure']"
+    },
+    {
+      "node": "camera_follow",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['following'] not declared in outputs ['exec_failure', 'exec_following']"
+    },
+    {
+      "node": "camera_set_zoom",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['zoom'] not declared in outputs ['current_zoom', 'exec_failure', 'exec_success']"
+    },
+    {
+      "node": "camera_shake",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['shaking'] not declared in outputs ['exec_failure', 'exec_shaking']"
+    },
+    {
+      "node": "clone_object",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['limit_reached', 'next'] not declared in outputs ['clone', 'exec_done']"
+    },
+    {
+      "node": "clone_object",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['name'] not in inputs/properties"
+    },
+    {
+      "node": "clone_object",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['object'] not declared in outputs ['clone', 'exec_done']"
+    },
+    {
+      "node": "clone_object",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "compare_text",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['other'] not in inputs/properties"
+    },
+    {
+      "node": "create_object",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['limit_reached', 'next'] not declared in outputs ['exec_done', 'object']"
+    },
+    {
+      "node": "create_object",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['source'] not in inputs/properties"
+    },
+    {
+      "node": "create_object",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "create_prefab",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['limit_reached', 'next'] not declared in outputs ['exec_done', 'instance']"
+    },
+    {
+      "node": "create_prefab",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['object', 'parameters'] not declared in outputs ['exec_done', 'instance']"
+    },
+    {
+      "node": "create_prefab",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "create_state_machine",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['current_state', 'machine_id'] not declared in outputs ['exec_created', 'exec_failure', 'initial_state_out', 'machine_id_out']"
+    },
+    {
+      "node": "destroy_after_time",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "destroy_after_time",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "emit_event",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "emit_event",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "get_continuous_motion",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done', 'velocity_x', 'velocity_y']"
+    },
+    {
+      "node": "get_continuous_motion",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['movement'] not in inputs/properties"
+    },
+    {
+      "node": "get_continuous_motion",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['active', 'paused', 'speed', 'x', 'y'] not declared in outputs ['exec_done', 'velocity_x', 'velocity_y']"
+    },
+    {
+      "node": "get_continuous_motion",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "get_progress_bar_value",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_failure', 'exec_not_found', 'exec_success', 'value']"
+    },
+    {
+      "node": "get_progress_bar_value",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_failure', 'exec_not_found', 'exec_success']"
+    },
+    {
+      "node": "get_ui_widget_property",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_failure', 'exec_success', 'value']"
+    },
+    {
+      "node": "get_ui_widget_property",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_failure', 'exec_success']"
+    },
+    {
+      "node": "get_variable",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done', 'value']"
+    },
+    {
+      "node": "get_variable",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "if_else",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['value'] not declared in outputs ['false', 'true']"
+    },
+    {
+      "node": "input_axis",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done', 'value']"
+    },
+    {
+      "node": "input_axis",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "is_grounded",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['false', 'true'] not declared in outputs ['airborne', 'grounded']"
+    },
+    {
+      "node": "is_grounded",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['airborne', 'grounded']"
+    },
+    {
+      "node": "jump",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "jump",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "key_held",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['false', 'true'] not declared in outputs ['held', 'released']"
+    },
+    {
+      "node": "key_held",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['held', 'released']"
+    },
+    {
+      "node": "key_pressed",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['false', 'true'] not declared in outputs ['exec_pressed']"
+    },
+    {
+      "node": "key_pressed",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_pressed']"
+    },
+    {
+      "node": "load_game",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['slot_name'] not declared in outputs ['exec_failure', 'exec_loaded', 'exec_no_save', 'loaded', 'slot_name_out']"
+    },
+    {
+      "node": "log_message",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "log_message",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['text'] not in inputs/properties"
+    },
+    {
+      "node": "log_message",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "move",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "move",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['value'] not in inputs/properties"
+    },
+    {
+      "node": "move",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "move_by",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "move_by",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['x', 'y'] not in inputs/properties"
+    },
+    {
+      "node": "move_by",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "patrol_axis",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "patrol_axis",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['maximum', 'minimum'] not in inputs/properties"
+    },
+    {
+      "node": "patrol_axis",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['direction', 'position'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "patrol_axis",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "pause_animation",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['paused'] not declared in outputs ['exec_failure', 'exec_success']"
+    },
+    {
+      "node": "pause_continuous_motion",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "pause_continuous_motion",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['movement'] not in inputs/properties"
+    },
+    {
+      "node": "pause_continuous_motion",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "play_animation",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_failure', 'exec_success']"
+    },
+    {
+      "node": "play_animation",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['state'] not in inputs/properties"
+    },
+    {
+      "node": "play_animation",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['animation'] not declared in outputs ['exec_failure', 'exec_success']"
+    },
+    {
+      "node": "play_animation",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_success']"
+    },
+    {
+      "node": "play_animation_asset",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "play_animation_asset",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "play_sound",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "play_sound",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "raycast",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['hit', 'hit_normal', 'hit_point'] not declared in outputs ['exec_hit', 'exec_no_hit', 'hit_distance', 'hit_normal_x', 'hit_normal_y', 'hit_object', 'hit_point_x', 'hit_point_y']"
+    },
+    {
+      "node": "read_key_axis",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done', 'value']"
+    },
+    {
+      "node": "read_key_axis",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "remove_component",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "remove_component",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "resume_continuous_motion",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "resume_continuous_motion",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['movement'] not in inputs/properties"
+    },
+    {
+      "node": "resume_continuous_motion",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "rotate",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "rotate",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "save_game",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['slot_name'] not declared in outputs ['exec_failure', 'exec_saved', 'saved', 'slot_name_out']"
+    },
+    {
+      "node": "sequence",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['then_{index}'] not declared in outputs ['next', 'then_0', 'then_1']"
+    },
+    {
+      "node": "sequence",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['next', 'then_0', 'then_1']"
+    },
+    {
+      "node": "set_active",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "set_active",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "set_collision_layer",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['layer'] not declared in outputs ['exec_failure', 'exec_success']"
+    },
+    {
+      "node": "set_collision_mask",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['mask'] not declared in outputs ['exec_failure', 'exec_success']"
+    },
+    {
+      "node": "set_hud",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "set_hud",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "set_pitch",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['pitch'] not declared in outputs ['current_pitch', 'exec_failure', 'exec_success']"
+    },
+    {
+      "node": "set_position",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "set_position",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "set_sprite",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "set_sprite",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "set_ui_progress_bar",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "set_ui_progress_bar",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "set_ui_text",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "set_ui_text",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "set_ui_visible",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "set_ui_visible",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "set_variable",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done', 'value']"
+    },
+    {
+      "node": "set_variable",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "set_volume",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['volume'] not declared in outputs ['current_volume', 'exec_failure', 'exec_success']"
+    },
+    {
+      "node": "show_dialog",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['dialog_id'] not declared in outputs ['dialog_id_out', 'exec_failure', 'exec_showing', 'is_showing']"
+    },
+    {
+      "node": "start_behavior_tree",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done', 'exec_failure']"
+    },
+    {
+      "node": "start_behavior_tree",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done', 'exec_failure']"
+    },
+    {
+      "node": "start_continuous_motion",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "start_continuous_motion",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['movement'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "start_continuous_motion",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "start_texture_scroll",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "start_texture_scroll",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "stop_animation",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_failure', 'exec_success']"
+    },
+    {
+      "node": "stop_animation",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['stopped'] not declared in outputs ['exec_failure', 'exec_success']"
+    },
+    {
+      "node": "stop_animation",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_success']"
+    },
+    {
+      "node": "stop_continuous_motion",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "stop_continuous_motion",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['movement'] not in inputs/properties"
+    },
+    {
+      "node": "stop_continuous_motion",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "stop_texture_scroll",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "stop_texture_scroll",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "update_continuous_motion",
+      "kind": "EXEC_PORT_MISMATCH",
+      "detail": "executor returns ['next'] not declared in outputs ['exec_done']"
+    },
+    {
+      "node": "update_continuous_motion",
+      "kind": "INPUT_PORT_MISMATCH",
+      "detail": "executor reads ['movement', 'x', 'y'] not in inputs/properties"
+    },
+    {
+      "node": "update_continuous_motion",
+      "kind": "UNREACHABLE_EXEC_PORT",
+      "detail": "declared exec outputs never returned: ['exec_done']"
+    },
+    {
+      "node": "update_ui_binding",
+      "kind": "DATA_PORT_MISMATCH",
+      "detail": "executor stores ['value'] not declared in outputs ['exec_failure', 'exec_not_found', 'exec_success']"
+    }
+  ],
+  "categories": {
+    "Events": 11,
+    "Objects": 7,
+    "Condition": 2,
+    "Movement": 10,
+    "Values": 3,
+    "UI": 9,
+    "Animation": 6,
+    "Action": 12,
+    "Animation/Getters": 6,
+    "Animation/Events": 2,
+    "Flow": 6,
+    "Audio": 4,
+    "Camera": 5,
+    "Components": 13,
+    "Dialog": 4,
+    "Logic/UI Dynamic": 6,
+    "Logic": 2,
+    "Physics": 4,
+    "Input": 7,
+    "Variables": 2,
+    "Graphs": 2,
+    "Particles": 3,
+    "Navigation": 4,
+    "Physics/Getters": 6,
+    "Physics/Events": 4,
+    "Physics/Queries": 1,
+    "Physics/Layers": 4,
+    "Persistence": 4,
+    "StateManagement": 5
+  },
+  "duplicate_executors": {},
+  "duplicate_evaluators": {},
+  "duplicate_titles": {
+    "on collision enter": [
+      "event_collision_enter",
+      "on_collision_enter"
+    ],
+    "on collision exit": [
+      "event_collision_exit",
+      "on_collision_exit"
+    ],
+    "on trigger enter": [
+      "event_trigger_enter",
+      "on_trigger_enter"
+    ],
+    "on trigger exit": [
+      "event_trigger_exit",
+      "on_trigger_exit"
+    ]
+  },
+  "missing_from_init": [
+    "audio_advanced_nodes",
+    "camera_nodes",
+    "dialog_nodes",
+    "input_advanced_nodes",
+    "particle_nodes",
+    "pathfinding_nodes",
+    "save_load_nodes",
+    "state_machine_nodes",
+    "ui_binding_nodes"
+  ],
+  "import_errors": {}
+}

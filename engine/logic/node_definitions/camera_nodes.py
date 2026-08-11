@@ -22,6 +22,7 @@ class CameraShakeNode(NodeDefinition):
         outputs=[
             PinDefinition(id="exec_shaking", label_key="Sacolejando", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="shaking", label_key="Tremendo", pin_type=PinType.BOOL),
         ]
     )
 
@@ -43,6 +44,7 @@ class CameraFollowNode(NodeDefinition):
         outputs=[
             PinDefinition(id="exec_following", label_key="Seguindo", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
+            PinDefinition(id="following", label_key="Seguindo", pin_type=PinType.BOOL),
         ]
     )
 
@@ -60,7 +62,7 @@ class CameraStopFollowNode(NodeDefinition):
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
@@ -103,8 +105,8 @@ class CameraSetZoomNode(NodeDefinition):
             PinDefinition(id="duration", label_key="Duração (s)", pin_type=PinType.FLOAT, default_value=0.5),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
-            PinDefinition(id="current_zoom", label_key="Zoom Atual", pin_type=PinType.FLOAT),
+            PinDefinition(id="zoom", label_key="Zoom Atual", pin_type=PinType.FLOAT),
         ]
     )

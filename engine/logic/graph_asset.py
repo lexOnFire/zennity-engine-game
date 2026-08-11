@@ -146,9 +146,13 @@ NODE_PORT_DEFINITIONS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "and": {"inputs": [("a", "bool"), ("b", "bool")], "outputs": [("value", "bool")]},
     "or": {"inputs": [("a", "bool"), ("b", "bool")], "outputs": [("value", "bool")]},
     "not": {"inputs": [("value", "bool")], "outputs": [("value", "bool")]},
-    "key_pressed": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
-    "key_held": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
-    "is_grounded": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
+    # Phase 9.5B Stage 1: these branch nodes now use domain port names instead
+    # of generic true/false.  Saved graphs and templates carrying the old names
+    # are rewritten by NODE_EXEC_PORT_ALIASES during normalisation, which runs
+    # before validation, so this table holds only the canonical spelling.
+    "key_pressed": {"inputs": [("in", "flow")], "outputs": [("exec_pressed", "flow"), ("exec_not_pressed", "flow"), ("value", "bool")]},
+    "key_held": {"inputs": [("in", "flow")], "outputs": [("held", "flow"), ("released", "flow"), ("value", "bool")]},
+    "is_grounded": {"inputs": [("in", "flow")], "outputs": [("grounded", "flow"), ("airborne", "flow"), ("value", "bool")]},
     "compare_number": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_text": {"inputs": [("in", "flow"), ("value", "text"), ("other", "text")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "play_animation": {"inputs": [("in", "flow"), ("target", "object"), ("state", "text")], "outputs": [("next", "flow"), ("exec_failure", "flow")]},

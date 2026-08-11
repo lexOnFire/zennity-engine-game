@@ -23,7 +23,30 @@ class NodeDefinition(MetadataDefinition):
     runtime_class: Callable[..., Any] | None = None
     executor: Callable[..., Any] | None = None
     evaluator: Callable[..., Any] | None = None
-    
+
+    #: Phase 9.5B Stage 1 -- how this node participates in flow execution.
+    #: Values come from ``engine.logic.contracts.ExecutionModel``; kept as a
+    #: plain string so ``engine.core`` does not import ``engine.logic``.
+    #:
+    #:   "action"        an executor runs it and returns exec ports (default)
+    #:   "event_source"  flow starts here; the frame loop drives it, no executor
+    #:   "terminal"      flow legitimately stops here; executor returns []
+    #:   "pure_data"     no exec ports; resolved by an evaluator on demand
+    #:
+    #: Recorded on the definition so the contract validator does not need a
+    #: hardcoded exception list that drifts forever.
+    execution_model: str = "action"
+
+    #: Exec-port prefixes this node generates at runtime, e.g. ``("then_",)``
+    #: for ``sequence``, which returns then_0..then_N based on a property.
+    dynamic_exec_prefixes: tuple[str, ...] = ()
+
+    #: Kept loadable for existing assets, but hidden from the palette so it
+    #: cannot be used in new graphs.  Phase 9.5B Stage 1 marks nodes that have
+    #: no runtime handler at all this way instead of offering a node that
+    #: silently does nothing.
+    deprecated: bool = False
+
     def __post_init__(self):
         if self.name_key and not self.title_key:
             self.title_key = self.name_key
