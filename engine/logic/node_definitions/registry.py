@@ -272,14 +272,6 @@ class NodeDefinitionRegistry:
             self._port_schema_view = MappingProxyType(self._port_schema)
         return self._port_schema_view
 
-    @property
-    def definitions(self) -> Mapping[str, dict]:
-        """Resolved definitions, building the catalogue on first access."""
-        from .catalogue import ensure_catalogue_loaded
-
-        ensure_catalogue_loaded()
-        return self.definitions_view()
-
     def definition_owner(self, node_id: str) -> Optional[str]:
         return self._definition_owner.get(node_id)
 
@@ -324,10 +316,6 @@ def get_registry() -> NodeDefinitionRegistry:
         _registry = NodeDefinitionRegistry()
 
     return _registry
-
-
-#: Canonical singleton accessor used by the runtime port validator.
-node_registry = get_registry()
 
 
 def resolve_node_definition(node_id: str) -> Optional[Any]:
