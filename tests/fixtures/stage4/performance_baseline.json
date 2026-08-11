@@ -1,0 +1,29 @@
+{
+  "_comment": "PHASE 9.5B Stage 4 baseline. Measured on the CI container; wall times are indicative and drift with the machine, which is why the regression tests assert on call counts and growth ratios rather than milliseconds. Generate with scripts/benchmark_editor_performance.py.",
+  "logic_graph_load": {
+    "before": {
+      "10":   {"ms": 145.0,   "refresh_connections": 10,  "mark_dirty": 9},
+      "100":  {"ms": 2517.0,  "refresh_connections": 100, "mark_dirty": 99},
+      "200":  {"ms": 8039.9,  "refresh_connections": 200, "mark_dirty": 199},
+      "400":  {"ms": 31393.8, "refresh_connections": 400, "mark_dirty": 399},
+      "1000": {"ms": null,    "refresh_connections": null, "note": "RecursionError in graph_validator; never completed"}
+    },
+    "after": {
+      "10":   {"ms": 91.3,   "refresh_connections": 2, "mark_dirty": 0},
+      "100":  {"ms": 541.8,  "refresh_connections": 2, "mark_dirty": 0},
+      "200":  {"ms": 1132.7, "refresh_connections": 2, "mark_dirty": 0},
+      "400":  {"ms": 2687.0, "refresh_connections": 2, "mark_dirty": 0},
+      "500":  {"ms": 2572.0, "refresh_connections": 2, "mark_dirty": 0},
+      "1000": {"ms": 6054.6, "refresh_connections": 2, "mark_dirty": 0}
+    },
+    "time_ratio_when_nodes_double": {
+      "before": [3.19, 3.90],
+      "after": [2.09, 2.37, 2.35]
+    }
+  },
+  "root_causes": [
+    "LogicNodeItem.itemChange called refresh_connections() on every ItemPositionHasChanged, which fires once per node placed during a load; each refresh walks every edge and every node.",
+    "The same handler called mark_dirty() per node, so merely opening a graph marked it unsaved.",
+    "graph_validator cycle detection was recursive, so a flow chain longer than the recursion limit raised RecursionError instead of validating."
+  ]
+}

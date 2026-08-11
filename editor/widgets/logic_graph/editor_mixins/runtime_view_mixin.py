@@ -94,18 +94,21 @@ class LogicGraphRuntimeViewMixin:
         self.target_type.blockSignals(False)
         self.target_value.blockSignals(False)
         self._loading_graph = True
-        self._clear_logic_scene()
-        self.node_items.clear()
-        self.edge_items.clear()
-        self.group_items.clear()
-        self.comment_items.clear()
-        editor_layout = self.graph.get("editor", {})
-        for group in editor_layout.get("groups", []):
-            self._create_group_item(group)
-        for comment in editor_layout.get("comments", []):
-            self._create_comment_item(comment)
-        for node in self.graph["nodes"]:
-            self._create_node_item(node)
+        # PHASE 9.5B Stage 4: one connection refresh for the whole load instead
+        # of one per node.  See LogicGraphEditor.bulk_update.
+        with self.bulk_update():
+            self._clear_logic_scene()
+            self.node_items.clear()
+            self.edge_items.clear()
+            self.group_items.clear()
+            self.comment_items.clear()
+            editor_layout = self.graph.get("editor", {})
+            for group in editor_layout.get("groups", []):
+                self._create_group_item(group)
+            for comment in editor_layout.get("comments", []):
+                self._create_comment_item(comment)
+            for node in self.graph["nodes"]:
+                self._create_node_item(node)
         self._loading_graph = False
         for node_id in self.graph.get("debug", {}).get("breakpoints", []):
             if node_id in self.node_items:

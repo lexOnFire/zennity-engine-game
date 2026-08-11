@@ -615,8 +615,16 @@ class LogicNodeItem(LogicNodeItemGeometryMixin, LogicNodeItemRuntimeMixin, QGrap
             from PySide6.QtCore import QPointF
             position = value if isinstance(value, QPointF) else self.pos()
             self.node["position"] = [round(position.x(), 2), round(position.y(), 2)]
-            self.editor.refresh_connections()
-            self.editor.mark_dirty()
+            # PHASE 9.5B Stage 4: during a bulk update (loading a graph, pasting,
+            # auto-layout) this fires once per node and each refresh walks every
+            # edge, which is what made loading quadratic.  Defer to a single
+            # refresh at the end of the block.  The position write above still
+            # happens, so the graph data stays correct either way.
+            if self.editor.is_bulk_updating:
+                self.editor.request_connection_refresh()
+            else:
+                self.editor.refresh_connections()
+                self.editor.mark_dirty()
         elif change == QGraphicsItem.ItemSelectedHasChanged:
             self._update_border_style()
         return result

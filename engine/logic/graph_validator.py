@@ -159,20 +159,38 @@ def validate_logic_graph(data: Mapping[str, Any] | None) -> list[dict[str, str]]
     visited: set[str] = set()
     cycle_nodes: set[str] = set()
 
-    def visit(node_id: str) -> None:
-        if node_id in visiting:
-            cycle_nodes.add(node_id)
+    def visit(root_id: str) -> None:
+        """Iterative depth-first search marking nodes that take part in a cycle.
+
+        PHASE 9.5B Stage 4: this was recursive, so a graph whose flow chain is
+        longer than Python's recursion limit raised RecursionError instead of
+        validating -- a 1000-node chain blew the stack. The traversal order and
+        the resulting ``cycle_nodes`` set are unchanged; only the stack is
+        explicit.
+
+        Each frame is ``(node_id, iterator_over_targets)``; a frame stays on the
+        stack while its node is "visiting", which is what lets a back edge be
+        recognised as a cycle.
+        """
+        if root_id in visited:
             return
-        if node_id in visited:
-            return
-        visiting.add(node_id)
-        for target_id in flow_adjacency.get(node_id, []):
-            if target_id in visiting:
-                cycle_nodes.update({node_id, target_id})
-            else:
-                visit(target_id)
-        visiting.discard(node_id)
-        visited.add(node_id)
+        stack: list[tuple[str, object]] = [(root_id, iter(flow_adjacency.get(root_id, [])))]
+        visiting.add(root_id)
+        while stack:
+            node_id, targets = stack[-1]
+            advanced = False
+            for target_id in targets:
+                if target_id in visiting:
+                    cycle_nodes.update({node_id, target_id})
+                elif target_id not in visited:
+                    visiting.add(target_id)
+                    stack.append((target_id, iter(flow_adjacency.get(target_id, []))))
+                    advanced = True
+                    break
+            if not advanced:
+                stack.pop()
+                visiting.discard(node_id)
+                visited.add(node_id)
 
     for node_id in flow_adjacency:
         visit(node_id)

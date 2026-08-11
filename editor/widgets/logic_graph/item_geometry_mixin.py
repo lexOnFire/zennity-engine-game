@@ -65,5 +65,5 @@ class LogicNodeItemGeometryMixin:
         else:
             self.set_runtime_state(*self._runtime_display)
         if notify:
-            self.editor.refresh_connections()
+            self.editor.request_connection_refresh()
             self.update()
