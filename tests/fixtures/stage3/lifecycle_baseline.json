@@ -1,0 +1,13 @@
+{
+  "_comment": "Lifecycle baseline for PHASE 9.5B Stage 3: the state an idle editor is in before any Play, and the state every Stop must return to. Values are counts and flags only -- no object ids or memory addresses -- so the fixture stays comparable across processes.",
+  "snapshot": {
+    "animation_handlers": 0,
+    "cameras": 0,
+    "physics_handlers": 0,
+    "runtime_threads": [],
+    "ui_binding_manager_live": false,
+    "ui_dispatcher_subscribers": 0,
+    "ui_manager_live": false,
+    "ui_runtime_service_live": false
+  }
+}

@@ -177,6 +177,62 @@ class ViewportRuntimeInitializer:
         except Exception:
             pass
 
+        self._reset_session_services()
+
+    def _reset_session_services(self) -> None:
+        """Reset the singletons whose state belongs to one Play session.
+
+        PHASE 9.5B Stage 3.  Each of these already exposed a reset API and none
+        of them was ever called on Stop, so runtime widgets, bindings and a
+        pending scene transition survived into the next Play.
+
+        Every step is isolated: a subsystem that fails to clean up is reported
+        and the teardown continues, so one bad reset cannot leave the rest of
+        the session live.
+        """
+        from engine.runtime.ui_event_dispatcher import get_ui_event_dispatcher
+
+        def _reset_ui_runtime_service() -> None:
+            from engine.ui.runtime_service import UIRuntimeService
+
+            UIRuntimeService.reset()
+
+        def _reset_ui_bindings() -> None:
+            from engine.ui.data_binding import UIDataBindingManager
+
+            UIDataBindingManager.reset()
+
+        def _reset_ui_manager() -> None:
+            from engine.ui.ui_manager import UIManager
+
+            UIManager.reset()
+
+        def _reset_scene_manager() -> None:
+            # Cancels any scene change requested during the session but never
+            # executed, so the next Play starts from the authoring scene.
+            from engine.core.scene_manager import SceneManager
+
+            SceneManager.reset()
+
+        def _reset_ui_dispatcher() -> None:
+            get_ui_event_dispatcher().clear()
+
+        steps = (
+            ("UI runtime service", _reset_ui_runtime_service),
+            ("UI data bindings", _reset_ui_bindings),
+            ("UI manager", _reset_ui_manager),
+            ("scene manager", _reset_scene_manager),
+            ("UI event dispatcher", _reset_ui_dispatcher),
+        )
+        for label, step in steps:
+            try:
+                step()
+            except Exception as exc:
+                self.emit({
+                    "type": "runtime_log", "level": "WARNING",
+                    "message": f"falha ao resetar {label} no Stop: {exc}",
+                })
+
     def _create_logic_services(self, scene_blackboard: dict[str, Any]) -> None:
         path = self.project_root / "Assets" / "Logic" / "ProjectBlackboard.zblackboard"
         try:

@@ -14,6 +14,33 @@ class UIEventDispatcher:
             self._subscribers[event_type] = []
         self._subscribers[event_type].append(callback)
 
+    def unsubscribe(self, event_type: str, callback: Callable[[dict[str, Any]], None]) -> bool:
+        """Remover uma inscrição. Seguro chamar para callback já removido.
+
+        PHASE 9.5B Stage 3: sem isto, cada LogicGraphRuntime criado deixava aqui
+        uma closure que segurava ``self``, então o runtime nunca era coletado e
+        seus handlers de física/animação nunca eram desregistrados — cinco
+        ciclos de Play/Stop deixavam cinco runtimes vivos.
+        """
+        callbacks = self._subscribers.get(event_type)
+        if not callbacks:
+            return False
+        try:
+            callbacks.remove(callback)
+        except ValueError:
+            return False
+        if not callbacks:
+            self._subscribers.pop(event_type, None)
+        return True
+
+    def clear(self) -> None:
+        """Descartar todas as inscrições — usado no teardown da sessão de Play."""
+        self._subscribers.clear()
+
+    def subscriber_count(self) -> int:
+        """Total de inscrições ativas. Usado pelos testes de lifecycle."""
+        return sum(len(callbacks) for callbacks in self._subscribers.values())
+
     def emit(self, event_type: str, payload: dict[str, Any]) -> None:
         """Despachar evento para todos os subscribers."""
         for callback in self._subscribers.get(event_type, []):

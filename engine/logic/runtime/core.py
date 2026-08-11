@@ -126,12 +126,23 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin, LogicGraphE
             register_animation_event_handler(self._dispatch_animation_event)
             self._registered_animation_handler = True
 
-        # CRITICAL: Subscribe to global UI event dispatcher for Play Mode
+        self._subscribe_to_ui_dispatcher()
+
+    def _subscribe_to_ui_dispatcher(self) -> None:
+        """Listen for global UI events, keeping the handle so stop() can detach.
+
+        The dispatcher is a module-global, so an orphaned closure here would keep
+        this runtime alive forever -- and with it every physics and animation
+        handler it registered.
+        """
+        self._ui_dispatcher_subscription: tuple[str, Any] | None = None
         try:
             from engine.runtime.ui_event_dispatcher import get_ui_event_dispatcher
-            dispatcher = get_ui_event_dispatcher()
-            dispatcher.subscribe("ui.button_clicked", lambda payload: self._handle_global_ui_button_clicked(payload))
-        except (ImportError, Exception):
+
+            callback = self._handle_global_ui_button_clicked
+            get_ui_event_dispatcher().subscribe("ui.button_clicked", callback)
+            self._ui_dispatcher_subscription = ("ui.button_clicked", callback)
+        except Exception:
             pass  # Dispatcher may not be available in all contexts
 
     def _handle_global_ui_button_clicked(self, payload: dict[str, Any]) -> None:
@@ -153,8 +164,28 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin, LogicGraphE
                 self.values[(node_id, "payload")] = payload
 
     def stop(self) -> None:
-        """Phase 5B.2: Explicit cleanup of physics event handlers.
-        Phase 6B.3: Also cleanup animation event handlers."""
+        """Release every registration and owner reference this runtime holds.
+
+        PHASE 9.5B Stage 3: called explicitly by the lifecycle owner
+        (``ViewportRuntimeInitializer._clear_runtime_state``).  ``__del__`` still
+        calls it as a backstop, but cleanup must never depend on the collector --
+        and could not, since the UI dispatcher subscription below was itself what
+        kept the object alive.
+
+        Safe to call repeatedly.
+        """
+        # Phase 9.5B Stage 3: drop the global UI dispatcher subscription first.
+        subscription = getattr(self, "_ui_dispatcher_subscription", None)
+        if subscription is not None:
+            event_type, callback = subscription
+            try:
+                from engine.runtime.ui_event_dispatcher import get_ui_event_dispatcher
+
+                get_ui_event_dispatcher().unsubscribe(event_type, callback)
+            except Exception:
+                pass
+            self._ui_dispatcher_subscription = None
+
         if self._registered_physics_handler:
             try:
                 from ..physics_event_dispatch import unregister_physics_event_handler
@@ -172,9 +203,26 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin, LogicGraphE
             except Exception:
                 pass
 
+        # Phase 9.5B Stage 3: release owner references and per-session state so a
+        # stopped runtime cannot pin the game object or the previous session's
+        # values.  The graph itself is kept: stop() ends a session, it does not
+        # invalidate the asset.
+        try:
+            self.event_bus = LogicEventBus()
+            self.values.clear()
+            self.executed_nodes.clear()
+            self._last_game = None
+            self._implicit_target = None
+            self.started = False
+        except Exception:
+            pass
+
     def __del__(self) -> None:
-        """Phase 5B.2: Cleanup physics event handler on destruction (fallback)."""
-        self.stop()
+        """Backstop only -- the lifecycle owner calls stop() explicitly."""
+        try:
+            self.stop()
+        except Exception:
+            pass
 
     def run_subgraph(self, game: Any, dt: float, inputs: Mapping[str, Any]) -> dict[str, Any]:
         """Executa uma chamada reutilizável sem iniciar eventos de frame."""

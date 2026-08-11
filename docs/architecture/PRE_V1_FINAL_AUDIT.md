@@ -38,7 +38,7 @@ dessas fronteiras cair abaixo de 70%.
 | Classe | Linhas | Margem até 500 | Situação |
 |---|---:|---:|---|
 | `editor.phase1_editor.ZennityPhase1Editor` | 458 | 42 | ✅ Abaixo de 500 |
-| `engine.logic.runtime.core.LogicGraphRuntime` | 362 | 138 | ✅ Abaixo de 500 |
+| `engine.logic.runtime.core.LogicGraphRuntime` | 410 | 90 | ✅ Abaixo de 500 |
 | `editor.widgets.phase1_viewport.Phase1ViewportWidget` | 387 | 113 | ✅ Abaixo de 500 |
 | `editor.windows.main_window.MainWindow` | 485 | 15 | ⚠️ Legado abaixo de 500; crescimento congelado |
 | `editor.widgets.viewport_widget.ViewportWidget` | 491 | 9 | ⚠️ Abaixo de 500; extração preventiva planejada |
@@ -49,6 +49,11 @@ da medição para não ser interpretada como estado permanente do código.
 
 ### Decisão preventiva para classes próximas do limite
 
+- `LogicGraphRuntime` cresceu de 362 para 410 linhas na PHASE 9.5B Stage 3: `stop()`
+  passou a desfazer a inscrição no dispatcher global de UI e a liberar as
+  referências de owner da sessão, e a inscrição saiu de `__init__` para
+  `_subscribe_to_ui_dispatcher`. Sem isso cada Play deixava um runtime vivo
+  permanentemente. Margem restante até 500: 90 linhas.
 - `LogicGraphRuntime` possui somente 6 linhas de margem. Novas responsabilidades
   não devem ser adicionadas à classe; qualquer crescimento exige extração prévia
   para os mixins ou serviços de runtime existentes.
