@@ -44,12 +44,11 @@ from pathlib import Path
 
 import pytest
 
-from engine.logic.contracts import (
-    FLOW_PIN_KINDS,
+from engine.logic.graph_asset import (
+    NODE_PORT_DEFINITIONS,
     declared_flow_outputs,
     sole_flow_output,
 )
-from engine.logic.graph_asset import NODE_PORT_DEFINITIONS
 from engine.logic.node_definitions.catalogue import ensure_catalogue_loaded
 from engine.logic.node_system import load_runtime_node_modules
 from engine.logic.runtime.registry import registry

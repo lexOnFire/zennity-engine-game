@@ -30,6 +30,7 @@ except ImportError:  # Self-contained exported runtime.
 # port schema agree on category names by construction.  Re-exported here
 # because graph_normalizer and the graph contract tests import it from this
 # module.
+from .contracts import FLOW_PIN_KINDS  # noqa: E402
 from .node_definitions.catalogue import (  # noqa: E402
     _CATEGORY_MIGRATIONS,
     _migrate_category,
@@ -353,3 +354,34 @@ def _declared_interface_ports(value: Any) -> list[tuple[str, str]]:
         used.add(name)
         ports.append((name, _safe_port_type(entry.get("type", "any"))))
     return ports
+
+
+def declared_flow_outputs(node_type: str) -> tuple[str, ...]:
+    """The flow outputs ``node_type`` declares, in declaration order."""
+    ports = NODE_PORT_DEFINITIONS.get(node_type)
+    if not ports:
+        return ()
+    return tuple(
+        name for name, kind in ports.get("outputs", ()) if kind in FLOW_PIN_KINDS
+    )
+
+
+def sole_flow_output(node_type: str, default: str = "next") -> str:
+    """The single flow output ``node_type`` declares, else ``default``.
+
+    PHASE 9 recovery item 7. For an executor shared by several node ids whose
+    contracts spell the same continuation differently: ``input_axis`` declares
+    ``next`` and ``read_key_axis`` declares ``exec_done``, and returning either
+    spelling unconditionally leaves the other node's only pin unreachable.
+
+    It lives here rather than beside ``ExecutionModel`` because it reads the
+    port table, and ``contracts`` must keep depending on nothing -- the
+    catalogue builds on it.
+
+    Deliberately narrow: it answers only for a node with exactly one flow
+    output, so it can never be used to guess which of several branches to take.
+    """
+    declared = declared_flow_outputs(node_type)
+    if len(declared) == 1:
+        return declared[0]
+    return default

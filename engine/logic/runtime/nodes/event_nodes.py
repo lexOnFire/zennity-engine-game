@@ -3,7 +3,7 @@ import math
 import random
 from typing import Any, Mapping
 from ..registry import registry
-from engine.logic.contracts import sole_flow_output
+from ...graph_asset import sole_flow_output
 
 @registry.register_executor(('input_axis', 'read_key_axis'))
 def execute_input_axis(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
