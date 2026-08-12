@@ -73,22 +73,11 @@ def execute_subgraph_return(runtime, node: Mapping[str, Any], game: Any, dt: flo
     runtime._store(node_id, "value", value)
     return []
 
-@registry.register_executor('set_variable')
-def execute_set_variable(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    node_id = str(node['id'])
-    node_type = str(node.get('type'))
-    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    name = str(properties.get("name", "value"))
-    scope = str(properties.get("scope", "object")).lower()
-    value = runtime._read_input(node_id, "value", properties.get("value"), game, dt, set())
-    value = runtime.blackboard.set(scope, name, value, runtime.object_key)
-    runtime.variables = runtime.blackboard.values_for_object(runtime.object_key)
-    if scope != "object":
-        # ``variables`` predates scoped blackboards and remains a public debug
-        # view of values written by the graph.
-        runtime.variables[name] = deepcopy(value)
-    runtime._store(node_id, "value", value)
-    return ["next"]
+# ``set_variable`` is implemented in scene_nodes, which wins by load order and
+# is a strict superset of what lived here: identical blackboard write, plus the
+# optional ``game.set_variable`` host hook that a public-contract test pins.
+# Two executors for one node meant the losing body was dead code that still
+# looked authoritative.
 
 @registry.register_executor('get_variable')
 def execute_get_variable(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:

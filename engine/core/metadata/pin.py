@@ -13,6 +13,11 @@ class PinType(str, Enum):
     VECTOR3 = "vector3"
     COLOR = "color"
     OBJECT = "object"
+    #: Accepts any type. A declaration could not previously say this, so nodes
+    #: that genuinely take anything -- ``set_variable``'s value -- had to be
+    #: patched by a hand-maintained port table sitting beside the declaration,
+    #: which is the shadowing PHASE 9 recovery item 8 removed.
+    ANY = "any"
 
 from engine.metadata.core import MetadataDefinition
 

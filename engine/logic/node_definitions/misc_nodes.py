@@ -14,11 +14,20 @@ class SetVariableNode(NodeDefinition):
         description_key="Define o valor de uma variável",
         inputs=[
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
-            PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING, default_value=None),
+            # ANY, not STRING: a variable holds whatever the graph puts in it,
+            # and the shipping assets feed this pin numbers. The declaration
+            # said STRING while the removed override said "any" -- the override
+            # was carrying a truth the pin vocabulary could not express.
+            PinDefinition(id="value", label_key="Valor", pin_type=PinType.ANY, default_value=None),
         ],
         outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
-            PinDefinition(id="value", label_key="Valor", pin_type=PinType.STRING),
+            # ``next``, not ``exec_done``: 12 flow edges across the shipping
+            # assets are wired to ``next`` and none to any other spelling. The
+            # declaration said ``exec_done`` and a _EXPLICIT_PORT_CONTRACTS
+            # entry silently overrode it, so this file never described the node
+            # the editor actually showed. No ``value`` output: nothing
+            # evaluates it, so it was a pin no author could ever read.
+            PinDefinition(id="next", label_key="Próximo", pin_type=PinType.EXEC),
         ]
     )
 

@@ -62,7 +62,11 @@ def execute_variables_set(runtime, node: Mapping[str, Any], game: Any, dt: float
             runtime.variables[name] = val
         if hasattr(game, "set_variable"):
             game.set_variable(name, val)
-    return ["done", "next"]
+    # ``done`` was never declared, appears in no asset and is asserted by no
+    # test -- it could only ever have been followed by an edge the editor
+    # cannot create. ``next`` is the contract, and what all 12 shipping flow
+    # edges are wired to.
+    return ["next"]
 
 
 @registry.register_executor(('ui.button_clicked', 'button_clicked', 'on_ui_click'))

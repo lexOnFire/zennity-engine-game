@@ -1,13 +1,7 @@
 {
-  "_comment": "Nodes whose executor returns a flow port their contract does not declare. Recorded at PHASE 9 recovery item 6 with 45 entries; item 7 classified all 45 and reduced them to 1. The 44 fixed were the same bug the save/load nodes had -- the executor returned the unprefixed spelling (success / touched / next) while the declaration used exec_*, so every pin the editor offered the author was unreachable. Assets settled the direction: 43 of the 45 nodes appear in no .zlogic at all, no alias covered the unprefixed spelling and no test asserted it, while the declarations are hand-authored with localised labels. The gate in tools/audit_node_system.py fails on any NEW entry, on any entry left here after it is fixed, and on any entry whose ports changed. This is a debt with a name and a bound, not an exemption.",
-  "_provenance": "PHASE 9 recovery item 7, regenerated from tools/audit_node_system.py:executor_output_violations(). 0 assets were modified.",
-  "count": 1,
-  "nodes": {
-    "set_variable": [
-      "done"
-    ]
-  },
-  "_reasons": {
-    "set_variable": "Out of scope by item 7 section 15: set_variable has two executors (misc_nodes and scene_nodes) and the scene_nodes one -- which wins by load order -- returns ['done', 'next']. Only 'next' is declared, and 10 asset instances wire 8 flow edges to it. Untangling 'done' means choosing a side in the duplicate-executor conflict, which item 7 is forbidden to touch. Item 7 additionally found that _EXPLICIT_PORT_CONTRACTS shadows the declarative definition here: the legacy table declares 'next' while misc_nodes declares 'exec_done'. Both facts belong to the set_variable duplicate item."
-  }
+  "_comment": "Nodes whose executor returns a flow port their contract does not declare. Recorded at PHASE 9 recovery item 6 with 45 entries, reduced to 1 by item 7, and to 0 by item 8 -- the last entry was set_variable, whose 'done' return was untangled once its duplicate executor was resolved. The list is deliberately kept in place while empty: the gate in tools/audit_node_system.py fails on any NEW entry, on any entry left here after it is fixed, and on any entry whose ports changed, so an empty file is the strongest possible statement and the check that enforces it is the same one that carried the debt down from 45.",
+  "_provenance": "PHASE 9 recovery item 8, regenerated from tools/audit_node_system.py:executor_output_violations(). 0 assets were modified.",
+  "count": 0,
+  "nodes": {},
+  "_reasons": {}
 }

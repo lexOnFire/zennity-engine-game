@@ -60,7 +60,6 @@ from .runtime.node_loader import (
 KNOWN_DUPLICATE_OWNERS: frozenset[str] = frozenset({
     "executor:play_animation",   # animation_nodes wins over actions_nodes
     "executor:stop_animation",   # animation_nodes wins over actions_nodes
-    "executor:set_variable",     # scene_nodes wins over misc_nodes
     "executor:load_game",        # scene_nodes wins over save_load_nodes
     "executor:has_save",         # scene_nodes wins over save_load_nodes
 })

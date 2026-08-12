@@ -279,13 +279,20 @@ def test_removing_a_declared_output_makes_the_gate_fail(monkeypatch):
     assert "exec_shaking" in executor_output_violations().get(node_id, [])
 
 
-def test_a_fixed_node_left_in_the_baseline_makes_the_gate_fail(monkeypatch):
-    """The baseline cannot quietly outlive the bug it records."""
-    monkeypatch.setattr(
-        "tools.audit_node_system.executor_output_violations", lambda: {}
+def test_a_fixed_node_left_in_the_baseline_makes_the_gate_fail(monkeypatch, tmp_path):
+    """The baseline cannot quietly outlive the bug it records.
+
+    Item 8 emptied the file, so the mutation has to supply the stale entry:
+    with nothing recorded there is nothing left to go stale, and a gate that
+    can no longer fail proves nothing.
+    """
+    stale = tmp_path / "baseline.json"
+    stale.write_text(
+        json.dumps({"count": 1, "nodes": {"camera_shake": ["shaking"]}}), encoding="utf-8"
     )
+    monkeypatch.setattr("tools.audit_node_system.EXECUTOR_OUTPUT_BASELINE", stale)
     failures = executor_output_failures()
-    assert any("remove it from" in failure for failure in failures)
+    assert any("remove it from" in failure for failure in failures), failures
 
 
 def test_a_conditional_return_counts_both_branches():
