@@ -120,15 +120,15 @@ def execute_pause_animation(runtime, node: Mapping[str, Any], game: Any, dt: flo
 
     animator, error = _resolve_animator(target_name, game)
     if error or not animator:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         animator.pause()
         runtime._store(node_id, "paused", True)
-        return ["success"]
+        return ["exec_success"]
 
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 # Phase 6B.2: Stop Animation Executor
@@ -183,11 +183,11 @@ def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: 
     value_str = str(properties.get("value", "")).strip()
 
     if not parameter_name or not value_str or not hasattr(game, "find_object"):
-        return ["failure"]
+        return ["exec_failure"]
 
     game_obj = game.find_object(target_name) if target_name else None
     if not game_obj:
-        return ["failure"]
+        return ["exec_failure"]
 
     controller = game_obj.get_component(AnimationController) if hasattr(game_obj, "get_component") else None
 
@@ -197,9 +197,9 @@ def execute_animator_parameter(runtime, node: Mapping[str, Any], game: Any, dt: 
         if controller:
             controller.set_parameter(parameter_name, value)
         runtime._store(node_id, parameter_name, value)
-        return ["success"]
+        return ["exec_success"]
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 
@@ -214,20 +214,20 @@ def execute_animator_set_trigger(runtime, node: Mapping[str, Any], game: Any, dt
     trigger_name = str(properties.get("trigger_name", "")).strip()
 
     if not trigger_name:
-        return ["failure"]
+        return ["exec_failure"]
 
     controller, error = _resolve_animator_controller(target_name, game)
     if error or not controller:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         # Set trigger to True (will be consumed by controller on next update)
         controller.set_parameter(trigger_name, True)
         runtime._store(node_id, trigger_name, True)
-        return ["success"]
+        return ["exec_success"]
 
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 # Phase 6B.2: Getter Evaluators (Pure Data Nodes)

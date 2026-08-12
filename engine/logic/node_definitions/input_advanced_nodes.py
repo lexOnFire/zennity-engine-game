@@ -23,6 +23,7 @@ class DetectTouchNode(NodeDefinition):
         outputs=[
             PinDefinition(id="exec_touched", label_key="Tocado", pin_type=PinType.EXEC),
             PinDefinition(id="exec_no_touch", label_key="Sem Toque", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
             PinDefinition(id="touch_x", label_key="Toque X", pin_type=PinType.FLOAT),
             PinDefinition(id="touch_y", label_key="Toque Y", pin_type=PinType.FLOAT),
         ]
@@ -46,6 +47,7 @@ class DetectSwipeNode(NodeDefinition):
         outputs=[
             PinDefinition(id="exec_swiped", label_key="Deslizou", pin_type=PinType.EXEC),
             PinDefinition(id="exec_no_swipe", label_key="Sem Deslize", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
             PinDefinition(id="swipe_distance", label_key="Distância", pin_type=PinType.FLOAT),
         ]
     )
@@ -67,6 +69,7 @@ class DetectPinchNode(NodeDefinition):
         outputs=[
             PinDefinition(id="exec_pinched", label_key="Pinçado", pin_type=PinType.EXEC),
             PinDefinition(id="exec_no_pinch", label_key="Sem Pinça", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
             PinDefinition(id="pinch_scale", label_key="Escala", pin_type=PinType.FLOAT),
         ]
     )
@@ -88,6 +91,7 @@ class IsKeyPressedNode(NodeDefinition):
         outputs=[
             PinDefinition(id="exec_pressed", label_key="Pressionada", pin_type=PinType.EXEC),
             PinDefinition(id="exec_not_pressed", label_key="Não Pressionada", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )
 
@@ -110,5 +114,6 @@ class WaitKeyReleaseNode(NodeDefinition):
             PinDefinition(id="exec_released", label_key="Liberada", pin_type=PinType.EXEC),
             PinDefinition(id="exec_waiting", label_key="Aguardando", pin_type=PinType.EXEC),
             PinDefinition(id="exec_timeout", label_key="Timeout", pin_type=PinType.EXEC),
+            PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),
         ]
     )

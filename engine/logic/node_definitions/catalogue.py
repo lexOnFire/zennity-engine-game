@@ -286,7 +286,6 @@ _EXPLICIT_PORT_CONTRACTS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "play_sound": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "set_ui_text": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
     "set_ui_progress_bar": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},
-    "get_ui_widget_property": {"inputs": [("in", "flow"), ("widget_name", "text"), ("property", "text")], "outputs": [("next", "flow"), ("value", "text")]},
     "get_progress_bar_value": {"inputs": [("in", "flow"), ("widget_name", "text")], "outputs": [("next", "flow"), ("value", "number")]},
     "bind_ui_to_variable": {"inputs": [("in", "flow"), ("widget_name", "text"), ("variable_name", "text"), ("property", "text")], "outputs": [("next", "flow"), ("exec_success", "flow"), ("exec_not_found", "flow"), ("exec_failure", "flow")]},
     "update_ui_binding": {"inputs": [("in", "flow"), ("widget_name", "text"), ("variable_name", "text"), ("property", "text")], "outputs": [("next", "flow"), ("exec_success", "flow"), ("exec_not_found", "flow"), ("exec_failure", "flow")]},

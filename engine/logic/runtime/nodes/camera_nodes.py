@@ -20,12 +20,12 @@ def execute_camera_shake(runtime, node: Mapping[str, Any], game: Any, dt: float)
         if hasattr(game, "camera_shake"):
             game.camera_shake(duration, intensity, frequency)
             runtime._store(node_id, "shaking", True)
-            return ["shaking"]
+            return ["exec_shaking"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em camera_shake: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('camera_follow')
@@ -41,12 +41,12 @@ def execute_camera_follow(runtime, node: Mapping[str, Any], game: Any, dt: float
         if target_name and hasattr(game, "camera_follow"):
             game.camera_follow(target_name, smooth_time)
             runtime._store(node_id, "following", True)
-            return ["following"]
+            return ["exec_following"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em camera_follow: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('camera_stop_follow')
@@ -55,10 +55,10 @@ def execute_camera_stop_follow(runtime, node: Mapping[str, Any], game: Any, dt: 
     try:
         if hasattr(game, "camera_stop_follow"):
             game.camera_stop_follow()
-        return ["success"]
+        return ["exec_success"]
     except Exception as e:
         print(f"Erro em camera_stop_follow: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('camera_look_at')
@@ -74,12 +74,12 @@ def execute_camera_look_at(runtime, node: Mapping[str, Any], game: Any, dt: floa
 
         if hasattr(game, "camera_look_at"):
             game.camera_look_at(x, y, duration)
-            return ["looking"]
+            return ["exec_looking"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em camera_look_at: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('camera_set_zoom')
@@ -95,9 +95,9 @@ def execute_camera_set_zoom(runtime, node: Mapping[str, Any], game: Any, dt: flo
         if hasattr(game, "camera_set_zoom"):
             game.camera_set_zoom(zoom, duration)
             runtime._store(node_id, "zoom", zoom)
-            return ["success"]
+            return ["exec_success"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em camera_set_zoom: {e}")
-        return ["failure"]
+        return ["exec_failure"]

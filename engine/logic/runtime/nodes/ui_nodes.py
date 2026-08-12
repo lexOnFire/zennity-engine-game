@@ -145,7 +145,7 @@ def execute_set_ui_visible(runtime, node: Mapping[str, Any], game: Any, dt: floa
             if comp is not None:
                 comp.visible = visible_val
 
-    return ["next"]
+    return ["exec_done"]
 
 
 @registry.register_executor('bind_ui_to_blackboard')
@@ -167,4 +167,4 @@ def execute_bind_ui_to_blackboard(runtime, node: Mapping[str, Any], game: Any, d
             blackboard=runtime.blackboard,
         )
 
-    return ["next"]
+    return ["exec_done"]

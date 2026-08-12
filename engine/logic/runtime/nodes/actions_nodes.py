@@ -141,5 +141,5 @@ def execute_start_behavior_tree(runtime, node: Mapping[str, Any], game: Any, dt:
         target.start_behavior_tree(path)
     elif hasattr(game, "start_behavior_tree"):
         game.start_behavior_tree(path)
-    return ["next"]
+    return ["exec_done"]
 

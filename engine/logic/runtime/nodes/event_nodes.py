@@ -3,6 +3,7 @@ import math
 import random
 from typing import Any, Mapping
 from ..registry import registry
+from engine.logic.contracts import sole_flow_output
 
 @registry.register_executor(('input_axis', 'read_key_axis'))
 def execute_input_axis(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
@@ -10,7 +11,11 @@ def execute_input_axis(runtime, node: Mapping[str, Any], game: Any, dt: float) -
     node_type = str(node.get('type'))
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
     runtime._evaluate_output(node_id, "value", game, dt, set())
-    return ["next"]
+    # ``input_axis`` and ``read_key_axis`` share this executor but declare
+    # different flow outputs (``next`` and ``exec_done``).  Returning either
+    # spelling unconditionally leaves the other node's only pin unreachable, so
+    # the contract of the node actually running decides.
+    return [sole_flow_output(node_type, default="next")]
 
 @registry.register_executor('key_pressed')
 def execute_key_pressed(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:

@@ -1,5 +1,5 @@
 {
-  "_comment": "Pre-Stage-2 baseline of the Logic Graph node system, captured at commit 477feee before PHASE 9.5B Stage 2 unified the definition sources. port_schema is the authoritative graph contract that .zlogic assets and runtime executors speak; Stage 2 must reproduce it exactly, derived from the definition catalogue instead of a parallel hand-maintained table. PHASE 9 recovery item 1: definition_ids regenerated on the recovery lineage. The palette gained 17 nodes and lost none -- absolute_number, add_number, and, clamp_number, delta_time, divide_number, find_nearest_object, get_object_name, get_position, join_text, multiply_number, not, or, random_number, subgraph_input, subtract_number, to_text -- all owned by the Stage 1 declarative modules math_nodes, logic_nodes and scene_nodes, which are present on disk but were absent from the catalogue because the module list was a hand-written tuple. Nothing else in this fixture is re-measured here. PHASE 9 recovery item 2: definition_ids regenerated again. Added ['app.quit', 'scene.load_scene', 'ui.button_clicked', 'ui.set_widget_enabled']: the canonical dotted ids gained the palette entry they never had -- they had a port contract and an executor but no authoring entry, so an author could not place them. Removed []: those spellings are now aliases and an alias never carries a palette row. PHASE 9 recovery item 4.2: the play_animation and stop_animation entries recorded the stale _EXPLICIT_PORT_CONTRACTS snapshot (in/state -> next), which is exactly the override that was removed so animation_nodes' declaration could be the source of truth. Regenerated from the canonical contract: play_animation exec/target/state/force -> next/exec_failure/animation, stop_animation exec/target -> next/exec_failure/stopped. Nothing else re-measured.",
+  "_comment": "Pre-Stage-2 baseline of the Logic Graph node system, captured at commit 477feee before PHASE 9.5B Stage 2 unified the definition sources. port_schema is the authoritative graph contract that .zlogic assets and runtime executors speak; Stage 2 must reproduce it exactly, derived from the definition catalogue instead of a parallel hand-maintained table. PHASE 9 recovery item 1: definition_ids regenerated on the recovery lineage. The palette gained 17 nodes and lost none -- absolute_number, add_number, and, clamp_number, delta_time, divide_number, find_nearest_object, get_object_name, get_position, join_text, multiply_number, not, or, random_number, subgraph_input, subtract_number, to_text -- all owned by the Stage 1 declarative modules math_nodes, logic_nodes and scene_nodes, which are present on disk but were absent from the catalogue because the module list was a hand-written tuple. Nothing else in this fixture is re-measured here. PHASE 9 recovery item 2: definition_ids regenerated again. Added ['app.quit', 'scene.load_scene', 'ui.button_clicked', 'ui.set_widget_enabled']: the canonical dotted ids gained the palette entry they never had -- they had a port contract and an executor but no authoring entry, so an author could not place them. Removed []: those spellings are now aliases and an alias never carries a palette row. PHASE 9 recovery item 4.2: the play_animation and stop_animation entries recorded the stale _EXPLICIT_PORT_CONTRACTS snapshot (in/state -> next), which is exactly the override that was removed so animation_nodes' declaration could be the source of truth. Regenerated from the canonical contract: play_animation exec/target/state/force -> next/exec_failure/animation, stop_animation exec/target -> next/exec_failure/stopped. Nothing else re-measured. PHASE 9 recovery item 7: port_schema regenerated for exactly six nodes. detect_pinch, detect_swipe, detect_touch, is_key_pressed and wait_key_release gained an exec_failure pin -- their executors returned 'failure' from an except guard against a contract that declared no failure outcome at all, while 33 sibling nodes already declared exec_failure. get_ui_widget_property lost a stale _EXPLICIT_PORT_CONTRACTS entry that shadowed its declarative definition: the legacy table declared a single 'next' and omitted the 'parent' input the executor reads, so the Inspector never offered it and the executor's success/failure returns looked like the broken side. No other entry was touched and no asset was modified; none of the six nodes appears in any .zlogic.",
   "counts": {
     "definition_sources": 2,
     "definitions": 175,
@@ -1407,6 +1407,10 @@
           "flow"
         ],
         [
+          "exec_failure",
+          "flow"
+        ],
+        [
           "pinch_scale",
           "number"
         ]
@@ -1434,6 +1438,10 @@
         ],
         [
           "exec_no_swipe",
+          "flow"
+        ],
+        [
+          "exec_failure",
           "flow"
         ],
         [
@@ -1472,6 +1480,10 @@
         ],
         [
           "exec_no_touch",
+          "flow"
+        ],
+        [
+          "exec_failure",
           "flow"
         ],
         [
@@ -2266,6 +2278,10 @@
         ],
         [
           "exec_not_pressed",
+          "flow"
+        ],
+        [
+          "exec_failure",
           "flow"
         ]
       ]
@@ -3765,6 +3781,10 @@
         ],
         [
           "exec_timeout",
+          "flow"
+        ],
+        [
+          "exec_failure",
           "flow"
         ]
       ]
@@ -5366,6 +5386,10 @@
           "flow"
         ],
         [
+          "exec_failure",
+          "flow"
+        ],
+        [
           "pinch_scale",
           "number"
         ]
@@ -5393,6 +5417,10 @@
         ],
         [
           "exec_no_swipe",
+          "flow"
+        ],
+        [
+          "exec_failure",
           "flow"
         ],
         [
@@ -5431,6 +5459,10 @@
         ],
         [
           "exec_no_touch",
+          "flow"
+        ],
+        [
+          "exec_failure",
           "flow"
         ],
         [
@@ -6088,8 +6120,12 @@
     "get_ui_widget_property": {
       "inputs": [
         [
-          "in",
+          "exec",
           "flow"
+        ],
+        [
+          "parent",
+          "text"
         ],
         [
           "widget_name",
@@ -6102,7 +6138,11 @@
       ],
       "outputs": [
         [
-          "next",
+          "exec_success",
+          "flow"
+        ],
+        [
+          "exec_failure",
           "flow"
         ],
         [
@@ -6265,6 +6305,10 @@
         ],
         [
           "exec_not_pressed",
+          "flow"
+        ],
+        [
+          "exec_failure",
           "flow"
         ]
       ]
@@ -8144,6 +8188,10 @@
         ],
         [
           "exec_timeout",
+          "flow"
+        ],
+        [
+          "exec_failure",
           "flow"
         ]
       ]

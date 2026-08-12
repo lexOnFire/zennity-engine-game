@@ -20,15 +20,15 @@ def execute_play_sound_fade(runtime, node: Mapping[str, Any], game: Any, dt: flo
 
         if path and hasattr(game, "play_sound_fade"):
             game.play_sound_fade(path, fade_in, fade_out, volume)
-            return ["playing"]
+            return ["exec_playing"]
         elif path and hasattr(game, "play_sound"):
             game.play_sound(path)
-            return ["playing"]
+            return ["exec_playing"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em play_sound_fade: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('set_volume')
@@ -44,12 +44,12 @@ def execute_set_volume(runtime, node: Mapping[str, Any], game: Any, dt: float) -
         if hasattr(game, "set_volume"):
             game.set_volume(volume, channel)
             runtime._store(node_id, "volume", volume)
-            return ["success"]
+            return ["exec_success"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em set_volume: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('set_pitch')
@@ -64,12 +64,12 @@ def execute_set_pitch(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         if hasattr(game, "set_pitch"):
             game.set_pitch(pitch)
             runtime._store(node_id, "pitch", pitch)
-            return ["success"]
+            return ["exec_success"]
 
-        return ["failure"]
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em set_pitch: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('stop_all_sounds')
@@ -78,7 +78,7 @@ def execute_stop_all_sounds(runtime, node: Mapping[str, Any], game: Any, dt: flo
     try:
         if hasattr(game, "stop_all_sounds"):
             game.stop_all_sounds()
-        return ["success"]
+        return ["exec_success"]
     except Exception as e:
         print(f"Erro em stop_all_sounds: {e}")
-        return ["failure"]
+        return ["exec_failure"]

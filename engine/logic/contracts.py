@@ -116,3 +116,36 @@ def resolve_execution_model(
 
 
 CANONICAL_MODELS: frozenset[str] = frozenset(model.value for model in ExecutionModel)
+
+
+def declared_flow_outputs(node_type: str) -> tuple[str, ...]:
+    """The flow outputs ``node_type`` declares, in declaration order.
+
+    Imported lazily: the catalogue builds on this module, so a module-level
+    import would close the cycle.
+    """
+    from engine.logic.graph_asset import NODE_PORT_DEFINITIONS
+
+    ports = NODE_PORT_DEFINITIONS.get(node_type)
+    if not ports:
+        return ()
+    return tuple(
+        name for name, kind in ports.get("outputs", ()) if kind in FLOW_PIN_KINDS
+    )
+
+
+def sole_flow_output(node_type: str, default: str = "next") -> str:
+    """The single flow output ``node_type`` declares, else ``default``.
+
+    For an executor shared by several node ids whose contracts spell the same
+    continuation differently. Returning one spelling unconditionally leaves the
+    other node's only pin unreachable, and an executor must not have to memorise
+    which id it is running under.
+
+    Deliberately narrow: it answers only for a node with exactly one flow
+    output, so it can never be used to guess which of several branches to take.
+    """
+    declared = declared_flow_outputs(node_type)
+    if len(declared) == 1:
+        return declared[0]
+    return default

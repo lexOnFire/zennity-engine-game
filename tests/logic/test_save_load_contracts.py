@@ -365,17 +365,15 @@ BASELINE = json.loads(
 
 
 def _current_mismatches() -> dict[str, list[str]]:
-    found = {}
-    for node_id in sorted(registry.executors):
-        if node_id not in NODE_PORT_DEFINITIONS:
-            continue
-        try:
-            undeclared = sorted(_returned_flow_ports(node_id) - _declared_flow_outputs(node_id))
-        except (OSError, TypeError):  # pragma: no cover - builtins have no source
-            continue
-        if undeclared:
-            found[node_id] = undeclared
-    return found
+    """Item 7 moved this scan into the canonical auditor.
+
+    The local version here walked every string in the return statement, so an
+    executor returning ``[sole_flow_output(node_type, default="next")]`` was
+    reported as returning ``"next"``. One scan, in the tool that gates CI.
+    """
+    from tools.audit_node_system import executor_output_violations
+
+    return executor_output_violations()
 
 
 def test_no_new_executor_port_mismatch_appears():

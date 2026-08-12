@@ -28,10 +28,10 @@ def execute_create_state_machine(runtime, node: Mapping[str, Any], game: Any, dt
         runtime._store(node_id, "machine_id", machine_id)
         runtime._store(node_id, "current_state", initial_state)
 
-        return ["created"]
+        return ["exec_created"]
     except Exception as e:
         print(f"Erro em create_state_machine: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('add_transition')
@@ -47,10 +47,10 @@ def execute_add_transition(runtime, node: Mapping[str, Any], game: Any, dt: floa
         condition = str(properties.get("condition", "always"))  # always, on_key, on_event
 
         if not hasattr(runtime, "_state_machines"):
-            return ["failure"]
+            return ["exec_failure"]
 
         if machine_id not in runtime._state_machines:
-            return ["failure"]
+            return ["exec_failure"]
 
         machine = runtime._state_machines[machine_id]
         if from_state not in machine["transitions"]:
@@ -61,10 +61,10 @@ def execute_add_transition(runtime, node: Mapping[str, Any], game: Any, dt: floa
             "condition": condition
         })
 
-        return ["success"]
+        return ["exec_success"]
     except Exception as e:
         print(f"Erro em add_transition: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('change_state')
@@ -79,10 +79,10 @@ def execute_change_state(runtime, node: Mapping[str, Any], game: Any, dt: float)
         force = bool(properties.get("force", False))  # Ignorar verificação de transição?
 
         if not hasattr(runtime, "_state_machines"):
-            return ["failure"]
+            return ["exec_failure"]
 
         if machine_id not in runtime._state_machines:
-            return ["failure"]
+            return ["exec_failure"]
 
         machine = runtime._state_machines[machine_id]
         current = machine["current_state"]
@@ -92,7 +92,7 @@ def execute_change_state(runtime, node: Mapping[str, Any], game: Any, dt: float)
             transitions = machine["transitions"].get(current, [])
             valid = any(t["target"] == new_state for t in transitions)
             if not valid:
-                return ["invalid_transition"]
+                return ["exec_invalid_transition"]
 
         # Fazer transição
         machine["previous_state"] = current
@@ -100,10 +100,10 @@ def execute_change_state(runtime, node: Mapping[str, Any], game: Any, dt: float)
         runtime._store(node_id, "previous_state", current)
         runtime._store(node_id, "new_state", new_state)
 
-        return ["changed"]
+        return ["exec_changed"]
     except Exception as e:
         print(f"Erro em change_state: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('get_state')
@@ -116,18 +116,18 @@ def execute_get_state(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         machine_id = str(properties.get("machine_id", ""))
 
         if not hasattr(runtime, "_state_machines"):
-            return ["failure"]
+            return ["exec_failure"]
 
         if machine_id not in runtime._state_machines:
-            return ["failure"]
+            return ["exec_failure"]
 
         current_state = runtime._state_machines[machine_id]["current_state"]
         runtime._store(node_id, "state", current_state)
 
-        return ["got_state"]
+        return ["exec_got_state"]
     except Exception as e:
         print(f"Erro em get_state: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('is_in_state')
@@ -141,17 +141,17 @@ def execute_is_in_state(runtime, node: Mapping[str, Any], game: Any, dt: float) 
         state = str(properties.get("state", ""))
 
         if not hasattr(runtime, "_state_machines"):
-            return ["not_in_state"]
+            return ["exec_not_in_state"]
 
         if machine_id not in runtime._state_machines:
-            return ["not_in_state"]
+            return ["exec_not_in_state"]
 
         current_state = runtime._state_machines[machine_id]["current_state"]
 
         if current_state == state:
-            return ["in_state"]
+            return ["exec_in_state"]
         else:
-            return ["not_in_state"]
+            return ["exec_not_in_state"]
     except Exception as e:
         print(f"Erro em is_in_state: {e}")
-        return ["failure"]
+        return ["exec_failure"]

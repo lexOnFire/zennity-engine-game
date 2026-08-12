@@ -165,6 +165,113 @@ def alias_failures() -> list[str]:
     return failures
 
 
+def returned_flow_ports(function) -> set[str]:
+    """The flow port names ``function`` can return as literals.
+
+    PHASE 9 recovery item 7. Only names the executor *returns* count, so this
+    reads the elements of the returned list/tuple rather than every string in
+    the statement:
+
+        return [sole_flow_output(node_type, default="next")]
+
+    returns whatever the contract says, not ``"next"`` -- an earlier scan that
+    walked the whole expression reported that argument as a returned port and
+    invented a violation. A conditional is descended into, because both
+    branches really are returned:
+
+        return ["exec_success" if ok else "exec_failure"]
+
+    A non-literal element yields nothing: the port is computed, and this
+    function reports only what it can prove.
+    """
+    import ast
+    import inspect
+    import textwrap
+
+    def literals(node) -> set[str]:
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return {node.value}
+        if isinstance(node, ast.IfExp):
+            return literals(node.body) | literals(node.orelse)
+        if isinstance(node, ast.BoolOp):
+            return set().union(*(literals(value) for value in node.values))
+        return set()
+
+    tree = ast.parse(textwrap.dedent(inspect.getsource(function)))
+    ports: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Return) and isinstance(node.value, (ast.List, ast.Tuple)):
+            for element in node.value.elts:
+                ports |= literals(element)
+    return ports
+
+
+def executor_output_violations() -> dict[str, list[str]]:
+    """Node ids whose executor returns a flow port the contract does not declare.
+
+    An edge can only be wired to a declared pin, and the dispatcher matches the
+    returned name against ``edge.from_port`` literally -- so a returned name
+    that is not declared is a branch no author can ever reach.
+    """
+    from engine.logic.graph_asset import NODE_PORT_DEFINITIONS
+    from engine.logic.node_definitions.catalogue import ensure_catalogue_loaded
+    from engine.logic.node_system import load_runtime_node_modules
+    from engine.logic.runtime.registry import registry
+
+    ensure_catalogue_loaded()
+    load_runtime_node_modules()
+
+    violations: dict[str, list[str]] = {}
+    for node_id, executor in sorted(registry.executors.items()):
+        ports = NODE_PORT_DEFINITIONS.get(node_id)
+        if not ports:
+            continue
+        declared = {
+            name for name, kind in ports.get("outputs", ()) if kind in ("flow", "exec")
+        }
+        try:
+            returned = returned_flow_ports(executor)
+        except (OSError, TypeError):  # pragma: no cover - builtins have no source
+            continue
+        undeclared = sorted(returned - declared)
+        if undeclared:
+            violations[node_id] = undeclared
+    return violations
+
+
+#: Nodes still returning an undeclared flow port, with the reason each is left.
+#: A debt with a name and a bound, not an exemption: the gate below fails both
+#: on a node that starts mismatching and on one listed here that no longer does.
+EXECUTOR_OUTPUT_BASELINE = (
+    REPO_ROOT / "tests" / "fixtures" / "stage2" / "executor_port_mismatch_baseline.json"
+)
+
+
+def executor_output_failures() -> list[str]:
+    """Gate the executor output contracts against the recorded baseline."""
+    recorded = json.loads(EXECUTOR_OUTPUT_BASELINE.read_text(encoding="utf-8"))["nodes"]
+    current = executor_output_violations()
+
+    failures = []
+    for node_id in sorted(set(current) - set(recorded)):
+        failures.append(
+            f"executor for {node_id!r} returns {current[node_id]}, which its contract "
+            "does not declare; an edge on the declared pin is never followed"
+        )
+    for node_id in sorted(set(recorded) - set(current)):
+        failures.append(
+            f"{node_id!r} no longer returns an undeclared port; remove it from "
+            f"{EXECUTOR_OUTPUT_BASELINE.name}"
+        )
+    for node_id in sorted(set(recorded) & set(current)):
+        if sorted(recorded[node_id]) != current[node_id]:
+            failures.append(
+                f"{node_id!r} now returns {current[node_id]}, not the recorded "
+                f"{sorted(recorded[node_id])}; update {EXECUTOR_OUTPUT_BASELINE.name}"
+            )
+    return failures
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="emit the snapshot as JSON")
@@ -191,6 +298,8 @@ def main(argv: list[str] | None = None) -> int:
     failures.extend(snapshot["contract_violations"])
     if args.aliases or args.ci:
         failures.extend(alias_failures())
+    if args.ci:
+        failures.extend(executor_output_failures())
 
     if args.parity or args.ci:
         plain = _run_probe(boot_provider=False)
