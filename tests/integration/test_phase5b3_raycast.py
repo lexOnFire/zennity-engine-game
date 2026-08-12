@@ -445,9 +445,9 @@ class TestLogicGraphRaycastNode:
         }
 
         result = executor(runtime, node, game, dt)
-        assert result == ["no_hit"]
-        assert "no_hit" in result
-        assert "hit" not in result
+        assert result == ["exec_no_hit"]
+        assert "exec_no_hit" in result
+        assert "exec_hit" not in result
 
         # Test with hit
         obj = MockGameObject("target", x=50.0, y=0.0)
@@ -456,9 +456,9 @@ class TestLogicGraphRaycastNode:
         game.physics_world.register_collider(box)
 
         result = executor(runtime, node, game, dt)
-        assert result == ["hit"]
-        assert "hit" in result
-        assert "no_hit" not in result
+        assert result == ["exec_hit"]
+        assert "exec_hit" in result
+        assert "exec_no_hit" not in result
 
 
 class TestLogicGraphRaycastE2E:
@@ -505,7 +505,7 @@ class TestLogicGraphRaycastE2E:
 
         # Execute raycast
         result = executor(runtime, node, game, dt)
-        assert result == ["hit"]
+        assert result == ["exec_hit"]
 
         # Evaluate output pins
         node_id = "raycast_1"
@@ -557,7 +557,7 @@ class TestLogicGraphRaycastE2E:
 
         # Execute raycast (no hit)
         result = executor(runtime, node, game, dt)
-        assert result == ["no_hit"]
+        assert result == ["exec_no_hit"]
 
         # Evaluate output pins - should return defaults
         node_id = "raycast_1"

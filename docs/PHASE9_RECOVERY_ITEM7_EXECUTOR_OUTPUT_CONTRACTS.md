@@ -52,8 +52,8 @@ default. Evidence, in the order the item specifies:
 - No alias covered the unprefixed spelling — `success` and `touched` are not in
   `FLOW_OUTPUT_SYNONYMS`, and the contract-relative resolver correctly refuses
   to invent them.
-- **No test asserted either spelling.** The only place the unprefixed names
-  appeared anywhere in `tests/` was item 6's own baseline fixture.
+- **31 integration tests did assert the unprefixed spelling** — see §12, which
+  corrects the claim this section originally made.
 - The declarations are hand-authored, with localised labels
   (`exec_shaking` / "Sacolejando"). They are deliberate contract.
 
@@ -169,3 +169,45 @@ pin is asserted as it stands — a test fails if it silently changes either way.
 
 Untouched as instructed: the `set_variable` duplicate, `move.speed`, `move_by`,
 `find_nearest_object`, `get_object_name`, and the 71 orphan edges.
+
+## 12. A claim this item got wrong, and what it cost
+
+The classification originally offered "no test asserts either spelling" as
+decisive evidence. That was false, and it was reached badly: four *node-specific*
+spellings were grepped (`shaking`, `no_touch`, `invalid_transition`,
+`got_state`), none were found, and the result was generalised to all 95 outputs.
+The generic spellings — `success`, `failure`, `hit`, `no_hit` — were never
+checked, and **31 integration tests asserted them**. They passed before the
+change and failed after it. The full suite caught it; the targeted runs did not,
+because they never covered `tests/integration`.
+
+Each of the 31 was classified before anything was edited:
+
+| | |
+|---|---|
+| implementation-spelling assertion | **31** |
+| public-contract assertion | **0** |
+
+The proof is that **no failing file contains `from_port` at all**. Every one of
+them calls the executor directly with a hand-built node dict — no graph, no
+edge, no dispatcher — and the assertion each test actually exists for is the
+side effect beside it (`controller.get_parameter("speed") == 5.0`,
+`animator.current_clip`, the populated `hit_object` pin). The port string was
+incidental to all of them, so they pinned the old internal spelling rather than
+a contract any author could see.
+
+They were updated one line at a time, by line number and against the exact text,
+never by global replace. One was different in kind and was rewritten rather than
+respelled: `test_show_dialog_executor_delegates_to_api` asserted
+`result in [["success"], ["failure"]]` under the message "Executor should return
+valid ports" — the right idea with the answer hardcoded. It now asserts
+`set(result) <= set(declared_flow_outputs("show_dialog"))`, so renaming a pin in
+the definition and the executor together no longer strands it.
+
+That is the general lesson, and it is why the gate is structural rather than a
+list of expected strings. `executor_output_violations()` applies
+
+    returned flow ports  ⊆  declared flow outputs
+
+to every one of the 128 executors, in the tool that gates CI. A correct future
+rename passes it untouched; only a divergence fails.

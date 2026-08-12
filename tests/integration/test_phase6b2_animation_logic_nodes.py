@@ -235,7 +235,7 @@ class TestPauseAnimationNode:
         from engine.logic.runtime.nodes.animation_nodes import execute_pause_animation
         result = execute_pause_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert animator._paused is True
 
     def test_pause_animation_missing_animator_failure(self, scene_with_animator):
@@ -265,7 +265,7 @@ class TestPauseAnimationNode:
         from engine.logic.runtime.nodes.animation_nodes import execute_pause_animation
         result = execute_pause_animation(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
 
 class TestStopAnimationNode:
@@ -588,7 +588,7 @@ class TestAnimatorParameterNode:
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
 
     def test_animator_parameter_bool(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -620,7 +620,7 @@ class TestAnimatorParameterNode:
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
 
     def test_animator_parameter_int(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -652,7 +652,7 @@ class TestAnimatorParameterNode:
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["exec_success"]
 
     def test_animator_parameter_missing_animator_failure(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -684,7 +684,7 @@ class TestAnimatorParameterNode:
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
 
 class TestAnimationSpriteIntegration:

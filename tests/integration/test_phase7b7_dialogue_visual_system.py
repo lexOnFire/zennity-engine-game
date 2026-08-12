@@ -541,7 +541,17 @@ class TestDialogueNodeExecutors:
 
         # Should fail without proper runtime, but shows node exists
         # (Full executor test requires full LogicGraphRuntime)
-        assert result in [["success"], ["failure"]], "Executor should return valid ports"
+        # "Valid ports" means the ones the contract declares -- asserted against
+        # the declaration rather than a hardcoded pair, so renaming a pin in
+        # definition and executor together does not strand this test on the old
+        # spelling. The engine-wide version of this rule is
+        # tools/audit_node_system.py:executor_output_violations.
+        from engine.logic.graph_asset import declared_flow_outputs
+
+        assert set(result) <= set(declared_flow_outputs("show_dialog")), (
+            f"executor returned {result}, which show_dialog does not declare "
+            f"(declares {sorted(declared_flow_outputs('show_dialog'))})"
+        )
 
     def test_wait_dialog_choice_executor_exists(self):
         """Test wait_dialog_choice node executor exists."""

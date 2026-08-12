@@ -61,28 +61,28 @@ class TestModifyRigidbody:
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'property': 'mass', 'value': 5.0}}
         result = execute_modify_rigidbody(runtime, node, self.game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert self.rb.mass == pytest.approx(5.0)
 
     def test_modify_gravity_scale(self):
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'property': 'gravity_scale', 'value': 2.0}}
         result = execute_modify_rigidbody(runtime, node, self.game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert self.rb.gravity_scale == pytest.approx(2.0)
 
     def test_modify_drag(self):
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'property': 'drag', 'value': 0.5}}
         result = execute_modify_rigidbody(runtime, node, self.game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert self.rb.drag == pytest.approx(0.5)
 
     def test_velocity_x_keeps_numpy(self):
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'property': 'velocity_x', 'value': 100.0}}
         result = execute_modify_rigidbody(runtime, node, self.game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert isinstance(self.rb.velocity, np.ndarray)
         assert self.rb.velocity[0] == pytest.approx(100.0)
 
@@ -90,7 +90,7 @@ class TestModifyRigidbody:
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'property': 'velocity_y', 'value': -50.0}}
         result = execute_modify_rigidbody(runtime, node, self.game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert isinstance(self.rb.velocity, np.ndarray)
         assert self.rb.velocity[1] == pytest.approx(-50.0)
 
@@ -98,13 +98,13 @@ class TestModifyRigidbody:
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'property': 'angular_drag', 'value': 0.5}}
         result = execute_modify_rigidbody(runtime, node, self.game, 0.016)
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
     def test_reject_constraints(self):
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'property': 'constraints', 'value': 'xyz'}}
         result = execute_modify_rigidbody(runtime, node, self.game, 0.016)
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
 
 class TestApplyForce:
@@ -121,21 +121,21 @@ class TestApplyForce:
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'force_x': 100.0, 'force_y': 0.0, 'force_mode': 'force'}}
         result = execute_apply_force(runtime, node, self.game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert self.rb.acceleration[0] > 0.0
 
     def test_impulse_mode(self):
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'force_x': 0.0, 'force_y': -300.0, 'force_mode': 'impulse'}}
         result = execute_apply_force(runtime, node, self.game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert self.rb.velocity[1] < 0.0
 
     def test_invalid_mode(self):
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'force_x': 100.0, 'force_y': 0.0, 'force_mode': 'invalid'}}
         result = execute_apply_force(runtime, node, self.game, 0.016)
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
 
 class TestTargetResolution:
@@ -145,7 +145,7 @@ class TestTargetResolution:
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'nonexistent', 'property': 'mass', 'value': 5.0}}
         result = execute_modify_rigidbody(runtime, node, game, 0.016)
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
     def test_no_rigidbody(self):
         scene = Scene("TestScene")
@@ -156,7 +156,7 @@ class TestTargetResolution:
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'empty', 'property': 'mass', 'value': 5.0}}
         result = execute_modify_rigidbody(runtime, node, game, 0.016)
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
 
 class TestGetters:
@@ -214,7 +214,7 @@ class TestE2E:
         runtime = MagicMock()
         node = {'id': 'n1', 'properties': {'target': 'player', 'force_x': 100.0, 'force_y': 0.0, 'force_mode': 'force'}}
         result = execute_apply_force(runtime, node, game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
 
         rb.update(0.1)
         assert rb.velocity[0] > 0.0

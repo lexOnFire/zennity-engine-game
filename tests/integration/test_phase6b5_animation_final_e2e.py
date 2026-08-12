@@ -123,7 +123,7 @@ class TestIdleToRunTransition:
         }
 
         result = execute_animator_parameter(runtime, node, game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert controller.get_parameter("speed") == 5.0
 
         # Controller evaluates transition
@@ -148,7 +148,7 @@ class TestIdleToRunTransition:
         }
 
         result = execute_animator_parameter(runtime, node, game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
 
         # Controller evaluates transition
         controller.update(0.016)
@@ -176,7 +176,7 @@ class TestTriggerAttack:
         }
 
         result = execute_animator_set_trigger(runtime, node, game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
         assert controller.get_parameter("attack_trigger") is True
 
         # Controller evaluates transition
@@ -561,7 +561,7 @@ class TestParameterTypeSafety:
             },
         }
         result = execute_animator_parameter(runtime, node, game, 0.016)
-        assert result == ["success"]
+        assert result == ["exec_success"]
 
     def test_int_parameter_preserved(self, scene_with_player_attack):
         scene, player, animator, controller, game, sr, runtime = scene_with_player_attack
