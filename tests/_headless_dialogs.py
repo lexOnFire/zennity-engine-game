@@ -47,6 +47,7 @@ hatch, not a licence to block CI.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -81,6 +82,9 @@ class HeadlessDialogRecorder:
         self.directory_path: str = str(directory)
         #: Answer returned by QMessageBox helpers.
         self.message_box_answer = None
+        #: The QMenu subclass installed in place of Qt's, for tests that want
+        #: to build a menu that cannot block.
+        self.menu_class = None
 
     def record(self, name: str, args: tuple, kwargs: dict) -> None:
         self.calls.append((name, args, kwargs))
@@ -165,12 +169,44 @@ def _headless_dialog_guard(request, monkeypatch, _headless_dialog_dir: Path):
     # QMenu.exec spins its own loop waiting for a click, and QApplication.exec
     # never returns until quit() -- both hang a headless run just as hard.
     if QMenu is not None:
-        def _no_menu(self, *args, **kwargs):
-            recorder.record("QMenu.exec", args, kwargs)
-            return None
+        # PHASE 9 recovery item 9B: setting QMenu.exec on the class LOOKS like it
+        # works -- type(QMenu.exec) really does become 'function' afterwards --
+        # but Shiboken resolves the method on the instance through its own
+        # metaobject, so ``menu.exec()`` still reaches the C++ slot and still
+        # opens a blocking loop. Stage 2.1 shipped the setattr form and no test
+        # exercised it, so the gap was invisible; a test that called
+        # ``QMenu().exec()`` hung immediately.
+        #
+        # A *Python subclass* overrides it properly (virtual dispatch works), so
+        # the name QMenu is rebound wherever production imported it. Production
+        # writes ``menu = QMenu(self)``, which resolves the module global.
+        class _HeadlessMenu(QMenu):
+            def exec(self, *args, **kwargs):  # noqa: A003 - mirrors the Qt API
+                recorder.record("QMenu.exec", args, kwargs)
+                return None
 
-        monkeypatch.setattr(QMenu, "exec", _no_menu, raising=False)
-        monkeypatch.setattr(QMenu, "exec_", _no_menu, raising=False)
+            def exec_(self, *args, **kwargs):
+                recorder.record("QMenu.exec", args, kwargs)
+                return None
+
+            def popup(self, *args, **kwargs):
+                recorder.record("QMenu.popup", args, kwargs)
+                return None
+
+        recorder.menu_class = _HeadlessMenu
+        # Two directions are needed. QtWidgets itself covers every module that
+        # runs ``from PySide6.QtWidgets import QMenu`` *after* this fixture; the
+        # loop below covers those that already did so before it.
+        import PySide6.QtWidgets as _qtwidgets
+
+        monkeypatch.setattr(_qtwidgets, "QMenu", _HeadlessMenu, raising=False)
+        for module in list(sys.modules.values()):
+            if module is None or not getattr(module, "__name__", "").startswith(
+                ("editor", "engine")
+            ):
+                continue
+            if getattr(module, "QMenu", None) is QMenu:
+                monkeypatch.setattr(module, "QMenu", _HeadlessMenu, raising=False)
 
     if QApplication is not None:
         def _no_app_loop(*args, **kwargs):
