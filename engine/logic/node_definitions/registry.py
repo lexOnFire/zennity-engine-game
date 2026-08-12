@@ -21,6 +21,16 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class DuplicateNodeDefinitionError(RuntimeError):
+    """Two modules declare the same canonical node id.  Never resolved silently.
+
+    Phase 9.5B Stage 1 introduced this; PHASE 9 recovery item 1 moved it next to
+    the registry that now owns ownership. It stays importable from
+    ``engine.logic.node_definitions`` -- that is the public spelling Stage 1
+    tests and callers use.
+    """
+
+
 class NodeDefinitionConflictError(Exception):
     """Raised when two definitions for the same node ID conflict."""
 
@@ -68,6 +78,11 @@ class NodeDefinitionRegistry:
         self._resolved: Dict[str, dict] = {}
         self._port_schema: Dict[str, dict] = {}
         self._definition_owner: Dict[str, str] = {}
+        # PHASE 9 recovery item 1: conflicts live here, next to the ownership
+        # they contradict. Stage 1 kept them in module-level globals beside a
+        # second owner table; two structures describing one fact is how the
+        # palette and the runtime came to disagree about play_animation.
+        self._definition_conflicts: list[tuple[str, str, str]] = []
         self._runtime_owner: Dict[str, str] = {}
         self._execution_model: Dict[str, str] = {}
         self._definitions_view: Optional[Mapping[str, dict]] = None
@@ -237,6 +252,7 @@ class NodeDefinitionRegistry:
         self._resolved.clear()
         self._port_schema.clear()
         self._definition_owner.clear()
+        self._definition_conflicts.clear()
         self._execution_model.clear()
         self._canonical.clear()
         self._adapters.clear()
@@ -252,7 +268,42 @@ class NodeDefinitionRegistry:
         self._port_schema_view = None
 
     def set_definition_owner(self, node_id: str, module_name: str) -> None:
+        """Claim ``node_id`` for ``module_name``.
+
+        A second module claiming the same id records a conflict and does NOT
+        take ownership: last-write-wins is exactly the behaviour that let
+        ``play_animation`` exist twice with incompatible port contracts, the
+        palette showing one and the MetadataManager holding the other.
+
+        The same module reclaiming its own id is a no-op, because discovery and
+        catalogue builds are idempotent and get re-run in tests.
+        """
+        previous = self._definition_owner.get(node_id)
+        if previous is not None and previous != module_name:
+            record = (node_id, previous, module_name)
+            if record not in self._definition_conflicts:
+                self._definition_conflicts.append(record)
+            return
         self._definition_owner[node_id] = module_name
+
+    def definition_conflicts(self) -> list[tuple[str, str, str]]:
+        """Recorded (node_id, first_owner, second_owner) clashes."""
+        return list(self._definition_conflicts)
+
+    def assert_no_duplicate_definitions(self) -> None:
+        """Raise if any node id was claimed by two modules."""
+        if not self._definition_conflicts:
+            return
+        lines = ["Duplicate NodeDefinition ids detected while building the catalogue:"]
+        for node_id, first, second in self._definition_conflicts:
+            lines.append(f"  id={node_id!r}")
+            lines.append(f"      module A: {first}")
+            lines.append(f"      module B: {second}")
+        lines.append(
+            "Exactly one module must own each node id -- "
+            "ONE NODE ID -> ONE DEFINITION -> ONE PORT CONTRACT."
+        )
+        raise DuplicateNodeDefinitionError("\n".join(lines))
 
     def set_runtime_owner(self, node_id: str, module_name: str) -> None:
         self._runtime_owner[node_id] = module_name

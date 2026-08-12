@@ -25,6 +25,7 @@ from typing import Any
 
 from .catalogue import (
     DECLARATIVE_DEFINITION_MODULES,
+    DECLARATIVE_IMPORT_FAILURES,
     DYNAMIC_PORT_NODES,
     _migrate_category,
     definitions_view,
@@ -32,6 +33,25 @@ from .catalogue import (
     port_schema_view,
     reset_catalogue_for_tests,
 )
+from .registry import DuplicateNodeDefinitionError, get_registry
+
+
+def definition_owner(node_id: str) -> str | None:
+    """Which declarative module declared ``node_id``."""
+    ensure_catalogue_loaded()
+    return get_registry().definition_owner(node_id)
+
+
+def duplicate_definition_conflicts() -> list[tuple[str, str, str]]:
+    """Recorded (node_id, first_owner, second_owner) clashes."""
+    ensure_catalogue_loaded()
+    return get_registry().definition_conflicts()
+
+
+def assert_no_duplicate_definitions() -> None:
+    """Raise :class:`DuplicateNodeDefinitionError` if any id has two owners."""
+    ensure_catalogue_loaded()
+    get_registry().assert_no_duplicate_definitions()
 
 
 class _NodeDefinitionsView(Mapping):
@@ -69,6 +89,11 @@ NODE_DEFINITIONS: Mapping[str, dict[str, Any]] = _NodeDefinitionsView()
 __all__ = [
     "NODE_DEFINITIONS",
     "DECLARATIVE_DEFINITION_MODULES",
+    "DECLARATIVE_IMPORT_FAILURES",
+    "DuplicateNodeDefinitionError",
+    "definition_owner",
+    "duplicate_definition_conflicts",
+    "assert_no_duplicate_definitions",
     "DYNAMIC_PORT_NODES",
     "definitions_view",
     "port_schema_view",

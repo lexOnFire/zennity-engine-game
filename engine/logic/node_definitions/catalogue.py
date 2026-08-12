@@ -31,13 +31,17 @@ Building the catalogue is lazy and idempotent: importing this module is cheap,
 
 from __future__ import annotations
 
+import logging
 import threading
 import unicodedata
 from importlib import import_module
+from pathlib import Path
 from types import MappingProxyType, ModuleType
 from typing import Any, Mapping
 
 from .registry import get_registry
+
+_log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Category migration -- converts legacy Portuguese category names to English.
@@ -77,29 +81,55 @@ def _migrate_category(raw: str) -> str:
     return _CATEGORY_MIGRATIONS.get(key, stripped) or stripped
 
 
+#: Modules that live in this package but are not declarative catalogues.
+#: ``catalogue`` and ``registry`` are the machinery itself; anything else must
+#: be listed here deliberately rather than discovered by accident.
+_NON_DECLARATIVE_MODULES: frozenset[str] = frozenset()
+
+_DISCOVERY_CACHE: tuple[str, ...] | None = None
+
+#: Modules whose import failed, module name -> reason.  Never silent: a
+#: declarative module that fails to import takes its whole domain out of the
+#: palette, and that used to happen with nothing to point at.
+DECLARATIVE_IMPORT_FAILURES: dict[str, str] = {}
+
+#: Declarative definitions whose id is currently an alias, kept aside rather
+#: than dropped. The node-id alias item decides which spelling is canonical;
+#: until then these do not reach the palette. See _harvest_declarative.
+ALIASED_DECLARATIVE_DEFINITIONS: dict[str, Any] = {}
+
+
+def _discover_declarative_modules() -> tuple[str, ...]:
+    """Find the declarative node modules on disk, deterministically.
+
+    PHASE 9 recovery item 1.  This replaced a hand-written tuple.  A tuple is a
+    second source of truth: a module could be added to the package, imported by
+    nobody, and simply not exist as far as the palette was concerned -- with no
+    error anywhere, because nothing compared the list to the directory.
+
+    Sorted, so build order is stable across filesystems, and cached, so repeated
+    catalogue builds in one process cannot disagree.
+    """
+    global _DISCOVERY_CACHE
+    if _DISCOVERY_CACHE is not None:
+        return _DISCOVERY_CACHE
+    directory = Path(__file__).resolve().parent
+    _DISCOVERY_CACHE = tuple(sorted(
+        path.stem
+        for path in directory.glob("*_nodes.py")
+        if not path.stem.startswith("_") and path.stem not in _NON_DECLARATIVE_MODULES
+    ))
+    return _DISCOVERY_CACHE
+
+
+def reset_discovery_cache_for_tests() -> None:
+    """Forget the discovery result so a test can re-run it from disk."""
+    global _DISCOVERY_CACHE
+    _DISCOVERY_CACHE = None
+
+
 #: Declarative ``NodeDefinition`` modules harvested into the catalogue.
-DECLARATIVE_DEFINITION_MODULES: tuple[str, ...] = (
-    "actions_nodes",
-    "animation_nodes",
-    "audio_advanced_nodes",
-    "camera_nodes",
-    "components_nodes",
-    "dialog_nodes",
-    "dynamic_ui_nodes",
-    "event_nodes",
-    "flow_nodes",
-    "input_advanced_nodes",
-    "misc_nodes",
-    "movement_nodes",
-    "particle_nodes",
-    "pathfinding_nodes",
-    "physics_nodes",
-    "prefab_nodes",
-    "save_load_nodes",
-    "state_machine_nodes",
-    "ui_binding_nodes",
-    "ui_nodes",
-)
+DECLARATIVE_DEFINITION_MODULES: tuple[str, ...] = _discover_declarative_modules()
 
 
 # ---------------------------------------------------------------------------
@@ -560,15 +590,37 @@ def _harvest_declarative(
     declarative: dict[str, Any],
     owners: dict[str, str],
 ) -> None:
-    for module_name in DECLARATIVE_DEFINITION_MODULES:
+    for module_name in _discover_declarative_modules():
         try:
             module = import_module(f"{__package__}.{module_name}")
-        except Exception:
+        except Exception as exc:
+            # Never silent. A declarative module that fails to import takes its
+            # node definitions with it, and the palette simply loses a domain
+            # with nothing to point at. Recorded and logged; the build carries
+            # on so one broken module cannot take down the editor.
+            DECLARATIVE_IMPORT_FAILURES[module_name] = f"{type(exc).__name__}: {exc}"
+            _log.exception("Declarative node module %r failed to import", module_name)
             continue
         for node_id, definition in _iter_declarative_definitions(module):
+            if node_id in RUNTIME_ID_ALIASES:
+                # This lineage's rule, unchanged here: an alias never gets its
+                # own definition, palette entry or port contract. Stage 1's
+                # scene_nodes declares the dotted ids (scene.load_scene,
+                # app.quit, ui.button_clicked, ui.set_widget_enabled), and
+                # letting them through would put two palette rows behind one
+                # operation and give the alias a contract whose entry pin the
+                # shipping assets do not use.
+                #
+                # Which spelling *should* be canonical is a real question -- the
+                # assets use the dotted form exclusively -- but it is the
+                # node-id alias item's question, not this one. Kept here so that
+                # item has the declarations to work from rather than having to
+                # re-derive them.
+                ALIASED_DECLARATIVE_DEFINITIONS[node_id] = definition
+                continue
             definitions[node_id] = _definition_to_legacy(definition)
             declarative[node_id] = definition
-            owners[node_id] = f"{__package__}.{module_name}"
+            owners[node_id] = module_name
 
 
 def _harvest_metadata_manager(definitions: dict[str, dict[str, Any]]) -> None:
@@ -687,6 +739,10 @@ def _build_catalogue() -> None:
         registry.register_canonical(definition, allow_override=True)
     for node_id, module_name in definition_owners.items():
         registry.set_definition_owner(node_id, module_name)
+    # Loud, and only once every owner is known: a conflict is not knowable
+    # until both claimants have been seen, so the check cannot live inside the
+    # loop above.
+    registry.assert_no_duplicate_definitions()
     for node_id, schema in port_schema.items():
         registry.set_execution_model(
             node_id, _execution_model(schema["inputs"], schema["outputs"])
