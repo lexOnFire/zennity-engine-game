@@ -31,7 +31,10 @@ from .catalogue import (
     definitions_view,
     ensure_catalogue_loaded,
     port_schema_view,
+    KNOWN_DUPLICATE_DEFINITIONS,
+    assert_no_unexpected_duplicates,
     reset_catalogue_for_tests,
+    unexpected_definition_conflicts,
 )
 from .registry import DuplicateNodeDefinitionError, get_registry
 
@@ -49,9 +52,14 @@ def duplicate_definition_conflicts() -> list[tuple[str, str, str]]:
 
 
 def assert_no_duplicate_definitions() -> None:
-    """Raise :class:`DuplicateNodeDefinitionError` if any id has two owners."""
+    """Raise unless every duplicate id is a recorded, scheduled one.
+
+    PHASE 9 recovery item 4.1: ``KNOWN_DUPLICATE_DEFINITIONS`` names the
+    duplicates that exist right now and are being resolved. Anything else still
+    raises.
+    """
     ensure_catalogue_loaded()
-    get_registry().assert_no_duplicate_definitions()
+    assert_no_unexpected_duplicates()
 
 
 class _NodeDefinitionsView(Mapping):
@@ -94,6 +102,8 @@ __all__ = [
     "definition_owner",
     "duplicate_definition_conflicts",
     "assert_no_duplicate_definitions",
+    "KNOWN_DUPLICATE_DEFINITIONS",
+    "unexpected_definition_conflicts",
     "DYNAMIC_PORT_NODES",
     "definitions_view",
     "port_schema_view",

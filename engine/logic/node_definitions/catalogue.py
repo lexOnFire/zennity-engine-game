@@ -40,7 +40,7 @@ from types import MappingProxyType, ModuleType
 from typing import Any, Mapping
 
 from ..contracts import ExecutionModel, normalize_execution_model, resolve_execution_model
-from .registry import get_registry
+from .registry import DuplicateNodeDefinitionError, get_registry
 
 _log = logging.getLogger(__name__)
 
@@ -93,6 +93,47 @@ _DISCOVERY_CACHE: tuple[str, ...] | None = None
 #: declarative module that fails to import takes its whole domain out of the
 #: palette, and that used to happen with nothing to point at.
 DECLARATIVE_IMPORT_FAILURES: dict[str, str] = {}
+
+#: Node ids that two declarative modules genuinely claim today, recorded so the
+#: catalogue still builds while the split brain is resolved.
+#:
+#: PHASE 9 recovery item 4.1 made the real catalogue path detect duplicates; it
+#: immediately found these two, declared in BOTH actions_nodes and
+#: animation_nodes, with different pins and two different executors. Choosing
+#: the winner is recovery item 4.2's decision, and this set is emptied there.
+#:
+#: An entry here is a debt with a name, not an exemption: any id NOT listed
+#: still raises, so a new duplicate cannot slip in behind these.
+KNOWN_DUPLICATE_DEFINITIONS: frozenset[str] = frozenset({
+    "play_animation",
+    "stop_animation",
+})
+
+
+def unexpected_definition_conflicts() -> list[tuple[str, str, str]]:
+    """Recorded conflicts minus the ones already known and scheduled."""
+    return [
+        conflict for conflict in get_registry().definition_conflicts()
+        if conflict[0] not in KNOWN_DUPLICATE_DEFINITIONS
+    ]
+
+
+def assert_no_unexpected_duplicates() -> None:
+    """Raise unless every duplicate is one of the recorded, scheduled ones."""
+    unexpected = unexpected_definition_conflicts()
+    if not unexpected:
+        return
+    lines = ["Duplicate NodeDefinition ids detected while building the catalogue:"]
+    for node_id, first, second in unexpected:
+        lines.append(f"  id={node_id!r}")
+        lines.append(f"      module A: {first}")
+        lines.append(f"      module B: {second}")
+    lines.append(
+        "Exactly one module must own each node id -- "
+        "ONE NODE ID -> ONE DEFINITION -> ONE PORT CONTRACT."
+    )
+    raise DuplicateNodeDefinitionError("\n".join(lines))
+
 
 #: Declarative definitions whose id is currently an alias, kept aside rather
 #: than dropped. The node-id alias item decides which spelling is canonical;
@@ -678,8 +719,21 @@ _LOADED = False
 def _harvest_declarative(
     definitions: dict[str, dict[str, Any]],
     declarative: dict[str, Any],
-    owners: dict[str, str],
+    claims: list[tuple[str, str]],
 ) -> None:
+    """Harvest every declarative module, recording *every* ownership claim.
+
+    PHASE 9 recovery item 4.1. This used to write ``owners[node_id] =
+    module_name`` -- a plain dict -- so when two modules declared the same id
+    the first claim was overwritten before the registry ever saw it. The
+    registry's duplicate detection was correct and its unit tests passed; it
+    simply was never handed the evidence. ``play_animation`` and
+    ``stop_animation`` were declared twice, in actions_nodes and
+    animation_nodes, and ``duplicate_definition_conflicts()`` reported nothing.
+
+    Claims are now a list in discovery order. Collapsing is the registry's
+    decision, and the registry records a conflict when it collapses.
+    """
     for module_name in _discover_declarative_modules():
         try:
             module = import_module(f"{__package__}.{module_name}")
@@ -710,7 +764,7 @@ def _harvest_declarative(
                 continue
             definitions[node_id] = _definition_to_legacy(definition)
             declarative[node_id] = definition
-            owners[node_id] = module_name
+            claims.append((node_id, module_name))
 
 
 def _harvest_metadata_manager(definitions: dict[str, dict[str, Any]]) -> None:
@@ -745,9 +799,9 @@ def _build_catalogue() -> None:
         for node_id, seed in _LEGACY_SEED_DEFINITIONS.items()
     }
     declarative: dict[str, Any] = {}
-    definition_owners: dict[str, str] = {}
+    definition_claims: list[tuple[str, str]] = []
 
-    _harvest_declarative(definitions, declarative, definition_owners)
+    _harvest_declarative(definitions, declarative, definition_claims)
     _harvest_metadata_manager(definitions)
 
     # --- port schema: explicit graph contracts first, definitions as fallback
@@ -813,7 +867,8 @@ def _build_catalogue() -> None:
         for name, default in (projected.get("properties") or {}).items():
             entry.setdefault("properties", {}).setdefault(name, default)
         entry["id"] = canonical
-        definition_owners.setdefault(canonical, "scene_nodes")
+        if not any(claim_id == canonical for claim_id, _ in definition_claims):
+            definition_claims.append((canonical, "scene_nodes"))
 
     # An alias is compatibility, never an authoring identity: it must not carry
     # a palette entry of its own next to the id it resolves onto.
@@ -864,12 +919,12 @@ def _build_catalogue() -> None:
         registry.set_port_schema(node_id, schema)
     for node_id, definition in declarative.items():
         registry.register_canonical(definition, allow_override=True)
-    for node_id, module_name in definition_owners.items():
+    for node_id, module_name in definition_claims:
         registry.set_definition_owner(node_id, module_name)
     # Loud, and only once every owner is known: a conflict is not knowable
     # until both claimants have been seen, so the check cannot live inside the
     # loop above.
-    registry.assert_no_duplicate_definitions()
+    assert_no_unexpected_duplicates()
 
     # Dynamic pin families come from the declarations that own them, falling
     # back to the seed for nodes with no declarative definition.

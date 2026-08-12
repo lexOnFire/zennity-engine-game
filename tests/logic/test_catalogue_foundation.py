@@ -135,9 +135,24 @@ def test_the_stage1_node_reached_the_catalogue(node_id: str, owner: str):
 # Ownership and duplicates
 # ---------------------------------------------------------------------------
 
-def test_the_real_catalogue_has_no_duplicate_ids():
-    assert duplicate_definition_conflicts() == []
-    assert_no_duplicate_definitions()  # must not raise
+def test_the_real_catalogue_has_no_unscheduled_duplicate_ids():
+    """PHASE 9 recovery item 4.1 changed what this can honestly assert.
+
+    It used to read ``duplicate_definition_conflicts() == []`` and pass -- while
+    play_animation and stop_animation were each declared twice. The harvest
+    collapsed the claims into a dict before the registry saw them, so the list
+    was empty because nothing was ever recorded, not because nothing was wrong.
+
+    The claims now reach the registry, so the real duplicates are visible. They
+    are recorded in KNOWN_DUPLICATE_DEFINITIONS and resolved in item 4.2;
+    anything else still raises. See tests/logic/test_duplicate_definition_detection.py
+    for the proof that a new duplicate fails the real build.
+    """
+    from engine.logic.node_definitions import KNOWN_DUPLICATE_DEFINITIONS
+
+    recorded = {node_id for node_id, _first, _second in duplicate_definition_conflicts()}
+    assert recorded == set(KNOWN_DUPLICATE_DEFINITIONS)
+    assert_no_duplicate_definitions()  # must not raise for the scheduled ones
 
 
 def test_every_declarative_node_has_exactly_one_owner():
