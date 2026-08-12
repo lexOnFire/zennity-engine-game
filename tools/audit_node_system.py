@@ -134,6 +134,37 @@ def _report(snapshot: dict) -> str:
     return "\n".join(lines)
 
 
+def alias_failures() -> list[str]:
+    """Node-id aliases must resolve, converge, and stay out of the palette.
+
+    PHASE 9 recovery item 2. An alias is the one mechanism allowed to make two
+    names mean one node, so it is also the one that can quietly reintroduce two
+    catalogues: a dangling target sends a saved node id nowhere, a chain makes
+    resolution non-idempotent, and an alias holding its own palette entry puts
+    two rows behind one operation.
+    """
+    from engine.logic.node_definitions import NODE_DEFINITIONS
+    from engine.logic.node_definitions.catalogue import (
+        NODE_ID_ALIASES,
+        ensure_catalogue_loaded,
+        resolve_node_id,
+        validate_node_id_aliases,
+    )
+    from engine.logic.graph_asset import NODE_PORT_DEFINITIONS
+
+    ensure_catalogue_loaded()
+    failures = list(validate_node_id_aliases(set(NODE_DEFINITIONS)))
+    for alias in NODE_ID_ALIASES:
+        if alias in NODE_DEFINITIONS:
+            failures.append(
+                f"alias {alias!r} has its own palette entry; only "
+                f"{resolve_node_id(alias)!r} may have one"
+            )
+        if alias in NODE_PORT_DEFINITIONS:
+            failures.append(f"alias {alias!r} has its own port contract")
+    return failures
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="emit the snapshot as JSON")
@@ -142,6 +173,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--probe", action="store_true", help="single-line JSON snapshot")
     parser.add_argument("--boot-provider", action="store_true", help="boot LogicProvider first")
     parser.add_argument("--out", type=Path, help="write the JSON snapshot to this path")
+    parser.add_argument("--aliases", action="store_true",
+                        help="check node-id alias targets, cycles and palette visibility")
     args = parser.parse_args(argv)
 
     if args.probe:
@@ -156,6 +189,8 @@ def main(argv: list[str] | None = None) -> int:
 
     failures: list[str] = []
     failures.extend(snapshot["contract_violations"])
+    if args.aliases or args.ci:
+        failures.extend(alias_failures())
 
     if args.parity or args.ci:
         plain = _run_probe(boot_provider=False)

@@ -31,6 +31,13 @@ from editor.widgets.logic_graph_editor import LogicGraphEditor  # noqa: E402
 #: Properties the runtime resolves itself and the user must not be asked to fill
 #: in. Kept explicit so a genuinely missing property cannot hide behind a broad
 #: exemption -- see docs/PHASE9_5B_STAGE4_1_NODE_PROPERTIES.md.
+# PHASE 9 recovery item 2: imported rather than re-declared. The same rule
+# exists in tests/logic/test_node_property_schema_validation.py, and two copies
+# of one fact is the failure mode this whole phase is about.
+from tests.logic.test_node_property_schema_validation import (  # noqa: E402
+    LEGACY_PROPERTY_FALLBACKS,
+)
+
 INTERNAL_PROPERTIES = {
     "object",        # runtime GameObject handle, resolved from object_name
     "widget",        # runtime widget handle, resolved from widget_name
@@ -182,7 +189,10 @@ def test_every_property_the_runtime_reads_is_declared():
             keys = set(re.findall(r"properties\.get\(\s*[\"']([^\"']+)", body))
             for node_id in node_ids:
                 declared = set(NODE_DEFINITIONS.get(node_id, {}).get("properties", {}))
-                missing = sorted(keys - declared - INTERNAL_PROPERTIES)
+                missing = sorted(
+                    keys - declared - INTERNAL_PROPERTIES
+                    - LEGACY_PROPERTY_FALLBACKS.get(node_id, set())
+                )
                 if missing and node_id in NODE_DEFINITIONS:
                     invisible.setdefault(node_id, []).extend(missing)
 

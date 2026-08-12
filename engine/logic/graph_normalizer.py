@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections.abc import Mapping
 from copy import deepcopy
 from typing import Any
+
+from engine.logic.node_definitions.catalogue import resolve_node_id as _resolve_node_id
+
+_log = logging.getLogger(__name__)
 
 try:
     from engine.logic.graph_asset import (
@@ -123,6 +128,14 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             if not isinstance(raw_node, Mapping):
                 continue
             node_type = str(raw_node.get("type", "custom")).strip() or "custom"
+            # PHASE 9 recovery item 2: legacy spellings (load_scene, quit_game,
+            # button_clicked, set_ui_enabled) resolve to the id that owns the
+            # definition, once, at load time -- so everything downstream, and
+            # anything saved afterwards, only ever sees canonical ids.
+            canonical_type = _resolve_node_id(node_type)
+            if canonical_type != node_type:
+                _log.debug("Legacy node id: %s -> %s", node_type, canonical_type)
+                node_type = canonical_type
             definition = NODE_DEFINITIONS.get(node_type, {})
             node_id = str(raw_node.get("id", "")).strip() or uuid.uuid4().hex
             if node_id in node_ids:

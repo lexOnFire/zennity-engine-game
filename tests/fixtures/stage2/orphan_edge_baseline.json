@@ -1,5 +1,5 @@
 {
-  "_comment": "Orphan graph edges present at commit 477feee, BEFORE PHASE 9.5B Stage 2. Each entry is an edge naming a port the node's contract does not declare. These are asset-authoring bugs (graphs saved against node types that no longer exist, or that never existed), not node-system bugs -- Stage 2 deliberately does not fix them, it only proves it introduces no new ones. EnemyAILogic's get_position.position is the known issue documented separately and explicitly out of scope.",
+  "_comment": "Orphan graph edges present at commit 477feee, BEFORE PHASE 9.5B Stage 2. Each entry is an edge naming a port the node's contract does not declare. These are asset-authoring bugs (graphs saved against node types that no longer exist, or that never existed), not node-system bugs -- Stage 2 deliberately does not fix them, it only proves it introduces no new ones. EnemyAILogic's get_position.position is the known issue documented separately and explicitly out of scope. PHASE 9 recovery item 2: MainMenuLogic gained two entries, 72 -> 74. They are not new breakage. The asset wires game.load_game.in and game.has_save.next; those ids had no port contract before node-id resolution existed, so node_port_definitions fell back to a generic in/next pair and the edges appeared to resolve. Resolving the ids onto load_game/has_save revealed that their real contracts declare exec / exec_loaded / exec_exists instead. Reconciling those pin names is port normalization, which is a later item; no asset was edited.",
   "orphan_edges_by_asset": {
     "BossAILogic.zlogic": [
       "get_position.in>in",
@@ -64,6 +64,10 @@
     "KeyCollectionLogic.zlogic": [
       "if_else.value>in"
     ],
+    "MainMenuLogic.zlogic": [
+      "has_save.next>out",
+      "load_game.in>in"
+    ],
     "PlayerCombatLogic.zlogic": [
       "destroy_object.next>out",
       "sequence.then_0>in",
@@ -97,5 +101,5 @@
     ]
   },
   "total_assets_with_orphans": 11,
-  "total_orphan_edges": 72
+  "total_orphan_edges": 74
 }

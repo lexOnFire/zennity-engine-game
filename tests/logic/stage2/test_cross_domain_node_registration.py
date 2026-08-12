@@ -20,7 +20,9 @@ DOMAIN_NODES = {
     "Animation": ("play_animation", "engine.logic.runtime.nodes.animation_nodes"),
     "UI": ("set_ui_text", "engine.logic.runtime.nodes.ui_nodes"),
     "Audio": ("set_volume", "engine.logic.runtime.nodes.audio_advanced_nodes"),
-    "Scene": ("load_scene", "engine.logic.runtime.nodes.scene_nodes"),
+    # PHASE 9 recovery item 2 made the dotted spelling canonical, because it is
+    # the one every shipping asset uses; "load_scene" is now an alias.
+    "Scene": ("scene.load_scene", "engine.logic.runtime.nodes.scene_nodes"),
     "Dialogue": ("show_dialog", "engine.logic.runtime.nodes.dialog_nodes"),
     "SaveLoad": ("save_game", "engine.logic.runtime.nodes.save_load_nodes"),
     "Camera": ("camera_shake", "engine.logic.runtime.nodes.camera_nodes"),

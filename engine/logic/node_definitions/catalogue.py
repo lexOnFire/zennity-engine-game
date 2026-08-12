@@ -320,27 +320,98 @@ _EXPLICIT_PORT_CONTRACTS: dict[str, dict[str, list[tuple[str, str]]]] = {
 }
 
 
-#: Legacy and dotted node ids that resolve onto a canonical operation.
-#: An alias never gets its own definition, palette entry or port contract --
-#: the canonical operation owns the implementation and the normalizer resolves
-#: the legacy id onto it.
-RUNTIME_ID_ALIASES: Mapping[str, str] = MappingProxyType({
-    "scene.load_scene": "load_scene",
-    "open_scene": "load_scene",
-    "app.quit": "quit_game",
-    "exit_game": "quit_game",
-    "ui.button_clicked": "button_clicked",
-    "on_ui_click": "button_clicked",
-    "ui.set_widget_enabled": "set_ui_enabled",
+#: LEGACY NODE ID -> CANONICAL NODE ID.  One-way, and the only node-id alias
+#: table in the engine.
+#:
+#: PHASE 9 recovery item 2.  The direction used to be the opposite -- dotted
+#: spellings resolved onto flat ones -- which contradicted every shipping asset.
+#: Measured on this branch:
+#:
+#:     scene.load_scene       5 uses     load_scene       0
+#:     ui.button_clicked      5 uses     button_clicked   0
+#:     app.quit               1 use      quit_game        0
+#:     ui.set_widget_enabled  1 use      set_ui_enabled   0
+#:
+#: The dotted form is what authors actually saved, so it owns the definition,
+#: the palette entry and the port contract; the flat form is a load/runtime
+#: alias. Renaming ids that assets already use buys nothing.
+#:
+#: The three entries at the bottom keep their original direction: their targets
+#: are the flat spelling and there is no asset evidence to flip them.
+#:
+#: An alias is compatibility, never authoring identity: it gets no definition,
+#: no palette row and no port contract of its own.
+NODE_ID_ALIASES: Mapping[str, str] = MappingProxyType({
+    "load_scene": "scene.load_scene",
+    "open_scene": "scene.load_scene",
+    "quit_game": "app.quit",
+    "exit_game": "app.quit",
+    "button_clicked": "ui.button_clicked",
+    "on_ui_click": "ui.button_clicked",
+    "set_ui_enabled": "ui.set_widget_enabled",
     "variables.set": "set_variable",
     "game.load_game": "load_game",
     "game.has_save": "has_save",
 })
 
+#: Deprecated spelling kept so existing importers keep working.
+RUNTIME_ID_ALIASES: Mapping[str, str] = NODE_ID_ALIASES
 
-def canonical_node_id(node_id: str) -> str:
-    """Resolve a legacy or dotted node id onto its canonical operation."""
-    return RUNTIME_ID_ALIASES.get(node_id, node_id)
+
+def resolve_node_id(node_id: str) -> str:
+    """Resolve a legacy node id onto the id that owns the definition.
+
+    Idempotent by construction: no alias target is itself an alias key, and
+    :func:`validate_node_id_aliases` enforces that.
+    """
+    return NODE_ID_ALIASES.get(node_id, node_id)
+
+
+#: Historical name for :func:`resolve_node_id`.
+canonical_node_id = resolve_node_id
+
+
+def get_node_aliases() -> Mapping[str, str]:
+    """The whole legacy -> canonical table, read-only."""
+    return NODE_ID_ALIASES
+
+
+def get_aliases_for(canonical_id: str) -> tuple[str, ...]:
+    """Legacy spellings that resolve onto ``canonical_id``."""
+    return tuple(sorted(k for k, v in NODE_ID_ALIASES.items() if v == canonical_id))
+
+
+def validate_node_id_aliases(known_ids: set[str] | None = None) -> list[str]:
+    """Structural problems in the alias table.  Empty means healthy.
+
+    Catches the three ways an alias table rots: an entry pointing at itself, a
+    chain that never converges (which would make resolution non-idempotent),
+    and a target that does not exist -- each of which silently sends a saved
+    node id nowhere.
+    """
+    problems: list[str] = []
+    for source, target in NODE_ID_ALIASES.items():
+        if source == target:
+            problems.append(f"self-alias: {source!r}")
+            continue
+        if target in NODE_ID_ALIASES:
+            problems.append(
+                f"alias chain: {source!r} -> {target!r} -> {NODE_ID_ALIASES[target]!r}; "
+                "resolution must converge in one step"
+            )
+        if known_ids is not None and target not in known_ids:
+            problems.append(f"alias {source!r} points at {target!r}, which has no definition")
+    # A cycle longer than the one-step check above cannot exist while no target
+    # is also a key, but prove it rather than assume it.
+    for source in NODE_ID_ALIASES:
+        seen, current = {source}, resolve_node_id(source)
+        while current in NODE_ID_ALIASES:
+            if current in seen:
+                problems.append(f"alias cycle through {source!r}")
+                break
+            seen.add(current)
+            current = resolve_node_id(current)
+    return problems
 
 
 def all_aliases() -> Mapping[str, tuple[str, ...]]:
@@ -350,7 +421,7 @@ def all_aliases() -> Mapping[str, tuple[str, ...]]:
     except Exception:  # pragma: no cover
         LEGACY_NODE_TYPES = {}
     merged: dict[str, set[str]] = {}
-    for source, target in {**LEGACY_NODE_TYPES, **RUNTIME_ID_ALIASES}.items():
+    for source, target in {**LEGACY_NODE_TYPES, **NODE_ID_ALIASES}.items():
         merged.setdefault(target, set()).add(source)
     return MappingProxyType(
         {target: tuple(sorted(sources)) for target, sources in sorted(merged.items())}
@@ -602,7 +673,7 @@ def _harvest_declarative(
             _log.exception("Declarative node module %r failed to import", module_name)
             continue
         for node_id, definition in _iter_declarative_definitions(module):
-            if node_id in RUNTIME_ID_ALIASES:
+            if node_id in NODE_ID_ALIASES:
                 # This lineage's rule, unchanged here: an alias never gets its
                 # own definition, palette entry or port contract. Stage 1's
                 # scene_nodes declares the dotted ids (scene.load_scene,
@@ -661,8 +732,12 @@ def _build_catalogue() -> None:
     _harvest_metadata_manager(definitions)
 
     # --- port schema: explicit graph contracts first, definitions as fallback
+    # PHASE 9 recovery item 2: the contract follows the canonical id. Several
+    # contracts are still keyed by the flat spelling (load_scene, quit_game,
+    # button_clicked, set_ui_enabled); an alias must not own a port contract,
+    # so they are re-keyed onto the id that owns the definition.
     port_schema: dict[str, dict[str, list[tuple[str, str]]]] = {
-        node_id: {
+        resolve_node_id(node_id): {
             "inputs": [tuple(pin) for pin in contract.get("inputs", [])],
             "outputs": [tuple(pin) for pin in contract.get("outputs", [])],
         }
@@ -693,6 +768,39 @@ def _build_catalogue() -> None:
             "outputs": [],
             "properties": dict(properties),
         }
+
+    # --- PALETTE RESCUE (PHASE 9 recovery item 2)
+    # The canonical dotted ids have a port contract and an executor but no
+    # authoring entry, so they are invisible in the palette: an author cannot
+    # place scene.load_scene at all, even though five shipping graphs use it.
+    # Stage 1's scene_nodes declares exactly the missing metadata, and item 1
+    # parked it in ALIASED_DECLARATIVE_DEFINITIONS.
+    #
+    # Metadata ONLY. Writing the declaration's pins here is how a good contract
+    # once got overwritten with an empty one: the entries carry authoring
+    # information, and the pins keep coming from the port schema below.
+    for node_id, declaration in ALIASED_DECLARATIVE_DEFINITIONS.items():
+        canonical = resolve_node_id(node_id)
+        if canonical not in port_schema:
+            continue
+        projected = _definition_to_legacy(declaration)
+        entry = definitions.setdefault(canonical, {"id": canonical, "properties": {}})
+        for field in ("title", "category", "description"):
+            value = projected.get(field)
+            if value:
+                entry[field] = value
+        # Defaults are additive: a default already resolved for this id was
+        # decided against the real contract and outranks the declaration's.
+        for name, default in (projected.get("properties") or {}).items():
+            entry.setdefault("properties", {}).setdefault(name, default)
+        entry["id"] = canonical
+        definition_owners.setdefault(canonical, "scene_nodes")
+
+    # An alias is compatibility, never an authoring identity: it must not carry
+    # a palette entry of its own next to the id it resolves onto.
+    for alias in NODE_ID_ALIASES:
+        definitions.pop(alias, None)
+        port_schema.pop(alias, None)
 
     # --- UNIFICATION: a definition's pins ARE its port schema entry.
     # This is what makes NODE_PORT_DEFINITIONS a derived view rather than a

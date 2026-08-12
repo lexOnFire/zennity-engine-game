@@ -32,6 +32,20 @@ INTERNAL_PROPERTIES = {
     "exposed_properties", "parameters",
 }
 
+#: Older property names an executor still falls back to, per node. They are NOT
+#: authoring fields: the current name is the declared one, and the fallback only
+#: exists so a graph saved under the old name keeps working.
+#:
+#: PHASE 9 recovery item 2 surfaced these. The nodes had no palette entry at all
+#: before the rescue, so this check skipped them entirely; declaring "scene" and
+#: "button" would put dead fields in the Inspector next to the real ones. No
+#: shipping asset uses either name -- measured, 0 occurrences across all
+#: .zlogic -- so there is nothing to migrate, only a fallback to leave alone.
+LEGACY_PROPERTY_FALLBACKS = {
+    "scene.load_scene": {"scene"},       # current name: scene_path
+    "ui.button_clicked": {"button"},     # current name: widget_name
+}
+
 
 def _executor_property_reads() -> dict[str, dict[str, object]]:
     """node_id -> {property: default} as written in the executor source."""
@@ -88,7 +102,10 @@ def test_no_runtime_property_is_undeclared():
         if node_id not in NODE_DEFINITIONS:
             continue  # alias or internal-only operation, not in the palette
         declared = set(NODE_DEFINITIONS[node_id].get("properties", {}))
-        missing = sorted(set(keys) - declared - INTERNAL_PROPERTIES)
+        missing = sorted(
+            set(keys) - declared - INTERNAL_PROPERTIES
+            - LEGACY_PROPERTY_FALLBACKS.get(node_id, set())
+        )
         if missing:
             invisible[node_id] = missing
     assert not invisible, (
