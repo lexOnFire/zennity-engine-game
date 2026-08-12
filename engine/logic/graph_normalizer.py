@@ -34,6 +34,10 @@ except ImportError:  # Self-contained exported runtime.
 # o usuário digitou no Inspector era simplesmente ignorado em tempo de execução.
 _RENAMED_NODE_PROPERTIES: dict[str, dict[str, str]] = {
     "log_message": {"message": "text"},
+    # PHASE 9 recovery item 4.2: the authoring property is "state". A graph
+    # saved with "animation_name" is migrated here, once, at load -- the same
+    # mechanism log_message already used, rather than a second fallback path.
+    "play_animation": {"animation_name": "state"},
 }
 
 

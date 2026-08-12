@@ -1,5 +1,5 @@
 {
-  "_comment": "Pre-Stage-2 baseline of the Logic Graph node system, captured at commit 477feee before PHASE 9.5B Stage 2 unified the definition sources. port_schema is the authoritative graph contract that .zlogic assets and runtime executors speak; Stage 2 must reproduce it exactly, derived from the definition catalogue instead of a parallel hand-maintained table. PHASE 9 recovery item 1: definition_ids regenerated on the recovery lineage. The palette gained 17 nodes and lost none -- absolute_number, add_number, and, clamp_number, delta_time, divide_number, find_nearest_object, get_object_name, get_position, join_text, multiply_number, not, or, random_number, subgraph_input, subtract_number, to_text -- all owned by the Stage 1 declarative modules math_nodes, logic_nodes and scene_nodes, which are present on disk but were absent from the catalogue because the module list was a hand-written tuple. Nothing else in this fixture is re-measured here. PHASE 9 recovery item 2: definition_ids regenerated again. Added ['app.quit', 'scene.load_scene', 'ui.button_clicked', 'ui.set_widget_enabled']: the canonical dotted ids gained the palette entry they never had -- they had a port contract and an executor but no authoring entry, so an author could not place them. Removed []: those spellings are now aliases and an alias never carries a palette row.",
+  "_comment": "Pre-Stage-2 baseline of the Logic Graph node system, captured at commit 477feee before PHASE 9.5B Stage 2 unified the definition sources. port_schema is the authoritative graph contract that .zlogic assets and runtime executors speak; Stage 2 must reproduce it exactly, derived from the definition catalogue instead of a parallel hand-maintained table. PHASE 9 recovery item 1: definition_ids regenerated on the recovery lineage. The palette gained 17 nodes and lost none -- absolute_number, add_number, and, clamp_number, delta_time, divide_number, find_nearest_object, get_object_name, get_position, join_text, multiply_number, not, or, random_number, subgraph_input, subtract_number, to_text -- all owned by the Stage 1 declarative modules math_nodes, logic_nodes and scene_nodes, which are present on disk but were absent from the catalogue because the module list was a hand-written tuple. Nothing else in this fixture is re-measured here. PHASE 9 recovery item 2: definition_ids regenerated again. Added ['app.quit', 'scene.load_scene', 'ui.button_clicked', 'ui.set_widget_enabled']: the canonical dotted ids gained the palette entry they never had -- they had a port contract and an executor but no authoring entry, so an author could not place them. Removed []: those spellings are now aliases and an alias never carries a palette row. PHASE 9 recovery item 4.2: the play_animation and stop_animation entries recorded the stale _EXPLICIT_PORT_CONTRACTS snapshot (in/state -> next), which is exactly the override that was removed so animation_nodes' declaration could be the source of truth. Regenerated from the canonical contract: play_animation exec/target/state/force -> next/exec_failure/animation, stop_animation exec/target -> next/exec_failure/stopped. Nothing else re-measured.",
   "counts": {
     "definition_sources": 2,
     "definitions": 175,
@@ -2737,7 +2737,7 @@
           "text"
         ],
         [
-          "animation_name",
+          "state",
           "text"
         ],
         [
@@ -2747,12 +2747,16 @@
       ],
       "outputs": [
         [
-          "exec_success",
+          "next",
           "flow"
         ],
         [
           "exec_failure",
           "flow"
+        ],
+        [
+          "animation",
+          "text"
         ]
       ]
     },
@@ -3496,12 +3500,16 @@
       ],
       "outputs": [
         [
-          "exec_success",
+          "next",
           "flow"
         ],
         [
           "exec_failure",
           "flow"
+        ],
+        [
+          "stopped",
+          "bool"
         ]
       ]
     },
@@ -6939,18 +6947,34 @@
     "play_animation": {
       "inputs": [
         [
-          "in",
+          "exec",
           "flow"
+        ],
+        [
+          "target",
+          "text"
         ],
         [
           "state",
           "text"
+        ],
+        [
+          "force",
+          "bool"
         ]
       ],
       "outputs": [
         [
           "next",
           "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "animation",
+          "text"
         ]
       ]
     },
@@ -7753,14 +7777,26 @@
     "stop_animation": {
       "inputs": [
         [
-          "in",
+          "exec",
           "flow"
+        ],
+        [
+          "target",
+          "text"
         ]
       ],
       "outputs": [
         [
           "next",
           "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "stopped",
+          "bool"
         ]
       ]
     },

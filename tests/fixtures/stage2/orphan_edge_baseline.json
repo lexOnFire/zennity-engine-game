@@ -1,7 +1,7 @@
 {
-  "_comment": "Orphan graph edges present at commit 477feee, BEFORE PHASE 9.5B Stage 2. Each entry is an edge naming a port the node's contract does not declare. These are asset-authoring bugs (graphs saved against node types that no longer exist, or that never existed), not node-system bugs -- Stage 2 deliberately does not fix them, it only proves it introduces no new ones. EnemyAILogic's get_position.position is the known issue documented separately and explicitly out of scope. PHASE 9 recovery item 2: MainMenuLogic gained two entries, 72 -> 74. They are not new breakage. The asset wires game.load_game.in and game.has_save.next; those ids had no port contract before node-id resolution existed, so node_port_definitions fell back to a generic in/next pair and the edges appeared to resolve. Resolving the ids onto load_game/has_save revealed that their real contracts declare exec / exec_loaded / exec_exists instead. Reconciling those pin names is port normalization, which is a later item; no asset was edited.",
+  "_comment": "Orphan graph edges present at commit 477feee, BEFORE PHASE 9.5B Stage 2. Each entry is an edge naming a port the node's contract does not declare. These are asset-authoring bugs (graphs saved against node types that no longer exist, or that never existed), not node-system bugs -- Stage 2 deliberately does not fix them, it only proves it introduces no new ones. EnemyAILogic's get_position.position is the known issue documented separately and explicitly out of scope. PHASE 9 recovery item 2: MainMenuLogic gained two entries, 72 -> 74. They are not new breakage. The asset wires game.load_game.in and game.has_save.next; those ids had no port contract before node-id resolution existed, so node_port_definitions fell back to a generic in/next pair and the edges appeared to resolve. Resolving the ids onto load_game/has_save revealed that their real contracts declare exec / exec_loaded / exec_exists instead. Reconciling those pin names is port normalization, which is a later item; no asset was edited. PHASE 9 recovery item 4.2: play_animation.in appears in PlayerCombatLogic (1) and PlayerMovement (3). This is the EXPECTED BLOCKER for recovery item 5, not asset breakage: the canonical contract from animation_nodes names the entry pin 'exec', the four saved edges name it 'in', and reconciling legacy flow-port spellings is port normalization's job. The contract is correct and no asset was edited; item 5 makes these resolve again. Keys are repo-relative paths from item 4.2 on: three distinct assets are named PlayerMovement.zlogic and a file-name key made all three share one recorded list.",
   "orphan_edges_by_asset": {
-    "BossAILogic.zlogic": [
+    "Assets/Logic/BossAILogic.zlogic": [
       "get_position.in>in",
       "get_position.object>in",
       "get_position.position>out",
@@ -13,26 +13,26 @@
       "object.find_by_name.object>out",
       "vector2.in>in"
     ],
-    "BossCombatLogic.zlogic": [
+    "Assets/Logic/BossCombatLogic.zlogic": [
       "if_else.compare_value>in",
       "if_else.value>in"
     ],
-    "BossHealthLogic.zlogic": [
+    "Assets/Logic/BossHealthLogic.zlogic": [
       "if_else.value>in",
       "math.divide.a>in",
       "math.divide.b>in",
       "math.divide.value>out",
       "ui.set_progress_bar.value>in"
     ],
-    "CoinCollectionLogic.zlogic": [
+    "Assets/Logic/CoinCollectionLogic.zlogic": [
       "if_else.value>in"
     ],
-    "DoorLogic.zlogic": [
+    "Assets/Logic/DoorLogic.zlogic": [
       "component.set_property.component>in",
       "event.listen.event_received>out",
       "object.get_component.component>out"
     ],
-    "EnemyAILogic.zlogic": [
+    "Assets/Logic/EnemyAILogic.zlogic": [
       "get_position.in>in",
       "get_position.object>in",
       "get_position.position>out",
@@ -44,7 +44,7 @@
       "object.find_by_name.object>out",
       "vector2.in>in"
     ],
-    "EnemyAttackLogic.zlogic": [
+    "Assets/Logic/EnemyAttackLogic.zlogic": [
       "animation.on_event.event>out",
       "get_position.in>in",
       "get_position.object>in",
@@ -61,20 +61,21 @@
       "physics.raycast_2d.max_distance>in",
       "physics.raycast_2d.origin>in"
     ],
-    "KeyCollectionLogic.zlogic": [
+    "Assets/Logic/KeyCollectionLogic.zlogic": [
       "if_else.value>in"
     ],
-    "MainMenuLogic.zlogic": [
+    "Assets/Logic/MainMenuLogic.zlogic": [
       "has_save.next>out",
       "load_game.in>in"
     ],
-    "PlayerCombatLogic.zlogic": [
+    "Assets/Logic/PlayerCombatLogic.zlogic": [
       "destroy_object.next>out",
+      "play_animation.in>in",
       "sequence.then_0>in",
       "sequence.then_1>in",
       "subtract_number.in>in"
     ],
-    "VictoryLogic.zlogic": [
+    "Assets/Logic/VictoryLogic.zlogic": [
       "every_frame.exec>out",
       "project_get.exec>in",
       "project_get.exec>out",
@@ -96,10 +97,13 @@
       "ui_set_text.target>in",
       "ui_set_text.text>in"
     ],
-    "tocaLogic.zlogic": [
+    "Assets/Logic/ZennityRun/PlayerMovement.zlogic": [
+      "play_animation.in>in"
+    ],
+    "Assets/Logic/tocaLogic.zlogic": [
       "start_behavior_tree.in>in"
     ]
   },
   "total_assets_with_orphans": 11,
-  "total_orphan_edges": 74
+  "total_orphan_edges": 76
 }

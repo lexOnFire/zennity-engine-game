@@ -1,6 +1,6 @@
 {
-  "_comment": "PHASE 9.5B Stage 4.1 baseline. Each entry is a property whose catalogue default differs from the fallback literal in its executor. This is latent, not active: the catalogue default is written into every node on creation, so the executor fallback only applies to a legacy asset that omits the property entirely -- there the runtime and the editor disagree. Reconciling all 66 would change authoring defaults across the palette, which is a gameplay change and out of scope for Stage 4.1. Recorded so the test fails on NEW divergence.",
-  "count": 65,
+  "_comment": "PHASE 9.5B Stage 4.1 baseline. Each entry is a property whose catalogue default differs from the fallback literal in its executor. This is latent, not active: the catalogue default is written into every node on creation, so the executor fallback only applies to a legacy asset that omits the property entirely -- there the runtime and the editor disagree. Reconciling all 66 would change authoring defaults across the palette, which is a gameplay change and out of scope for Stage 4.1. Recorded so the test fails on NEW divergence. PHASE 9 recovery item 4.2: play_animation.animation_name and play_animation.state left this baseline because the mismatch is gone, not because the check was relaxed. The node was declared twice; the losing declaration defaulted animation_name to 'idle' while the executor read that same key, and the winning declaration had no 'state' pin at all. animation_nodes now owns the node, 'state' is the declared authoring property with an empty default, and the executor reads it -- so declaration and executor agree and there is nothing left to record.",
+  "count": 63,
   "mismatches": {
     "add_transition.from_state": {
       "declared": "idle",
@@ -83,7 +83,7 @@
       "executor": ""
     },
     "create_ui_label.text": {
-      "declared": "Din\u00e2mico",
+      "declared": "Dinâmico",
       "executor": "Dynamic"
     },
     "create_ui_progress_bar.parent": {
@@ -213,14 +213,6 @@
     "pause_continuous_motion.movement": {
       "declared": "",
       "executor": "Movement"
-    },
-    "play_animation.animation_name": {
-      "declared": "idle",
-      "executor": ""
-    },
-    "play_animation.state": {
-      "declared": "",
-      "executor": "Idle"
     },
     "play_animation.target": {
       "declared": "player",

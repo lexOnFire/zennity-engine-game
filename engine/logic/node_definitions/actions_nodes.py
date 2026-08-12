@@ -4,22 +4,13 @@ from __future__ import annotations
 from engine.core.metadata import NodeDefinition, PinDefinition, PinType
 
 
-class PlayAnimationNode(NodeDefinition):
-    """Reproduz animação por nome."""
-
-    __node_definition__ = NodeDefinition(
-        id="play_animation",
-        title_key="Tocar Animação",
-        category_key="Actions",
-        description_key="Reproduz uma animação pelo nome do estado",
-        inputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
-            PinDefinition(id="state", label_key="Estado", pin_type=PinType.STRING, default_value="Idle"),
-        ],
-        outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
-        ]
-    )
+# PHASE 9 recovery item 4.2: play_animation and stop_animation used to be
+# declared here AS WELL AS in animation_nodes, with different pins and two
+# different executors. animation_nodes owns them: it resolves the real Animator
+# component through ``target``, has a failure path, and is the direction Stage 1
+# chose. What lived here was a thinner parallel implementation
+# (``game.animator.play(state)``) that assumed the game object *was* the
+# animator. See docs/PHASE9_RECOVERY_ITEM4_2_ANIMATION_CONTRACTS.md.
 
 
 class PlayAnimationAssetNode(NodeDefinition):
@@ -33,23 +24,6 @@ class PlayAnimationAssetNode(NodeDefinition):
         inputs=[
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="path", label_key="Caminho", pin_type=PinType.STRING, default_value=""),
-        ],
-        outputs=[
-            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
-        ]
-    )
-
-
-class StopAnimationNode(NodeDefinition):
-    """Para a animação atual."""
-
-    __node_definition__ = NodeDefinition(
-        id="stop_animation",
-        title_key="Parar Animação",
-        category_key="Actions",
-        description_key="Para a animação atualmente reproduzindo",
-        inputs=[
-            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
         ],
         outputs=[
             PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),

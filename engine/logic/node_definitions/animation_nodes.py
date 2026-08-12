@@ -15,12 +15,22 @@ class PlayAnimationNode:
         inputs=[
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
             PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
-            PinDefinition(id="animation_name", label_key="Animation", pin_type=PinType.STRING, default_value="idle"),
+            # PHASE 9 recovery item 4.2: the authoring property is ``state``,
+            # not ``animation_name``. Every saved node uses it -- Idle, Jump,
+            # Run, PlayerAttack, 4 of 4 -- and none uses animation_name. The
+            # legacy name is migrated at load time by _RENAMED_NODE_PROPERTIES,
+            # so it is compatibility, not a second authorable field.
+            #
+            # The default is empty on purpose. It used to be "idle", and the
+            # normalizer seeded that over a legacy graph's real animation name.
+            PinDefinition(id="state", label_key="Estado", pin_type=PinType.STRING, default_value=""),
             PinDefinition(id="force", label_key="Force", pin_type=PinType.BOOL, default_value=False),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            # "next" is the engine's one name for "this succeeded, continue".
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+            PinDefinition(id="animation", label_key="Animation", pin_type=PinType.STRING),
         ]
     )
 
@@ -59,8 +69,10 @@ class StopAnimationNode:
             PinDefinition(id="target", label_key="Target", pin_type=PinType.STRING, default_value="player"),
         ],
         outputs=[
-            PinDefinition(id="exec_success", label_key="Success", pin_type=PinType.EXEC),
+            PinDefinition(id="next", label_key="Pronto", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Failure", pin_type=PinType.EXEC),
+            # The executor already stores this; it was simply never declared.
+            PinDefinition(id="stopped", label_key="Parada", pin_type=PinType.BOOL),
         ]
     )
 

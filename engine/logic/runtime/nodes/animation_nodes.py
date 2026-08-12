@@ -71,29 +71,42 @@ def execute_play_animation(runtime, node: Mapping[str, Any], game: Any, dt: floa
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
-    target_name = str(properties.get("target", "")).strip()
-    animation_name = str(properties.get("animation_name", "")).strip()
+    # PHASE 9 recovery item 4.2. This read ``animation_name`` while every saved
+    # node stores ``state``, so the author's value was ignored and the seeded
+    # default played instead. ``state`` is the authoring property; the legacy
+    # name is migrated at load time and kept here only as a defensive fallback
+    # for a graph that reaches the runtime without passing the normalizer.
+    target_name = str(
+        runtime._read_input(node_id, "target", properties.get("target", ""), game, dt, set())
+    ).strip()
+    state = str(
+        runtime._read_input(
+            node_id, "state",
+            properties.get("state") or properties.get("animation_name", ""),
+            game, dt, set(),
+        )
+    ).strip()
     force = bool(properties.get("force", False))
 
-    if not animation_name:
-        return ["failure"]
+    if not state:
+        return ["exec_failure"]
 
     animator, error = _resolve_animator(target_name, game)
     if error or not animator:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         # Validate animation exists before playing
-        if animation_name not in animator._clips:
-            return ["failure"]
+        if state not in animator._clips:
+            return ["exec_failure"]
 
         # Call actual Animator API
-        animator.play(animation_name, force=force)
-        runtime._store(node_id, "animation", animation_name)
-        return ["success"]
+        animator.play(state, force=force)
+        runtime._store(node_id, "animation", state)
+        return ["next"]
 
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 # Phase 6B.2: Pause Animation Executor
@@ -125,19 +138,21 @@ def execute_stop_animation(runtime, node: Mapping[str, Any], game: Any, dt: floa
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
-    target_name = str(properties.get("target", "")).strip()
+    target_name = str(
+        runtime._read_input(node_id, "target", properties.get("target", ""), game, dt, set())
+    ).strip()
 
     animator, error = _resolve_animator(target_name, game)
     if error or not animator:
-        return ["failure"]
+        return ["exec_failure"]
 
     try:
         animator.stop()
         runtime._store(node_id, "stopped", True)
-        return ["success"]
+        return ["next"]
 
     except (ValueError, TypeError, AttributeError):
-        return ["failure"]
+        return ["exec_failure"]
 
 
 def _parse_animator_param_value(value_str: str, existing_value: Any = None) -> Any:

@@ -44,6 +44,12 @@ INTERNAL_PROPERTIES = {
 LEGACY_PROPERTY_FALLBACKS = {
     "scene.load_scene": {"scene"},       # current name: scene_path
     "ui.button_clicked": {"button"},     # current name: widget_name
+    # PHASE 9 recovery item 4.2: the authoring property is "state"; a graph
+    # saved with "animation_name" is migrated by _RENAMED_NODE_PROPERTIES at
+    # load. The executor keeps reading it defensively for a graph that reaches
+    # the runtime without passing the normalizer. Declaring it would put a dead
+    # field in the Inspector next to the live one.
+    "play_animation": {"animation_name"},
 }
 
 

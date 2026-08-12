@@ -97,17 +97,15 @@ DECLARATIVE_IMPORT_FAILURES: dict[str, str] = {}
 #: Node ids that two declarative modules genuinely claim today, recorded so the
 #: catalogue still builds while the split brain is resolved.
 #:
-#: PHASE 9 recovery item 4.1 made the real catalogue path detect duplicates; it
-#: immediately found these two, declared in BOTH actions_nodes and
-#: animation_nodes, with different pins and two different executors. Choosing
-#: the winner is recovery item 4.2's decision, and this set is emptied there.
+#: PHASE 9 recovery item 4.1 made the real catalogue path detect duplicates and
+#: immediately found play_animation and stop_animation, declared in BOTH
+#: actions_nodes and animation_nodes. Item 4.2 resolved them, so the set is
+#: empty -- which is the point: it holds scheduled debts, and a debt that is
+#: paid must leave.
 #:
 #: An entry here is a debt with a name, not an exemption: any id NOT listed
 #: still raises, so a new duplicate cannot slip in behind these.
-KNOWN_DUPLICATE_DEFINITIONS: frozenset[str] = frozenset({
-    "play_animation",
-    "stop_animation",
-})
+KNOWN_DUPLICATE_DEFINITIONS: frozenset[str] = frozenset()
 
 
 def unexpected_definition_conflicts() -> list[tuple[str, str, str]]:
@@ -284,9 +282,7 @@ _EXPLICIT_PORT_CONTRACTS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "is_grounded": {"inputs": [("in", "flow")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_number": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
     "compare_text": {"inputs": [("in", "flow"), ("value", "text")], "outputs": [("true", "flow"), ("false", "flow"), ("value", "bool")]},
-    "play_animation": {"inputs": [("in", "flow"), ("state", "text")], "outputs": [("next", "flow")]},
     "play_animation_asset": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
-    "stop_animation": {"inputs": [("in", "flow")], "outputs": [("next", "flow")]},
     "play_sound": {"inputs": [("in", "flow"), ("path", "text")], "outputs": [("next", "flow")]},
     "set_ui_text": {"inputs": [("in", "flow"), ("text", "text")], "outputs": [("next", "flow")]},
     "set_ui_progress_bar": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},

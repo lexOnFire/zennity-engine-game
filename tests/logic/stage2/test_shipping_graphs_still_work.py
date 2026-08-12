@@ -78,7 +78,9 @@ def test_graph_loads_normalizes_and_builds_a_runtime(path: Path):
     assert runtime.graph["nodes"] is not None
 
 
-@pytest.mark.parametrize("path", SHIPPING_GRAPHS, ids=lambda p: p.stem)
+@pytest.mark.parametrize(
+    "path", SHIPPING_GRAPHS, ids=lambda p: p.relative_to(REPO_ROOT).as_posix()
+)
 def test_graph_introduces_no_new_orphan_edges(path: Path):
     """No edge may lose its port because the schema is now derived.
 
@@ -88,7 +90,12 @@ def test_graph_introduces_no_new_orphan_edges(path: Path):
     on any *new* orphan, and also on an orphan that silently disappears, since
     both mean the port contract moved.
     """
-    recorded = set(ORPHAN_BASELINE["orphan_edges_by_asset"].get(path.name, []))
+    # PHASE 9 recovery item 4.2: keyed by repo-relative path, not file name.
+    # Three different assets are called PlayerMovement.zlogic, so a name key
+    # made all three read the same recorded list -- invisible while they all had
+    # zero orphans, wrong the moment one of them differed.
+    key = path.relative_to(REPO_ROOT).as_posix()
+    recorded = set(ORPHAN_BASELINE["orphan_edges_by_asset"].get(key, []))
     actual = set(_orphan_edges(normalize_logic_graph(load_logic_graph(path))))
     assert actual == recorded, (
         f"{path.name} orphan edges changed\n"

@@ -75,7 +75,7 @@ class TestPlayAnimationNode:
             'id': 'node_1',
             'properties': {
                 'target': 'Player',
-                'animation_name': 'run',
+                'state': 'run',
                 'force': False,
             }
         }
@@ -88,11 +88,17 @@ class TestPlayAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["next"]
         assert animator.current_clip == "run"
 
     def test_play_animation_missing_animator_failure(self, scene_with_animator):
@@ -103,7 +109,7 @@ class TestPlayAnimationNode:
             'id': 'node_1',
             'properties': {
                 'target': 'NonExistent',
-                'animation_name': 'idle',
+                'state': 'idle',
                 'force': False,
             }
         }
@@ -115,11 +121,17 @@ class TestPlayAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
     def test_play_animation_empty_target_failure(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -128,7 +140,7 @@ class TestPlayAnimationNode:
             'id': 'node_1',
             'properties': {
                 'target': '',
-                'animation_name': 'idle',
+                'state': 'idle',
                 'force': False,
             }
         }
@@ -140,11 +152,17 @@ class TestPlayAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
     def test_play_animation_with_force(self, scene_with_animator):
         scene, player, animator, game, sr = scene_with_animator
@@ -157,7 +175,7 @@ class TestPlayAnimationNode:
             'id': 'node_1',
             'properties': {
                 'target': 'Player',
-                'animation_name': 'run',
+                'state': 'run',
                 'force': True,
             }
         }
@@ -169,11 +187,17 @@ class TestPlayAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["next"]
         assert animator.current_frame == 0  # Reset to frame 0 with force
 
 
@@ -201,6 +225,12 @@ class TestPauseAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_pause_animation
         result = execute_pause_animation(runtime, node, game, 0.016)
@@ -224,6 +254,12 @@ class TestPauseAnimationNode:
 
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
+
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
 
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_pause_animation
@@ -255,11 +291,17 @@ class TestStopAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_stop_animation
         result = execute_stop_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["next"]
         assert animator.current_clip is None
 
     def test_stop_animation_missing_animator_failure(self, scene_with_animator):
@@ -279,11 +321,17 @@ class TestStopAnimationNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_stop_animation
         result = execute_stop_animation(runtime, node, game, 0.016)
 
-        assert result == ["failure"]
+        assert result == ["exec_failure"]
 
 
 class TestGetCurrentAnimationNode:
@@ -530,6 +578,12 @@ class TestAnimatorParameterNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
@@ -555,6 +609,12 @@ class TestAnimatorParameterNode:
 
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
+
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
 
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
@@ -582,6 +642,12 @@ class TestAnimatorParameterNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
@@ -608,6 +674,12 @@ class TestAnimatorParameterNode:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_animator_parameter
         result = execute_animator_parameter(runtime, node, game, 0.016)
@@ -627,7 +699,7 @@ class TestAnimationSpriteIntegration:
             'id': 'node_1',
             'properties': {
                 'target': 'Player',
-                'animation_name': 'run',
+                'state': 'run',
                 'force': False,
             }
         }
@@ -639,11 +711,17 @@ class TestAnimationSpriteIntegration:
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
 
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
+
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
         result = execute_play_animation(runtime, node, game, 0.016)
 
-        assert result == ["success"]
+        assert result == ["next"]
 
         # Advance animation
         animator._advance(0.016)
@@ -674,6 +752,12 @@ class TestAnimationSpriteIntegration:
 
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
+
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
 
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_pause_animation
@@ -708,7 +792,7 @@ class TestAnimationSpriteIntegration:
             'id': 'node_1',
             'properties': {
                 'target': 'Player',
-                'animation_name': 'run',
+                'state': 'run',
                 'force': False,
             }
         }
@@ -717,7 +801,7 @@ class TestAnimationSpriteIntegration:
             'id': 'node_2',
             'properties': {
                 'target': 'Enemy',
-                'animation_name': 'idle',
+                'state': 'idle',
                 'force': False,
             }
         }
@@ -728,6 +812,12 @@ class TestAnimationSpriteIntegration:
 
             def _store(self, key, subkey, value):
                 self.values[(key, subkey)] = value
+
+            def _read_input(self, node_id, name, fallback, game, dt, seen):
+                # PHASE 9 recovery item 4.2: the animation executors resolve
+                # target/state through _read_input so a data edge can drive
+                # them, as their pins declare. With no edge, the property wins.
+                return fallback
 
         runtime = RuntimeMock()
         from engine.logic.runtime.nodes.animation_nodes import execute_play_animation
