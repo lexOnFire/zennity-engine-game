@@ -82,21 +82,11 @@ def execute_ui_button_clicked(runtime, node: Mapping[str, Any], game: Any, dt: f
     return []
 
 
-@registry.register_executor(('game.load_game', 'load_game'))
-def execute_game_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    node_id = str(node['id'])
-    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
-    inputs = node.get('inputs', {}) if isinstance(node.get('inputs'), Mapping) else {}
-    slot = str(runtime._read_input(node_id, "slot", inputs.get("slot", properties.get("slot", "autosave")), game, dt, set()))
-
-    if hasattr(game, "load_game"):
-        game.load_game(slot)
-    return ["success", "next"]
-
-
-@registry.register_executor(('game.has_save', 'has_save'))
-def execute_game_has_save(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    return ["false"]
+# PHASE 9 recovery item 6: the load_game and has_save executors that used to
+# live here were the losing half of a split brain, and they won by load order.
+# The has_save one did nothing at all -- it returned ["false"] without checking
+# for a save -- and the load_game one ignored the declared slot_name property.
+# save_load_nodes has the real implementations; only one executor may own an id.
 
 
 @registry.register_executor(('ui.set_widget_enabled', 'set_ui_enabled'))

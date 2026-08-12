@@ -1,0 +1,191 @@
+{
+  "_comment": "Nodes whose executor returns a flow port their contract does not declare, recorded at PHASE 9 recovery item 6. This is systemic, not a save/load problem: 45 of 128 executors return the unprefixed spelling (success/failure/loaded) while the declaration uses exec_* -- an edge wired to the declared port is simply never followed at runtime. Item 6 fixed the four save/load nodes (save_game, load_game, has_save, delete_save) and recorded the rest so the class is visible and cannot grow. The gate fails on any NEW entry and on any entry that is fixed but left here.",
+  "count": 45,
+  "nodes": {
+    "add_transition": [
+      "failure",
+      "success"
+    ],
+    "animator_parameter": [
+      "failure",
+      "success"
+    ],
+    "animator_set_trigger": [
+      "failure",
+      "success"
+    ],
+    "apply_force": [
+      "failure",
+      "success"
+    ],
+    "bind_ui_to_blackboard": [
+      "next"
+    ],
+    "camera_follow": [
+      "failure",
+      "following"
+    ],
+    "camera_look_at": [
+      "failure",
+      "looking"
+    ],
+    "camera_set_zoom": [
+      "failure",
+      "success"
+    ],
+    "camera_shake": [
+      "failure",
+      "shaking"
+    ],
+    "camera_stop_follow": [
+      "failure",
+      "success"
+    ],
+    "change_state": [
+      "changed",
+      "failure",
+      "invalid_transition"
+    ],
+    "close_dialog": [
+      "failure",
+      "success"
+    ],
+    "create_particle_system": [
+      "created",
+      "failure"
+    ],
+    "create_state_machine": [
+      "created",
+      "failure"
+    ],
+    "detect_pinch": [
+      "failure",
+      "no_pinch",
+      "pinched"
+    ],
+    "detect_swipe": [
+      "failure",
+      "no_swipe",
+      "swiped"
+    ],
+    "detect_touch": [
+      "failure",
+      "no_touch",
+      "touched"
+    ],
+    "distance_to_point": [
+      "calculated",
+      "failure"
+    ],
+    "emit_particles": [
+      "emitting",
+      "failure"
+    ],
+    "find_path": [
+      "failure",
+      "found"
+    ],
+    "follow_path": [
+      "failure",
+      "finished",
+      "following"
+    ],
+    "get_state": [
+      "failure",
+      "got_state"
+    ],
+    "get_ui_widget_property": [
+      "failure",
+      "success"
+    ],
+    "is_in_state": [
+      "failure",
+      "in_state",
+      "not_in_state"
+    ],
+    "is_key_pressed": [
+      "failure",
+      "not_pressed",
+      "pressed"
+    ],
+    "modify_collider": [
+      "failure",
+      "success"
+    ],
+    "modify_rigidbody": [
+      "failure",
+      "success"
+    ],
+    "pause_animation": [
+      "failure",
+      "success"
+    ],
+    "play_sound_fade": [
+      "failure",
+      "playing"
+    ],
+    "raycast": [
+      "hit",
+      "no_hit"
+    ],
+    "read_key_axis": [
+      "next"
+    ],
+    "set_collision_layer": [
+      "failure",
+      "success"
+    ],
+    "set_collision_mask": [
+      "failure",
+      "success"
+    ],
+    "set_dialog_choice": [
+      "failure",
+      "success"
+    ],
+    "set_pitch": [
+      "failure",
+      "success"
+    ],
+    "set_ui_visible": [
+      "next"
+    ],
+    "set_variable": [
+      "done"
+    ],
+    "set_volume": [
+      "failure",
+      "success"
+    ],
+    "show_dialog": [
+      "failure",
+      "success"
+    ],
+    "start_behavior_tree": [
+      "next"
+    ],
+    "stop_all_sounds": [
+      "failure",
+      "success"
+    ],
+    "stop_particles": [
+      "failure",
+      "stopped"
+    ],
+    "stop_path": [
+      "failure",
+      "stopped"
+    ],
+    "wait_dialog_choice": [
+      "chosen",
+      "failure",
+      "waiting"
+    ],
+    "wait_key_release": [
+      "failure",
+      "released",
+      "timeout",
+      "waiting"
+    ]
+  }
+}

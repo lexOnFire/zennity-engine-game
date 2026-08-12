@@ -57,6 +57,36 @@ FLOW_OUTPUT_SYNONYMS: Final[frozenset[str]] = frozenset({
 })
 
 
+#: Node-scoped legacy output ports, resolved only where the *asset itself*
+#: shows which branch was meant. The generic resolver deliberately refuses
+#: these -- a node with several semantic outcomes has no "continue" pin -- so
+#: each entry here carries its evidence rather than a guess.
+#:
+#: has_save.next: MainMenuLogic wires it into
+#: ``ui.set_widget_enabled {widget_name: "ContinueButton", enabled: true}``, and
+#: the node is named ``check_save``. Continue is enabled when a save exists, so
+#: "next" meant exec_exists. The opposite reading -- enable Continue when there
+#: is nothing to continue -- is not a coherent design.
+NODE_SCOPED_OUTPUT_ALIASES: Final[dict[str, dict[str, str]]] = {
+    "has_save": {"next": "exec_exists"},
+}
+
+
+def resolve_node_output_port(node_type: str, port: str, declared_flow_outputs) -> str:
+    """Contract-relative resolution, plus the node-scoped table above.
+
+    The node-scoped entry is consulted only when the port is not declared, and
+    the target must itself be declared -- so a stale entry cannot invent a pin.
+    """
+    if not port or port in declared_flow_outputs:
+        return port
+    scoped = NODE_SCOPED_OUTPUT_ALIASES.get(node_type, {})
+    target = scoped.get(port)
+    if target and target in declared_flow_outputs:
+        return target
+    return resolve_output_port(port, declared_flow_outputs)
+
+
 class AmbiguousPortAlias(Exception):
     """A legacy port could refer to more than one declared pin."""
 

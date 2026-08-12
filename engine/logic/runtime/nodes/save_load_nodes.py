@@ -37,10 +37,10 @@ def execute_save_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
             with open(f"{game.save_path}/{slot_name}.json", "w") as f:
                 json.dump(save_data, f, indent=2)
 
-        return ["saved"]
+        return ["exec_saved"]
     except Exception as e:
         print(f"Erro em save_game: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('load_game')
@@ -53,7 +53,7 @@ def execute_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         slot_name = str(properties.get("slot_name", "save_slot_1"))
 
         if not hasattr(runtime, "_save_slots"):
-            return ["no_save"]
+            return ["exec_no_save"]
 
         if slot_name not in runtime._save_slots:
             # Tentar carregar de arquivo
@@ -62,9 +62,9 @@ def execute_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
                     with open(f"{game.save_path}/{slot_name}.json", "r") as f:
                         save_data = json.load(f)
                 except:
-                    return ["no_save"]
+                    return ["exec_no_save"]
             else:
-                return ["no_save"]
+                return ["exec_no_save"]
         else:
             save_data = runtime._save_slots[slot_name]
 
@@ -87,10 +87,10 @@ def execute_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         runtime._store(node_id, "slot_name", slot_name)
         runtime._store(node_id, "loaded", True)
 
-        return ["loaded"]
+        return ["exec_loaded"]
     except Exception as e:
         print(f"Erro em load_game: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('delete_save')
@@ -113,10 +113,10 @@ def execute_delete_save(runtime, node: Mapping[str, Any], game: Any, dt: float) 
             except:
                 pass
 
-        return ["deleted"]
+        return ["exec_deleted"]
     except Exception as e:
         print(f"Erro em delete_save: {e}")
-        return ["failure"]
+        return ["exec_failure"]
 
 
 @registry.register_executor('has_save')
@@ -137,9 +137,9 @@ def execute_has_save(runtime, node: Mapping[str, Any], game: Any, dt: float) -> 
             has_save = os.path.exists(f"{game.save_path}/{slot_name}.json")
 
         if has_save:
-            return ["exists"]
+            return ["exec_exists"]
         else:
-            return ["not_exists"]
+            return ["exec_not_exists"]
     except Exception as e:
         print(f"Erro em has_save: {e}")
-        return ["failure"]
+        return ["exec_failure"]

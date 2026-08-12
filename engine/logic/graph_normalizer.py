@@ -11,7 +11,7 @@ from typing import Any
 from engine.logic.node_definitions.catalogue import resolve_node_id as _resolve_node_id
 from engine.logic.port_aliases import flow_pins as _flow_pins
 from engine.logic.port_aliases import resolve_input_port as _resolve_input_port
-from engine.logic.port_aliases import resolve_output_port as _resolve_output_port
+from engine.logic.port_aliases import resolve_node_output_port as _resolve_output_port
 
 _log = logging.getLogger(__name__)
 
@@ -50,6 +50,15 @@ _RENAMED_NODE_PROPERTIES: dict[str, dict[str, str]] = {
     # saved with "animation_name" is migrated here, once, at load -- the same
     # mechanism log_message already used, rather than a second fallback path.
     "play_animation": {"animation_name": "state"},
+    # PHASE 9 recovery item 6: the declared pin is "slot_name" and the real
+    # executors read it. The MainMenuLogic nodes were saved with "slot" by the
+    # stub executor that has now been removed -- it invented its own property
+    # name and defaulted to "autosave", so the slot an author picked in the
+    # Inspector never reached the save system.
+    "load_game": {"slot": "slot_name"},
+    "has_save": {"slot": "slot_name"},
+    "save_game": {"slot": "slot_name"},
+    "delete_save": {"slot": "slot_name"},
 }
 
 
@@ -230,7 +239,9 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             raw_from = str(raw_edge.get("from_port", raw_edge.get("from_pin", "next")))
             raw_to = str(raw_edge.get("to_port", raw_edge.get("to_pin", "in")))
             from_port = _resolve_output_port(
-                raw_from, _flow_pins(_definition_pins(node_types.get(source_node, ""), "outputs"))
+                node_types.get(source_node, ""),
+                raw_from,
+                _flow_pins(_definition_pins(node_types.get(source_node, ""), "outputs")),
             )
             to_port = _resolve_input_port(
                 raw_to, _flow_pins(_definition_pins(node_types.get(target_node, ""), "inputs"))

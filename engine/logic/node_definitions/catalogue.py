@@ -656,7 +656,10 @@ _RUNTIME_READ_PROPERTY_DEFAULTS: dict[str, dict[str, Any]] = {
     # in the palette, and it was invisible.
     "input_axis": {"negative": "A", "positive": "D"},
     "read_key_axis": {"negative": "A", "positive": "D"},
-    "load_game": {"slot": "autosave"},
+    # PHASE 9 recovery item 6: "slot" was the property the removed stub executor
+    # invented. The declared pin -- and what the real executor reads -- is
+    # slot_name, so declaring "slot" here put a dead field in the Inspector next
+    # to the live one. Saved graphs are migrated by _RENAMED_NODE_PROPERTIES.
     "sequence": {"outputs": 2},
     "set_ui_text": {"object_name": "", "widget_name": ""},
     "set_ui_progress_bar": {"max_value": 100.0, "object_name": "", "widget_name": ""},
