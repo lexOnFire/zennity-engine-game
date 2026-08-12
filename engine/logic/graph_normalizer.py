@@ -9,8 +9,20 @@ from copy import deepcopy
 from typing import Any
 
 from engine.logic.node_definitions.catalogue import resolve_node_id as _resolve_node_id
+from engine.logic.port_aliases import flow_pins as _flow_pins
+from engine.logic.port_aliases import resolve_input_port as _resolve_input_port
+from engine.logic.port_aliases import resolve_output_port as _resolve_output_port
 
 _log = logging.getLogger(__name__)
+
+
+def _definition_pins(node_type: str, key: str) -> list:
+    """Declared pins for *node_type*, empty when the type is unknown.
+
+    An unknown type has no contract to resolve against, so its ports are left
+    exactly as saved rather than guessed at.
+    """
+    return (NODE_DEFINITIONS.get(node_type) or {}).get(key, []) or []
 
 try:
     from engine.logic.graph_asset import (
@@ -126,6 +138,10 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
 
     nodes: list[dict[str, Any]] = []
     node_ids: set[str] = set()
+    # Node ids are resolved first, so port normalization below looks the pins up
+    # on the definition the node actually resolved to. Doing it the other way
+    # round would consult the wrong contract.
+    node_types: dict[str, str] = {}
     raw_nodes = source.get("nodes", [])
     if isinstance(raw_nodes, list):
         for index, raw_node in enumerate(raw_nodes):
@@ -145,6 +161,7 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             if node_id in node_ids:
                 node_id = uuid.uuid4().hex
             node_ids.add(node_id)
+            node_types[node_id] = node_type
             position = raw_node.get("position", [80.0 + (index % 4) * 230.0, 80.0 + (index // 4) * 130.0])
             if not isinstance(position, (list, tuple)) or len(position) < 2:
                 position = [80.0, 80.0]
@@ -206,12 +223,30 @@ def normalize_logic_graph(data: Mapping[str, Any] | None) -> dict[str, Any]:
             target_node = str(raw_edge.get("to_node", raw_edge.get("to", "")))
             if source_node not in node_ids or target_node not in node_ids or source_node == target_node:
                 continue
+            # PHASE 9 recovery item 5: legacy flow-port spellings resolve
+            # against the target node's own contract, once, at load. There is no
+            # global rename -- "in" is correct for 44 node types and wrong for 3,
+            # so only the node's declaration can say which is which.
+            raw_from = str(raw_edge.get("from_port", raw_edge.get("from_pin", "next")))
+            raw_to = str(raw_edge.get("to_port", raw_edge.get("to_pin", "in")))
+            from_port = _resolve_output_port(
+                raw_from, _flow_pins(_definition_pins(node_types.get(source_node, ""), "outputs"))
+            )
+            to_port = _resolve_input_port(
+                raw_to, _flow_pins(_definition_pins(node_types.get(target_node, ""), "inputs"))
+            )
+            if from_port != raw_from:
+                _log.debug("Legacy flow output: %s.%s -> %s",
+                           node_types.get(source_node, "?"), raw_from, from_port)
+            if to_port != raw_to:
+                _log.debug("Legacy flow input: %s.%s -> %s",
+                           node_types.get(target_node, "?"), raw_to, to_port)
             edges.append({
                 "id": str(raw_edge.get("id", "")).strip() or uuid.uuid4().hex,
                 "from_node": source_node,
-                "from_port": str(raw_edge.get("from_port", raw_edge.get("from_pin", "next"))),
+                "from_port": from_port,
                 "to_node": target_node,
-                "to_port": str(raw_edge.get("to_port", raw_edge.get("to_pin", "in"))),
+                "to_port": to_port,
                 "kind": str(raw_edge.get("kind", "flow")),
                 "order": _safe_int(raw_edge.get("order", edge_index), edge_index),
             })

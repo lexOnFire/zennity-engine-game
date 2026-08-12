@@ -1,5 +1,5 @@
 {
-  "_comment": "Orphan graph edges present at commit 477feee, BEFORE PHASE 9.5B Stage 2. Each entry is an edge naming a port the node's contract does not declare. These are asset-authoring bugs (graphs saved against node types that no longer exist, or that never existed), not node-system bugs -- Stage 2 deliberately does not fix them, it only proves it introduces no new ones. EnemyAILogic's get_position.position is the known issue documented separately and explicitly out of scope. PHASE 9 recovery item 2: MainMenuLogic gained two entries, 72 -> 74. They are not new breakage. The asset wires game.load_game.in and game.has_save.next; those ids had no port contract before node-id resolution existed, so node_port_definitions fell back to a generic in/next pair and the edges appeared to resolve. Resolving the ids onto load_game/has_save revealed that their real contracts declare exec / exec_loaded / exec_exists instead. Reconciling those pin names is port normalization, which is a later item; no asset was edited. PHASE 9 recovery item 4.2: play_animation.in appears in PlayerCombatLogic (1) and PlayerMovement (3). This is the EXPECTED BLOCKER for recovery item 5, not asset breakage: the canonical contract from animation_nodes names the entry pin 'exec', the four saved edges name it 'in', and reconciling legacy flow-port spellings is port normalization's job. The contract is correct and no asset was edited; item 5 makes these resolve again. Keys are repo-relative paths from item 4.2 on: three distinct assets are named PlayerMovement.zlogic and a file-name key made all three share one recorded list.",
+  "_comment": "Orphan graph edges present at commit 477feee, BEFORE PHASE 9.5B Stage 2. Each entry is an edge naming a port the node's contract does not declare. These are asset-authoring bugs (graphs saved against node types that no longer exist, or that never existed), not node-system bugs -- Stage 2 deliberately does not fix them, it only proves it introduces no new ones. EnemyAILogic's get_position.position is the known issue documented separately and explicitly out of scope. PHASE 9 recovery item 2: MainMenuLogic gained two entries, 72 -> 74. They are not new breakage. The asset wires game.load_game.in and game.has_save.next; those ids had no port contract before node-id resolution existed, so node_port_definitions fell back to a generic in/next pair and the edges appeared to resolve. Resolving the ids onto load_game/has_save revealed that their real contracts declare exec / exec_loaded / exec_exists instead. Reconciling those pin names is port normalization, which is a later item; no asset was edited. PHASE 9 recovery item 4.2: play_animation.in appears in PlayerCombatLogic (1) and PlayerMovement (3). This is the EXPECTED BLOCKER for recovery item 5, not asset breakage: the canonical contract from animation_nodes names the entry pin 'exec', the four saved edges name it 'in', and reconciling legacy flow-port spellings is port normalization's job. The contract is correct and no asset was edited; item 5 makes these resolve again. Keys are repo-relative paths from item 4.2 on: three distinct assets are named PlayerMovement.zlogic and a file-name key made all three share one recorded list. PHASE 9 recovery item 5: 76 -> 72. Port normalization resolved 6 edges against their node's own contract -- play_animation.in -> exec (4), load_game.in -> exec (1), start_behavior_tree.in -> exec (1) -- and created none. The play_animation entries are the blocker item 4.2 recorded deliberately, now cleared. has_save.next is NOT resolved and stays here on purpose: that node declares exec_exists / exec_not_exists / exec_failure, so 'next' names no outcome and attaching it to one would pick a behaviour silently. Its executor returns ['false'], which the contract does not declare either -- a contract/executor mismatch of the kind item 4.2 fixed for the animation nodes, and not something port normalization can repair.",
   "orphan_edges_by_asset": {
     "Assets/Logic/BossAILogic.zlogic": [
       "get_position.in>in",
@@ -65,12 +65,10 @@
       "if_else.value>in"
     ],
     "Assets/Logic/MainMenuLogic.zlogic": [
-      "has_save.next>out",
-      "load_game.in>in"
+      "has_save.next>out"
     ],
     "Assets/Logic/PlayerCombatLogic.zlogic": [
       "destroy_object.next>out",
-      "play_animation.in>in",
       "sequence.then_0>in",
       "sequence.then_1>in",
       "subtract_number.in>in"
@@ -96,14 +94,8 @@
       "ui_set_text.exec>out",
       "ui_set_text.target>in",
       "ui_set_text.text>in"
-    ],
-    "Assets/Logic/ZennityRun/PlayerMovement.zlogic": [
-      "play_animation.in>in"
-    ],
-    "Assets/Logic/tocaLogic.zlogic": [
-      "start_behavior_tree.in>in"
     ]
   },
   "total_assets_with_orphans": 11,
-  "total_orphan_edges": 76
+  "total_orphan_edges": 72
 }
