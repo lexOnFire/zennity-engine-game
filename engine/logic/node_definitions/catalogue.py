@@ -39,6 +39,7 @@ from pathlib import Path
 from types import MappingProxyType, ModuleType
 from typing import Any, Mapping
 
+from ..contracts import ExecutionModel, normalize_execution_model, resolve_execution_model
 from .registry import get_registry
 
 _log = logging.getLogger(__name__)
@@ -476,6 +477,25 @@ def _definition_to_legacy(definition: Any) -> dict[str, Any]:
         "inputs": [_pin_tuple(pin) for pin in list(getattr(definition, "inputs", []))],
         "outputs": [_pin_tuple(pin) for pin in list(getattr(definition, "outputs", []))],
         "properties": properties,
+        # PHASE 9 recovery item 3. These three were declared and then dropped
+        # here, which is the quietest bug in the system: nothing fails, the
+        # value simply stops existing downstream. execution_model is emitted
+        # ONLY when actually declared -- an unconditional default would make
+        # every node look explicitly classified and suppress derivation for the
+        # entire catalogue. test_projection_fidelity.py makes the class of bug
+        # impossible to reintroduce for any field, not just these.
+        **(
+            {"execution_model": declared_model}
+            if (declared_model := normalize_execution_model(
+                getattr(definition, "execution_model", None)))
+            else {}
+        ),
+        **(
+            {"dynamic_exec_prefixes": tuple(declared_prefixes)}
+            if (declared_prefixes := getattr(definition, "dynamic_exec_prefixes", ()))
+            else {}
+        ),
+        "deprecated": bool(getattr(definition, "deprecated", False)),
     }
 
 
@@ -623,29 +643,28 @@ _EXPLICIT_METADATA: dict[str, dict[str, str]] = {
 #: Node types whose ports are expanded at authoring time from node properties.
 #: ``node_port_definitions()`` in :mod:`engine.logic.graph_asset` owns the
 #: expansion; the catalogue only records that the static schema is a floor.
-DYNAMIC_PORT_NODES: Mapping[str, tuple[str, ...]] = MappingProxyType({
-    "sequence": ("then_",),
-    "create_prefab": ("param_",),
+#: Nodes whose pins expand at runtime.  Seeded for the ones with no declarative
+#: definition to carry the information; where a NodeDefinition declares
+#: ``dynamic_exec_prefixes`` the declaration wins, and _build_catalogue merges
+#: it in.  Two tables for one fact is the failure this phase keeps finding.
+_DYNAMIC_PORT_SEED: dict[str, tuple[str, ...]] = {
     "get_prefab_parameter": (),
     "subgraph_input": (),
     "subgraph_return": (),
     "call_subgraph": (),
-})
+}
+
+DYNAMIC_PORT_NODES: Mapping[str, tuple[str, ...]] = MappingProxyType(dict(_DYNAMIC_PORT_SEED))
 
 
 def _execution_model(inputs: list[Any], outputs: list[Any]) -> str:
-    """Classify a node from its pins alone -- no separate hand-maintained table."""
-    flow_in = [p for p in inputs if isinstance(p, (list, tuple)) and str(p[1]) in ("flow", "exec")]
-    flow_out = [p for p in outputs if isinstance(p, (list, tuple)) and str(p[1]) in ("flow", "exec")]
-    if not flow_in and not flow_out:
-        return "pure"
-    if not flow_in:
-        return "event"
-    if not flow_out:
-        return "terminal"
-    if len(flow_out) > 1:
-        return "branch"
-    return "flow"
+    """Structural fallback classification.
+
+    Kept as a thin wrapper so existing callers keep working; the vocabulary and
+    the rule now live in :mod:`engine.logic.contracts`. It used to return a
+    second vocabulary (pure/event/flow/branch) that nothing translated.
+    """
+    return resolve_execution_model(None, inputs, outputs)
 
 
 # ---------------------------------------------------------------------------
@@ -851,10 +870,25 @@ def _build_catalogue() -> None:
     # until both claimants have been seen, so the check cannot live inside the
     # loop above.
     registry.assert_no_duplicate_definitions()
+
+    # Dynamic pin families come from the declarations that own them, falling
+    # back to the seed for nodes with no declarative definition.
+    global DYNAMIC_PORT_NODES
+    merged_prefixes = dict(_DYNAMIC_PORT_SEED)
+    for node_id, definition in definitions.items():
+        declared_prefixes = definition.get("dynamic_exec_prefixes")
+        if declared_prefixes:
+            merged_prefixes[node_id] = tuple(declared_prefixes)
+    DYNAMIC_PORT_NODES = MappingProxyType(merged_prefixes)
+    # Declared beats derived; derivation only fills the gap. The declaration
+    # carries intent the pins cannot: restart_scene has a flow output and is
+    # still TERMINAL, because the scene it would continue into is gone.
     for node_id, schema in port_schema.items():
-        registry.set_execution_model(
-            node_id, _execution_model(schema["inputs"], schema["outputs"])
-        )
+        declared = (definitions.get(node_id) or {}).get("execution_model")
+        model = resolve_execution_model(declared, schema["inputs"], schema["outputs"])
+        registry.set_execution_model(node_id, model)
+        if node_id in definitions:
+            definitions[node_id]["execution_model"] = model
 
 
 def ensure_catalogue_loaded() -> None:

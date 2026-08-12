@@ -83,6 +83,11 @@ class SequenceNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="sequence",
+        # PHASE 9 recovery item 3: the pin family this node expands at runtime
+        # (then_0, then_1, ...). Declared here, on the node that owns it, so
+        # DYNAMIC_PORT_NODES stops being a second table describing the same
+        # fact -- the catalogue now derives it from the declarations.
+        dynamic_exec_prefixes=("then_",),
         title_key="Sequência",
         category_key="Flow",
         description_key="Executa múltiplas ramos um após o outro",

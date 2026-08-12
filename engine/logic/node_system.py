@@ -31,9 +31,13 @@ from .node_definitions.catalogue import (
     DYNAMIC_PORT_NODES,
     all_aliases,
     canonical_node_id,
+    definitions_view,
     ensure_catalogue_loaded,
     port_schema_view,
 )
+from . import node_definitions as _node_definitions_pkg  # noqa: F401
+from .contracts import ExecutionModel
+from .node_definitions import catalogue as _catalogue
 from .node_definitions.registry import get_registry
 from .runtime.node_loader import (
     RUNTIME_NODE_MODULES,
@@ -89,7 +93,12 @@ def describe_node(node_id: str) -> Mapping[str, Any]:
             "definition_owner_module": registry.definition_owner(node_id),
             "runtime_owner_module": registry.runtime_owner(node_id),
             "execution_model": registry.execution_model(node_id),
-            "dynamic_exec_prefixes": tuple(DYNAMIC_PORT_NODES.get(node_id, ())),
+            "deprecated": bool(definitions_view().get(node_id, {}).get("deprecated", False)),
+            # Read through the module so the merged table built at catalogue
+            # time is what answers, not the seed captured at import time.
+            "dynamic_exec_prefixes": tuple(
+                _catalogue.DYNAMIC_PORT_NODES.get(node_id, ())
+            ),
             "aliases": _aliases_for(node_id),
             "has_executor": node_id in handler_registry.executors,
             "has_evaluator": node_id in handler_registry.evaluators,
@@ -154,6 +163,47 @@ def validate_node_system() -> list[str]:
     return violations
 
 
+def classify_runtime_coverage() -> dict[str, list[str]]:
+    """Group palette nodes by whether the runtime backs them, using their model.
+
+    PHASE 9 recovery item 3. "Definition with no executor" is not one situation:
+
+    * EVENT_SOURCE legitimately has none -- the frame loop dispatches it, and
+      demanding an executor would have needed an ever-drifting list of event
+      node ids, which is exactly what execution_model exists to avoid;
+    * PURE_DATA is resolved by an evaluator;
+    * DEPRECATED is a decision already recorded on the definition;
+    * anything else with no runtime at all is a real gap.
+
+    Classification is by declared/derived model and by the deprecated flag. No
+    node id appears anywhere in this function on purpose.
+    """
+    ensure_catalogue_loaded()
+    load_runtime_node_modules()
+    from .runtime.registry import registry as handler_registry
+
+    registry = get_registry()
+    definitions = definitions_view()
+    grouped: dict[str, list[str]] = {
+        "backed": [], "event_source_without_executor": [],
+        "deprecated_without_runtime": [], "missing_runtime": [],
+    }
+    for node_id in sorted(definitions):
+        has_runtime = (
+            node_id in handler_registry.executors or node_id in handler_registry.evaluators
+        )
+        if has_runtime:
+            grouped["backed"].append(node_id)
+            continue
+        if definitions[node_id].get("deprecated"):
+            grouped["deprecated_without_runtime"].append(node_id)
+        elif registry.execution_model(node_id) == ExecutionModel.EVENT_SOURCE.value:
+            grouped["event_source_without_executor"].append(node_id)
+        else:
+            grouped["missing_runtime"].append(node_id)
+    return grouped
+
+
 def get_node_system_status() -> Mapping[str, Any]:
     """Full, Qt-free snapshot of the node system for diagnostics and CI."""
     ensure_catalogue_loaded()
@@ -189,6 +239,9 @@ def get_node_system_status() -> Mapping[str, Any]:
                     for node_id in sorted(definitions)
                     if _aliases_for(node_id)
                 }
+            ),
+            "runtime_coverage": MappingProxyType(
+                {k: tuple(v) for k, v in classify_runtime_coverage().items()}
             ),
             "execution_models": MappingProxyType(
                 {node_id: registry.execution_model(node_id) for node_id in sorted(schema)}

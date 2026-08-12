@@ -60,17 +60,33 @@ def test_status_is_importable_without_qt():
 def test_describe_node_answers_ownership():
     described = describe_node("move_by")
     assert described["exists"]
-    assert described["execution_model"] == "flow"
+    # PHASE 9 recovery item 3 unified the vocabulary onto ExecutionModel
+    # (action / event_source / pure_data / terminal). "flow" was the derived
+    # classifier's spelling for the same thing, from a second vocabulary that
+    # nothing translated.
+    assert described["execution_model"] == "action"
     assert described["runtime_owner_module"] == "engine.logic.runtime.nodes.movement_nodes"
     assert described["has_executor"]
     assert ("in", "flow") in described["inputs"]
 
 
 def test_describe_node_reports_execution_models():
-    assert describe_node("event_update")["execution_model"] == "event"
-    assert describe_node("if_else")["execution_model"] == "branch"
-    assert describe_node("add_number")["execution_model"] == "pure"
+    assert describe_node("event_update")["execution_model"] == "event_source"
+    assert describe_node("add_number")["execution_model"] == "pure_data"
     assert describe_node("destroy_object")["execution_model"] == "terminal"
+    # if_else used to report "branch". The canonical vocabulary has no such
+    # member: branching is how an action continues, not a different kind of
+    # node, and nothing ever consumed the distinction.
+    assert describe_node("if_else")["execution_model"] == "action"
+
+    from engine.logic.contracts import CANONICAL_MODELS
+
+    outside = {
+        node_id: model
+        for node_id, model in get_node_system_status()["execution_models"].items()
+        if model not in CANONICAL_MODELS
+    }
+    assert not outside, f"models outside {sorted(CANONICAL_MODELS)}: {outside}"
 
 
 def test_describe_node_reports_aliases():

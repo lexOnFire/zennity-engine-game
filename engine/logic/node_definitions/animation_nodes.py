@@ -168,6 +168,12 @@ class AnimateValueNode:
 
     __node_definition__ = NodeDefinition(
         id="animate_value",
+        # PHASE 9 recovery item 3, revalidated on this branch: no executor, no
+        # evaluator, and 0 uses across every shipping .zlogic. Stage 1 declared
+        # the same thing. Marked rather than deleted -- the definition documents
+        # an intent that was never implemented -- and the flag is what makes the
+        # validator report it as deprecated instead of as a missing runtime.
+        deprecated=True,
         title_key="Animar Valor (Lerp)",
         category_key="Animation",
         description_key="Anima uma propriedade de A para B com duração e easing",
@@ -296,6 +302,8 @@ class WaitUntilConditionNode:
 
     __node_definition__ = NodeDefinition(
         id="wait_until_condition",
+        # Same evidence as animate_value: no runtime of any kind, 0 asset uses.
+        deprecated=True,
         title_key="Aguardar Até Condição",
         category_key="Flow",
         description_key="Pausa execução até condição ser verdadeira ou timeout",

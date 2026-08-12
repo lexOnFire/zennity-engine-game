@@ -30,6 +30,8 @@ class CreatePrefabNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="create_prefab",
+        # Exposed prefab parameters become param_<name> pins at runtime.
+        dynamic_exec_prefixes=("param_",),
         title_key="Criar Prefab",
         category_key="Objects",
         description_key="Instancia um prefab na cena",
