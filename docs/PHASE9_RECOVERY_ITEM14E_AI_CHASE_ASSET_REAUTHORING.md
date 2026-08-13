@@ -142,21 +142,37 @@ proved only that it does not block movement.
 | `animator.set_trigger` | animation not implemented | out (declared debt) |
 | `variable.increment` | no canonical increment node; cooldown logic | out |
 
-## Manual acceptance — required
+## Manual acceptance — Enemy PASSED
 
-Automated status is complete; gameplay is not signed off. Steps:
+Played by the author in `Level1.zscene`. Result, in their words: the enemies
+follow when they see the player, stop following once the player leaves the
+detection field, stop on reaching the player, and do not push or jitter.
 
-1. Open `Assets/Scenes/Level1.zscene` (three Enemies).
-2. Press Play.
-3. Walk the Player towards an Enemy until inside `detection_range` (300).
-4. Confirm it starts moving and moves **towards** the Player.
-5. Walk away — confirm it follows, and stops once outside detection.
-6. Approach until inside `attack_range` (48) — confirm it stops.
-7. Confirm it does not push through or jitter on the Player.
-8. Confirm the speed looks like ~100 px/s.
-9. Open `Assets/Scenes/Level2.zscene` and repeat for the Boss (speed 80,
-   detection 500, attack 72).
-10. Stop, then Play again — confirm behaviour repeats from a clean state.
+| step | result |
+|---|---|
+| starts moving inside `detection_range` (300) | **PASS** |
+| moves towards the player | **PASS** |
+| stops once outside detection | **PASS** |
+| stops inside `attack_range` (48) | **PASS** |
+| no pushing, no jitter at the boundary | **PASS** |
 
-Expect **no animation change**: enemies will chase without a run/idle
-transition. That is the declared debt above, not a regression from this item.
+The last row was the open risk. The automated test only proves the chase settles
+at 46.67 against a 48 limit; whether a step of 1.67 px looks like a stable stop
+or a one-frame tremor is not something a test can answer. It stops cleanly.
+
+Worth recording plainly: this chase had **never run**. No flow edge reached any
+branch node, and the chain went through three node types the engine does not
+have. This playtest is the first time it executed at all.
+
+### Still unconfirmed
+
+- **Boss** (`Level2.zscene`, speed 80, detection 500, attack 72). The thresholds
+  differ enough from the Enemy's that the feel may differ; the automated
+  measurements pass identically, but no one has played it.
+- **Stop → Play** repeat from a clean state.
+
+Expect **no animation change**: enemies chase without a run/idle transition.
+That is the declared debt above, not a regression from this item.
+
+Player movement is a separate matter and was broken for an unrelated reason —
+see item 15, which restored it after this item shipped.
