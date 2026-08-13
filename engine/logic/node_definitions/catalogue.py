@@ -252,11 +252,17 @@ _EXPLICIT_PORT_CONTRACTS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "get_position": {"inputs": [("target", "object")], "outputs": [("x", "number"), ("y", "number")]},
     # One entry: this key was declared TWICE with different pins and the second
     # silently won, which is how delta_x/delta_y reached the palette at all.
-    # ``velocity`` stays declared -- BossAILogic and EnemyAILogic wire
-    # multiply_number.value into it, so dropping the pin would orphan two
-    # shipping edges. The executor does not read it; that is recorded debt, not
-    # something to hide by deleting the port the assets use.
-    "move_by": {"inputs": [("in", "flow"), ("target", "object"), ("velocity", "vector2"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
+    #
+    # ``velocity`` was dropped by PHASE 9 recovery item 14F. It arrived in
+    # b19f603e to quiet a validator -- "register port definitions" -- and no
+    # commit ever made an executor read it. Item 9 kept it because BossAILogic
+    # and EnemyAILogic wired multiply_number.value into it, so removing the pin
+    # would have orphaned two shipping edges; item 14E reauthored both onto
+    # ``x``/``y``, which retired that reason. With no producer and no consumer
+    # it was an authorable field that moved nothing, and the Inspector offered
+    # it as though it did. No alias replaces it: there is no proven semantics to
+    # migrate to, and inventing one would be worse than removing it.
+    "move_by": {"inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
     "start_continuous_motion": {
         "inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")],
         "outputs": [("next", "flow"), ("movement", "movement")],

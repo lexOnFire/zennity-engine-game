@@ -192,9 +192,16 @@ def test_the_vector_contracts_exist_but_the_nodes_do_not():
     an evaluator. So the vector API was specified and never built, which is why
     ``move_by.velocity`` could be typed ``vector2`` with nothing able to fill it.
 
-    Recorded rather than acted on: it does not change the decision, because the
+    Recorded rather than acted on: it did not change the decision, because the
     two port mismatches on ``get_position`` and ``if_else`` would still dangle
     and ``multiply_number`` would still reject a vector.
+
+    PHASE 9 recovery item 14F closed the ``move_by`` half of this find: the
+    ``vector2``-typed ``velocity`` pin is gone, so no live node offers a socket
+    the unbuilt vector API was supposed to fill. The ``vector2`` and
+    ``normalize_vector`` *contracts* are still in the port table with no
+    definition behind them -- that is the remaining half, and it is left as
+    recorded debt rather than swept up here.
     """
     producers = sorted(
         node_id for node_id, ports in NODE_PORT_DEFINITIONS.items()
@@ -205,9 +212,11 @@ def test_the_vector_contracts_exist_but_the_nodes_do_not():
         assert node_id not in NODE_DEFINITIONS, f"{node_id} gained a definition"
         assert node_id not in registry.executors
         assert node_id not in registry.evaluators
-    assert any(
+    # Inverted by item 14F: move_by no longer offers a vector2 socket.
+    assert not any(
         kind == "vector2" for _n, kind in NODE_PORT_DEFINITIONS["move_by"]["inputs"]
     )
+    assert "velocity" not in {n for n, _k in NODE_PORT_DEFINITIONS["move_by"]["inputs"]}
 
 
 def test_the_scalar_pieces_the_next_item_will_use_all_exist():

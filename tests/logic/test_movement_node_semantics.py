@@ -160,11 +160,14 @@ def test_displacement_is_linear_in_speed():
 def test_no_authorable_property_is_ignored_by_the_executor(node_type: str):
     """The rule item 9 exists for: a field the Inspector offers must do something.
 
-    ``velocity`` is the one recorded exception, asserted separately so it stays
-    a known gap rather than an unnoticed one.
+    ``velocity`` used to be carved out of this check -- the one recorded
+    exception, kept visible so it stayed a known gap. PHASE 9 recovery item 14F
+    removed the pin instead, so the carve-out went with it and the rule is now
+    unconditional: every authorable field on these nodes is read by their
+    executor, with no name spelled into the gate.
     """
     authorable = set(NODE_DEFINITIONS[node_type].get("properties", {}))
-    ignored = authorable - _executor_reads(node_type) - {"velocity"}
+    ignored = authorable - _executor_reads(node_type)
     assert not ignored, f"{node_type} offers {sorted(ignored)} and reads none of them"
 
 
@@ -217,20 +220,39 @@ def test_the_labels_no_longer_promise_a_displacement():
     assert "Delta" not in labels.get("y", "")
 
 
-def test_the_velocity_pin_is_declared_but_unread():
-    """A recorded gap, deliberately not fixed in item 9.
+def test_the_velocity_pin_is_gone():
+    """Item 9 recorded this gap; item 14F closed it, and the check is inverted.
 
-    ``BossAILogic`` and ``EnemyAILogic`` wire ``multiply_number.value`` into
-    ``move_by.velocity`` and the executor reads ``x``/``y`` instead, so the
-    computed value is discarded -- two enemies calculate a movement and stand
-    still. Deleting the pin would orphan two shipping edges; reading it would
-    make those enemies begin to move, which is a gameplay decision. Asserted as
-    it stands so changing it either way is deliberate.
+    It used to assert the opposite -- that ``velocity`` was declared and that
+    the executor did not read it. That was true and worth pinning: BossAILogic
+    and EnemyAILogic wired ``multiply_number.value`` into it while the executor
+    read ``x``/``y``, so two enemies computed a movement and stood still.
+    Deleting the pin then would have orphaned two shipping edges; reading it
+    would have been a gameplay decision item 9 was not allowed to take.
+
+    Item 14E reauthored both graphs onto ``x``/``y``, leaving a port with no
+    producer and no consumer, and item 14F removed it at its only source -- the
+    projection table, since the declarative ``MoveByNode`` never had it. The
+    executor is untouched: it read ``x``/``y`` before and reads them now.
     """
-    assert "velocity" in {
+    assert "velocity" not in {
         name for name, _kind in NODE_PORT_DEFINITIONS["move_by"]["inputs"]
     }
+    assert "velocity" not in NODE_DEFINITIONS["move_by"].get("properties", {})
     assert "velocity" not in _executor_reads("move_by")
+
+    # No alias took its place: there was no proven semantics to migrate to,
+    # and a lie -- velocity -> x, say -- would be worse than the removal.
+    from engine.logic import port_aliases
+
+    assert port_aliases.resolve_input_port("velocity", ["in"]) == "velocity"
+    from engine.logic.node_definitions.catalogue import NODE_ID_ALIASES
+
+    assert "velocity" not in NODE_ID_ALIASES
+
+    # The pins that do work are still there.
+    inputs = {name for name, _kind in NODE_PORT_DEFINITIONS["move_by"]["inputs"]}
+    assert {"in", "target", "x", "y"} <= inputs
 
 
 def test_no_graph_wires_velocity_any_more():
@@ -316,5 +338,5 @@ def test_pointing_the_executor_at_another_field_makes_the_gate_fail(monkeypatch)
 
     monkeypatch.setitem(registry.executors, "move_by", _drifted)
     authorable = set(NODE_DEFINITIONS["move_by"].get("properties", {}))
-    ignored = authorable - _executor_reads("move_by") - {"velocity"}
+    ignored = authorable - _executor_reads("move_by")
     assert ignored, "the ignored-field check cannot fail, so it proves nothing"
