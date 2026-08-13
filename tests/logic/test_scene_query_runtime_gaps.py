@@ -365,18 +365,18 @@ def _model(node_id: str) -> str:
     )
 
 
-def test_the_coverage_classifier_is_coarser_than_the_execution_model():
-    """``has_runtime`` accepts an evaluator for an ACTION node.
+def test_no_action_node_is_backed_by_an_evaluator_alone():
+    """Item 10 recorded this gap; item 11 closed it.
 
-    Item 10's mutation test exposed this: dropping ``find_nearest_object``'s
-    executor left it "backed" because the evaluator remained, even though an
-    ACTION node's flow ports can only fire from an executor.
+    ``has_runtime`` used to accept an evaluator for an ACTION node, and item
+    10's mutation test exposed it: dropping ``find_nearest_object``'s executor
+    left it "backed" because the evaluator remained. Applying the model strictly
+    found two nodes hiding behind that -- ``find_tag`` and
+    ``get_progress_bar_value`` -- and item 11 restored both executors and made
+    the classifier consult ``execution_model``.
 
-    Applying the model strictly finds exactly two more nodes -- ``find_tag`` and
-    ``get_progress_bar_value``, both ACTION with an evaluator and no executor,
-    so both have flow pins that never fire. They are out of item 10's scope
-    (section 24: incidental gaps are recorded, not fixed), and pinning the set
-    here means a third one cannot appear unnoticed.
+    Asserted as empty rather than deleted: an ACTION node that loses its
+    executor tomorrow fails here, which is the whole reason the check exists.
     """
     strict_gaps = sorted(
         node_id for node_id in NODE_DEFINITIONS
@@ -385,7 +385,7 @@ def test_the_coverage_classifier_is_coarser_than_the_execution_model():
         and node_id not in registry.executors
         and node_id in registry.evaluators
     )
-    assert strict_gaps == ["find_tag", "get_progress_bar_value"], strict_gaps
+    assert strict_gaps == [], strict_gaps
 
 
 def test_neither_item_10_node_is_among_those():

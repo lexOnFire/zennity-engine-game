@@ -361,3 +361,23 @@ def evaluate_get_progress_bar_value(runtime, node_id: str, port: str, node: Mapp
         # Service não disponível — fallback direto
         val = _fetch_progress_bar_value(runtime, widget_name, game)
         return runtime._store(node_id, "value", val)
+
+
+@registry.register_executor('get_progress_bar_value')
+def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Lê o valor e continua o fluxo.
+
+    PHASE 9 recovery item 11 -- restaurado da linhagem em que foi escrito
+    (``a80b1be``), que não é ancestral desta branch. O node declara ``in``/
+    ``next`` e só tinha evaluator, e a cobertura o dava por atendido porque
+    aceitava um evaluator para um ACTION.
+
+    Dívida registrada, não resolvida aqui: a NodeDefinition declarativa promete
+    ``exec_success`` / ``exec_not_found`` / ``exec_failure``, enquanto o contrato
+    efetivo -- e o único asset que usa o node -- falam ``next``. Nada jamais
+    retornou os três ramos. Removê-los é decisão de contrato de authoring, e
+    apagar ``next`` orfanaria a edge que existe hoje.
+    """
+    node_id = str(node['id'])
+    evaluate_get_progress_bar_value(runtime, node_id, "value", node, game, dt, set())
+    return ["next"]

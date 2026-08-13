@@ -162,17 +162,39 @@ def validate_node_system() -> list[str]:
     return violations
 
 
+def _runtime_required(model: str) -> str:
+    """Which registry has to back a node with this execution model.
+
+    PHASE 9 recovery item 11. ``executor or evaluator`` was not a definition of
+    coverage, it was a definition of *something exists*: an ACTION declares flow
+    pins, and only an executor can return them, so an evaluator satisfied the
+    check while the node's flow was still unbacked.
+
+    Structural on purpose -- the answer comes from the model, never from a node
+    id, so a node added tomorrow is judged by the contract it declares.
+    """
+    if model == ExecutionModel.PURE_DATA.value:
+        return "evaluators"
+    if model == ExecutionModel.EVENT_SOURCE.value:
+        # The frame loop dispatches these; demanding an executor would need the
+        # drifting list of event ids that execution_model exists to abolish.
+        return ""
+    # ACTION and TERMINAL both continue (or deliberately stop) flow, and both
+    # do it by returning ports from an executor.
+    return "executors"
+
+
 def classify_runtime_coverage() -> dict[str, list[str]]:
     """Group palette nodes by whether the runtime backs them, using their model.
 
-    PHASE 9 recovery item 3. "Definition with no executor" is not one situation:
+    PHASE 9 recovery item 3, corrected by item 11. "Definition with no executor"
+    is not one situation:
 
-    * EVENT_SOURCE legitimately has none -- the frame loop dispatches it, and
-      demanding an executor would have needed an ever-drifting list of event
-      node ids, which is exactly what execution_model exists to avoid;
+    * EVENT_SOURCE legitimately has none -- the frame loop dispatches it;
     * PURE_DATA is resolved by an evaluator;
     * DEPRECATED is a decision already recorded on the definition;
-    * anything else with no runtime at all is a real gap.
+    * ACTION and TERMINAL need an executor, and an evaluator is not a
+      substitute: their flow ports can only be returned by one.
 
     Classification is by declared/derived model and by the deprecated flag. No
     node id appears anywhere in this function on purpose.
@@ -188,16 +210,17 @@ def classify_runtime_coverage() -> dict[str, list[str]]:
         "deprecated_without_runtime": [], "missing_runtime": [],
     }
     for node_id in sorted(definitions):
-        has_runtime = (
-            node_id in handler_registry.executors or node_id in handler_registry.evaluators
-        )
+        model = registry.execution_model(node_id)
+        required = _runtime_required(model)
+        has_runtime = not required or node_id in getattr(handler_registry, required)
         if has_runtime:
-            grouped["backed"].append(node_id)
+            if required:
+                grouped["backed"].append(node_id)
+            else:
+                grouped["event_source_without_executor"].append(node_id)
             continue
         if definitions[node_id].get("deprecated"):
             grouped["deprecated_without_runtime"].append(node_id)
-        elif registry.execution_model(node_id) == ExecutionModel.EVENT_SOURCE.value:
-            grouped["event_source_without_executor"].append(node_id)
         else:
             grouped["missing_runtime"].append(node_id)
     return grouped

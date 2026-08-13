@@ -272,6 +272,24 @@ def executor_output_failures() -> list[str]:
     return failures
 
 
+def runtime_coverage_failures() -> list[str]:
+    """Nodes whose execution model demands a runtime they do not have.
+
+    PHASE 9 recovery item 11. Consumes ``classify_runtime_coverage`` rather than
+    restating the rule: one structural classification, read by the boot
+    snapshot and by this gate, so the two cannot drift apart.
+    """
+    from engine.logic.node_system import classify_runtime_coverage
+
+    coverage = classify_runtime_coverage()
+    return [
+        f"{node_id!r} declares a contract its execution model cannot back: "
+        "an ACTION or TERMINAL node needs an executor, a PURE_DATA node needs "
+        "an evaluator"
+        for node_id in coverage["missing_runtime"]
+    ]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true", help="emit the snapshot as JSON")
@@ -300,6 +318,7 @@ def main(argv: list[str] | None = None) -> int:
         failures.extend(alias_failures())
     if args.ci:
         failures.extend(executor_output_failures())
+        failures.extend(runtime_coverage_failures())
 
     if args.parity or args.ci:
         plain = _run_probe(boot_provider=False)

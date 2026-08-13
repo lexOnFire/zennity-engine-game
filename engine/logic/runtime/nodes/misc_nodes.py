@@ -174,6 +174,25 @@ def evaluate_self_object(runtime, node_id: str, port: str, node: Mapping[str, An
     value = game
     return value
 
+@registry.register_executor('find_tag')
+def execute_find_tag(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Resolve o objeto e continua o fluxo.
+
+    PHASE 9 recovery item 11 -- restaurado da linhagem Stage 1, que não é
+    ancestral desta branch. O node declara pinos de fluxo ``in``/``next`` e só
+    tinha evaluator: a cobertura o dava por atendido porque aceitava um
+    evaluator para um ACTION, e a continuação só funcionava por acidente, pelo
+    ``return ["next"]`` que ``_execute`` usa quando não há executor nenhum.
+
+    Guardar o objeto aqui também evita resolver a mesma tag duas vezes quando a
+    saída de dados é lida depois.
+    """
+    node_id = str(node['id'])
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    runtime._store(node_id, "object", game.find(str(properties.get("tag", "Player"))))
+    return ["next"]
+
+
 @registry.register_evaluator('find_tag')
 def evaluate_find_tag(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
     node_type = str(node.get('type'))
