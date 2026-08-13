@@ -152,6 +152,8 @@ def alias_failures() -> list[str]:
     )
     from engine.logic.graph_asset import NODE_PORT_DEFINITIONS
 
+    from engine.logic.node_definitions.catalogue import all_aliases
+
     ensure_catalogue_loaded()
     failures = list(validate_node_id_aliases(set(NODE_DEFINITIONS)))
     for alias in NODE_ID_ALIASES:
@@ -162,6 +164,24 @@ def alias_failures() -> list[str]:
             )
         if alias in NODE_PORT_DEFINITIONS:
             failures.append(f"alias {alias!r} has its own port contract")
+
+    # PHASE 9 recovery item 12. The class of bug ``variable.set`` belonged to:
+    # a diagnostic naming an alias that the resolver cannot resolve. Whatever
+    # the engine reports as an alias, every subsystem must agree what it
+    # resolves to -- so the report is checked against the resolver rather than
+    # trusted.
+    for canonical, sources in all_aliases().items():
+        for source in sources:
+            resolved = resolve_node_id(source)
+            if resolved != canonical:
+                failures.append(
+                    f"{source!r} is reported as an alias of {canonical!r} but "
+                    f"resolve_node_id gives {resolved!r}; one of them is lying"
+                )
+        if canonical not in NODE_DEFINITIONS:
+            failures.append(
+                f"aliases resolve onto {canonical!r}, which has no definition"
+            )
     return failures
 
 

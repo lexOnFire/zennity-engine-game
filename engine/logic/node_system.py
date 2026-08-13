@@ -69,6 +69,24 @@ def _aliases_for(node_id: str) -> tuple[str, ...]:
     return all_aliases().get(node_id, ())
 
 
+def _migration_ids_for(node_id: str) -> tuple[str, ...]:
+    """Pre-1.0 visual-script types that migrate onto ``node_id``.
+
+    Reported apart from ``aliases`` because it is a different mechanism: these
+    ids are rewritten when a legacy-format document is loaded, and they are not
+    resolvable by ``resolve_node_id``. Some of the map's targets do not exist as
+    definitions at all -- the migration degrades on purpose.
+    """
+    try:
+        from .legacy_visual_script import LEGACY_NODE_TYPES
+    except Exception:  # pragma: no cover - the migration module is optional
+        return ()
+    return tuple(sorted(
+        source for source, target in LEGACY_NODE_TYPES.items()
+        if target == node_id and source not in _catalogue.NODE_ID_ALIASES
+    ))
+
+
 def describe_node(node_id: str) -> Mapping[str, Any]:
     """Read-only description of where a node comes from and what it is.
 
@@ -98,7 +116,16 @@ def describe_node(node_id: str) -> Mapping[str, Any]:
             "dynamic_exec_prefixes": tuple(
                 _catalogue.DYNAMIC_PORT_NODES.get(node_id, ())
             ),
+            # ``aliases`` are node ids that resolve onto this one -- every entry
+            # here satisfies resolve_node_id(alias) == node_id.
             "aliases": _aliases_for(node_id),
+            # PHASE 9 recovery item 12: ids that reach this node only through
+            # the pre-1.0 visual-script *migration*, which is a different
+            # mechanism and used to be reported as if it were aliasing. Keeping
+            # them under their own name loses no diagnostic and stops the two
+            # from being confused -- that confusion is how ``variable.set``
+            # looked handled while the resolver could not resolve it.
+            "legacy_migration_ids": _migration_ids_for(node_id),
             "has_executor": node_id in handler_registry.executors,
             "has_evaluator": node_id in handler_registry.evaluators,
             "inputs": tuple(tuple(p) for p in (schema or {}).get("inputs", [])),

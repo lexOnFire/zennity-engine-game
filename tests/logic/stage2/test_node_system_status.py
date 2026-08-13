@@ -90,8 +90,23 @@ def test_describe_node_reports_execution_models():
 
 
 def test_describe_node_reports_aliases():
-    assert "input.axis" in describe_node("input_axis")["aliases"]
+    """``aliases`` means ids that resolve; migration ids have their own field.
+
+    PHASE 9 recovery item 12 split these. ``input.axis`` reaches ``input_axis``
+    only through the pre-1.0 visual-script migration -- ``resolve_node_id``
+    never resolved it -- so reporting it as an alias was the same false claim
+    that hid ``variable.set``. Neither fact was dropped; they are named apart.
+    """
+    from engine.logic.node_definitions.catalogue import resolve_node_id
+
+    axis = describe_node("input_axis")
+    assert "input.axis" in axis["legacy_migration_ids"]
+    assert "input.axis" not in axis["aliases"]
+
     assert "variables.set" in describe_node("set_variable")["aliases"]
+    for node_id in ("input_axis", "set_variable"):
+        for alias in describe_node(node_id)["aliases"]:
+            assert resolve_node_id(alias) == node_id
 
 
 def test_aliases_do_not_create_definitions_or_palette_entries():

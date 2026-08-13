@@ -457,13 +457,27 @@ def validate_node_id_aliases(known_ids: set[str] | None = None) -> list[str]:
 
 
 def all_aliases() -> Mapping[str, tuple[str, ...]]:
-    """Canonical node id -> the legacy ids that normalize onto it."""
-    try:
-        from ..legacy_visual_script import LEGACY_NODE_TYPES
-    except Exception:  # pragma: no cover
-        LEGACY_NODE_TYPES = {}
+    """Canonical node id -> the legacy ids that normalize onto it.
+
+    PHASE 9 recovery item 12. This used to merge ``LEGACY_NODE_TYPES`` from
+    ``legacy_visual_script``, which made it report 43 aliases of which 32 could
+    not be resolved by ``resolve_node_id`` -- a diagnostic asserting something
+    no other subsystem honoured. ``variable.set`` was found that way: reported
+    as a known alias, invisible to the resolver.
+
+    The two tables describe different things and are deliberately not merged.
+    ``NODE_ID_ALIASES`` says which ``.zlogic`` node id is an alias of which;
+    ``LEGACY_NODE_TYPES`` is the migration map for pre-1.0 visual-script
+    documents, five of whose targets are node ids that do not exist -- the
+    migration degrades on purpose -- and membership in it is also what
+    ``is_legacy_visual_script`` uses to recognise the format. Folding it in here
+    would import broken targets and make any ``.zlogic`` holding an alias look
+    like a legacy visual script.
+
+    So this derives from the one authority, and every id it reports resolves.
+    """
     merged: dict[str, set[str]] = {}
-    for source, target in {**LEGACY_NODE_TYPES, **NODE_ID_ALIASES}.items():
+    for source, target in NODE_ID_ALIASES.items():
         merged.setdefault(target, set()).add(source)
     return MappingProxyType(
         {target: tuple(sorted(sources)) for target, sources in sorted(merged.items())}
