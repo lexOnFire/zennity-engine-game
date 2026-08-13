@@ -121,10 +121,26 @@ def execute_distance_to_point(runtime, node: Mapping[str, Any], game: Any, dt: f
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
     try:
-        x1 = float(properties.get("x1", 0.0))
-        y1 = float(properties.get("y1", 0.0))
-        x2 = float(properties.get("x2", 100.0))
-        y2 = float(properties.get("y2", 100.0))
+        # PHASE 9 recovery item 14D.1. The four coordinates are declared inputs
+        # and were read straight off ``properties``, so a data edge into any of
+        # them did nothing: a node wired from ``get_position`` still computed
+        # (0,0) -> (100,100) and returned 141.42 forever. That makes the node
+        # unusable for anything whose positions move, which is every real use of
+        # a distance node -- and it is why the scalar chase plan could not close.
+        #
+        # A connected input now wins; with nothing connected the property, and
+        # its default, still answers, so authoring by property is unchanged.
+        def _coordinate(name: str, fallback: float) -> float:
+            return float(
+                runtime._read_input(
+                    node_id, name, properties.get(name, fallback), game, dt, set()
+                )
+            )
+
+        x1 = _coordinate("x1", 0.0)
+        y1 = _coordinate("y1", 0.0)
+        x2 = _coordinate("x2", 100.0)
+        y2 = _coordinate("y2", 100.0)
 
         dx = x2 - x1
         dy = y2 - y1
