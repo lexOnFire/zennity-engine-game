@@ -1,0 +1,381 @@
+{
+  "_comment": "PHASE 9 recovery item 14C, design gate. BossAILogic and EnemyAILogic were authored against an API this engine never had. The chase chain does not fail at one missing node: of the edges below, every one is unresolved, and two of them point at nodes that DO exist with entirely different port shapes -- get_position offers target/x/y where the assets wire object/position, and if_else offers condition where the assets wire value. Implementing vector2, normalize_vector and math.distance would NOT make these graphs run. Decision: do not adopt a new vector API. The assets are to be re-authored onto the existing scalar API instead, which is the next item's subject.",
+  "_provenance": "PHASE 9 recovery item 14C. Measured on normalized graphs. No production or asset changed.",
+  "decision": "C_REAUTHOR_ASSETS_ONTO_EXISTING_API",
+  "vector_api_adopted": false,
+  "existing_scalar_pieces": {
+    "get_position": {
+      "inputs": [
+        [
+          "target",
+          "object"
+        ]
+      ],
+      "outputs": [
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ]
+    },
+    "distance_to_point": {
+      "inputs": [
+        [
+          "exec",
+          "flow"
+        ],
+        [
+          "x1",
+          "number"
+        ],
+        [
+          "y1",
+          "number"
+        ],
+        [
+          "x2",
+          "number"
+        ],
+        [
+          "y2",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "exec_calculated",
+          "flow"
+        ],
+        [
+          "exec_failure",
+          "flow"
+        ],
+        [
+          "distance",
+          "number"
+        ]
+      ]
+    },
+    "multiply_number": {
+      "inputs": [
+        [
+          "a",
+          "number"
+        ],
+        [
+          "b",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "value",
+          "number"
+        ]
+      ]
+    },
+    "if_else": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "condition",
+          "any"
+        ]
+      ],
+      "outputs": [
+        [
+          "true",
+          "flow"
+        ],
+        [
+          "false",
+          "flow"
+        ]
+      ]
+    },
+    "move_by": {
+      "inputs": [
+        [
+          "in",
+          "flow"
+        ],
+        [
+          "target",
+          "object"
+        ],
+        [
+          "velocity",
+          "vector2"
+        ],
+        [
+          "x",
+          "number"
+        ],
+        [
+          "y",
+          "number"
+        ]
+      ],
+      "outputs": [
+        [
+          "next",
+          "flow"
+        ]
+      ]
+    }
+  },
+  "multiply_number_accepts_vector": false,
+  "chains": {
+    "BossAILogic": {
+      "total_edges": 23,
+      "unresolved_edges": 16,
+      "resolved_edges": 7,
+      "broken": [
+        {
+          "edge": "find_tag.object -> get_position.object",
+          "reasons": [
+            "get_position has no input 'object' (has ['target'])"
+          ]
+        },
+        {
+          "edge": "event_update.next -> get_position.in",
+          "reasons": [
+            "get_position has no input 'in' (has ['target'])"
+          ]
+        },
+        {
+          "edge": "get_position.position -> math.distance.point_b",
+          "reasons": [
+            "get_position has no output 'position' (has ['x', 'y'])",
+            "math.distance is phantom"
+          ]
+        },
+        {
+          "edge": "get_position.position -> math.distance.point_a",
+          "reasons": [
+            "get_position has no output 'position' (has ['x', 'y'])",
+            "math.distance is phantom"
+          ]
+        },
+        {
+          "edge": "math.distance.distance -> if_else.value",
+          "reasons": [
+            "math.distance is phantom",
+            "if_else has no input 'value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "get_variable.value -> if_else.compare_value",
+          "reasons": [
+            "if_else has no input 'compare_value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "get_variable.value -> if_else.compare_value",
+          "reasons": [
+            "if_else has no input 'compare_value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "get_variable.value -> if_else.value",
+          "reasons": [
+            "if_else has no input 'value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "math.distance.distance -> if_else.value",
+          "reasons": [
+            "math.distance is phantom",
+            "if_else has no input 'value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "get_variable.value -> if_else.compare_value",
+          "reasons": [
+            "if_else has no input 'compare_value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "if_else.true -> vector2.in",
+          "reasons": [
+            "vector2 is phantom"
+          ]
+        },
+        {
+          "edge": "get_position.position -> vector2.x",
+          "reasons": [
+            "get_position has no output 'position' (has ['x', 'y'])",
+            "vector2 is phantom"
+          ]
+        },
+        {
+          "edge": "get_position.position -> vector2.y",
+          "reasons": [
+            "get_position has no output 'position' (has ['x', 'y'])",
+            "vector2 is phantom"
+          ]
+        },
+        {
+          "edge": "vector2.vector -> normalize_vector.vector",
+          "reasons": [
+            "vector2 is phantom",
+            "normalize_vector is phantom"
+          ]
+        },
+        {
+          "edge": "normalize_vector.value -> multiply_number.a",
+          "reasons": [
+            "normalize_vector is phantom"
+          ]
+        },
+        {
+          "edge": "move_by.next -> set_animator_parameter.in",
+          "reasons": [
+            "set_animator_parameter is phantom"
+          ]
+        }
+      ]
+    },
+    "EnemyAILogic": {
+      "total_edges": 25,
+      "unresolved_edges": 20,
+      "resolved_edges": 5,
+      "broken": [
+        {
+          "edge": "find_tag.object -> get_position.object",
+          "reasons": [
+            "get_position has no input 'object' (has ['target'])"
+          ]
+        },
+        {
+          "edge": "event_update.next -> get_position.in",
+          "reasons": [
+            "get_position has no input 'in' (has ['target'])"
+          ]
+        },
+        {
+          "edge": "get_position.position -> math.distance.point_b",
+          "reasons": [
+            "get_position has no output 'position' (has ['x', 'y'])",
+            "math.distance is phantom"
+          ]
+        },
+        {
+          "edge": "get_position.position -> math.distance.point_a",
+          "reasons": [
+            "get_position has no output 'position' (has ['x', 'y'])",
+            "math.distance is phantom"
+          ]
+        },
+        {
+          "edge": "math.distance.distance -> if_else.value",
+          "reasons": [
+            "math.distance is phantom",
+            "if_else has no input 'value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "get_variable.value -> if_else.compare_value",
+          "reasons": [
+            "if_else has no input 'compare_value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "math.distance.distance -> if_else.value",
+          "reasons": [
+            "math.distance is phantom",
+            "if_else has no input 'value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "get_variable.value -> if_else.compare_value",
+          "reasons": [
+            "if_else has no input 'compare_value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "if_else.true -> vector2.in",
+          "reasons": [
+            "vector2 is phantom"
+          ]
+        },
+        {
+          "edge": "get_position.position -> vector2.x",
+          "reasons": [
+            "get_position has no output 'position' (has ['x', 'y'])",
+            "vector2 is phantom"
+          ]
+        },
+        {
+          "edge": "get_position.position -> vector2.y",
+          "reasons": [
+            "get_position has no output 'position' (has ['x', 'y'])",
+            "vector2 is phantom"
+          ]
+        },
+        {
+          "edge": "vector2.vector -> normalize_vector.vector",
+          "reasons": [
+            "vector2 is phantom",
+            "normalize_vector is phantom"
+          ]
+        },
+        {
+          "edge": "normalize_vector.value -> multiply_number.a",
+          "reasons": [
+            "normalize_vector is phantom"
+          ]
+        },
+        {
+          "edge": "if_else.true -> set_animator_parameter.in",
+          "reasons": [
+            "set_animator_parameter is phantom"
+          ]
+        },
+        {
+          "edge": "get_variable.value -> if_else.compare_value",
+          "reasons": [
+            "if_else has no input 'compare_value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "get_variable.value -> if_else.value",
+          "reasons": [
+            "if_else has no input 'value' (has ['in', 'condition'])"
+          ]
+        },
+        {
+          "edge": "if_else.true -> animator.set_trigger.in",
+          "reasons": [
+            "animator.set_trigger is phantom"
+          ]
+        },
+        {
+          "edge": "animator.set_trigger.next -> set_variable.exec",
+          "reasons": [
+            "animator.set_trigger is phantom"
+          ]
+        },
+        {
+          "edge": "if_else.true -> variable.increment.in",
+          "reasons": [
+            "variable.increment is phantom"
+          ]
+        },
+        {
+          "edge": "if_else.false -> set_animator_parameter.in",
+          "reasons": [
+            "set_animator_parameter is phantom"
+          ]
+        }
+      ]
+    }
+  }
+}
