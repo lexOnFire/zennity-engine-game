@@ -344,6 +344,26 @@ class LogicGraphExecutionMixin:
     def _condition(self, value: Any) -> bool:
         if isinstance(value, bool):
             return value
+        # PHASE 9 recovery item 15. Numbers are decided by their value, before
+        # anything turns them into text.
+        #
+        # There was no numeric branch at all: a number fell into the string path
+        # below, which exists for tokens and variable names. ``1`` and ``0``
+        # survived that only by accident -- ``str(1)`` happens to be a literal
+        # this function recognizes -- while ``2``, ``-1`` and every float landed
+        # on the final variable lookup and came back False. ``str(1.0)`` is
+        # "1.0", which is not a listed literal and is not a variable name.
+        #
+        # That is why PlayerMovementLogic did not move the player: ``input_axis``
+        # returns ``float(game.axis(...))``, so its ``1.0`` reached ``if_else``
+        # and read as false in every direction. An analog stick, which is the
+        # reason the axis is a float, could never have worked either.
+        #
+        # Only genuine int/float values are intercepted. The *string* "1.0" is
+        # untouched and still resolves through the text path, so a variable that
+        # happens to be spelled like a number keeps its meaning.
+        if isinstance(value, (int, float)):
+            return value != 0
         text = str(value).strip().replace(" ", "").lower()
         axis = float(self.values.get("axis", 0.0))
         if text in {"axis!=0", "movimento!=0"}:
