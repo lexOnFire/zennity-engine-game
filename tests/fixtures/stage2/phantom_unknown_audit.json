@@ -1,0 +1,582 @@
+{
+  "_comment": "PHASE 9 recovery item 14B. Individual audit of the 27 phantom node ids that item 14A could not classify. This is an AUDIT: no production changed, no alias created, no node implemented. Every classification records the evidence it rests on, and 'a node with a similar name exists' was explicitly rejected as evidence -- where that is all there is, the id stays H_UNKNOWN. H is a valid result: inventing semantics would be worse than admitting ignorance.",
+  "_provenance": "PHASE 9 recovery item 14B. Measured on normalized graphs; history searched across all commits.",
+  "total_ids": 27,
+  "total_instances": 52,
+  "by_classification": {
+    "H_UNKNOWN": {
+      "ids": 15,
+      "instances": 25
+    },
+    "F_AUTHORING_ERROR": {
+      "ids": 8,
+      "instances": 20
+    },
+    "D_PLUGIN_OPTIONAL": {
+      "ids": 3,
+      "instances": 5
+    },
+    "C_LEGACY_MIGRATION_GAP": {
+      "ids": 1,
+      "instances": 2
+    }
+  },
+  "nodes": {
+    "animation.on_event": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": [
+          "event"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "on_animation_event",
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "A similarly named node 'on_animation_event' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "animator.set_trigger": {
+      "instances": 4,
+      "assets": [
+        "Assets/Logic/BossCombatLogic.zlogic",
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": [
+          "next"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "animator_set_trigger",
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "A similarly named node 'animator_set_trigger' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "component.set_property": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "Assets/Logic/DoorLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "component",
+          "in"
+        ],
+        "out": [
+          "next"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "dialogue.start_dialogue_asset": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/GuardInteractionLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": []
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "event.custom": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/GuardInteractionLogic.zlogic",
+        "Assets/Logic/PlayerHealthLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": []
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "event_custom",
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "A similarly named node 'event_custom' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "event.listen": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/DoorLogic.zlogic",
+        "Assets/Logic/GuardInteractionLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": [
+          "event_received"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "every_frame": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": [
+          "exec"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "F_AUTHORING_ERROR",
+      "confidence": "high",
+      "rationale": "One of the 20 nodes of VictoryLogic.zlogic, which is 100% phantom: not one of its nodes exists in the catalogue. The graph uses a port vocabulary foreign to this engine -- 'exec' as both input and output, where the engine uses 'in'/'next'. No historical implementation under this id in any commit, and no plugin counterpart. The asset was authored against an API this engine never had.",
+      "recommended_action": "Decide the fate of the whole asset, not the ids in isolation."
+    },
+    "math.distance": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossAILogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "point_a",
+          "point_b"
+        ],
+        "out": [
+          "distance"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": "logic.math.distance",
+      "candidate": null,
+      "classification": "D_PLUGIN_OPTIONAL",
+      "confidence": "medium",
+      "rationale": "'logic.math.distance' is declared in engine/plugins/logic/nodes.py, a layer that does not feed the core catalogue. No historical implementation under this id. Copying it into the core just to clear the phantom would move a plugin's node into the engine.",
+      "recommended_action": "Decide whether the plugin layer should register into the catalogue."
+    },
+    "math.divide": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "Assets/Logic/PlayerHealthLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "a",
+          "b"
+        ],
+        "out": [
+          "value"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "divide_number",
+      "classification": "C_LEGACY_MIGRATION_GAP",
+      "confidence": "high",
+      "rationale": "Structural, not name-based: math.add, math.subtract, math.multiply and math.clamp are ALL in LEGACY_NODE_TYPES mapping onto *_number nodes that exist. math.divide is the one sibling missing from the map, and divide_number exists and accepts every port the assets wire (a, b -> value). The family is the evidence.",
+      "recommended_action": "Candidate for a migration-map entry in a later item. NOT applied here."
+    },
+    "object.get_component": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/DoorLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": [
+          "component"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "object.get_variable": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/LevelExitLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "object"
+        ],
+        "out": [
+          "value"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "get_variable",
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "A similarly named node 'get_variable' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "object.set_variable": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "value"
+        ],
+        "out": []
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "set_variable",
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "A similarly named node 'set_variable' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "physics.get_raycast_hit": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "raycast"
+        ],
+        "out": [
+          "other"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "physics.raycast_2d": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "direction",
+          "max_distance",
+          "origin"
+        ],
+        "out": [
+          "hit"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "raycast",
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "A similarly named node 'raycast' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "project_get": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": [
+          "exec",
+          "value"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "F_AUTHORING_ERROR",
+      "confidence": "high",
+      "rationale": "One of the 20 nodes of VictoryLogic.zlogic, which is 100% phantom: not one of its nodes exists in the catalogue. The graph uses a port vocabulary foreign to this engine -- 'exec' as both input and output, where the engine uses 'in'/'next'. No historical implementation under this id in any commit, and no plugin counterpart. The asset was authored against an API this engine never had.",
+      "recommended_action": "Decide the fate of the whole asset, not the ids in isolation."
+    },
+    "project_set": {
+      "instances": 5,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": [
+          "exec"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "F_AUTHORING_ERROR",
+      "confidence": "high",
+      "rationale": "One of the 20 nodes of VictoryLogic.zlogic, which is 100% phantom: not one of its nodes exists in the catalogue. The graph uses a port vocabulary foreign to this engine -- 'exec' as both input and output, where the engine uses 'in'/'next'. No historical implementation under this id in any commit, and no plugin counterpart. The asset was authored against an API this engine never had.",
+      "recommended_action": "Decide the fate of the whole asset, not the ids in isolation."
+    },
+    "save.save_game": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/LevelExitLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": []
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "save_game",
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "A similarly named node 'save_game' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "scene.load": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/BossHealthLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": []
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": "logic.scene.load",
+      "candidate": null,
+      "classification": "D_PLUGIN_OPTIONAL",
+      "confidence": "medium",
+      "rationale": "'logic.scene.load' is declared in engine/plugins/logic/nodes.py, a layer that does not feed the core catalogue. No historical implementation under this id. Copying it into the core just to clear the phantom would move a plugin's node into the engine.",
+      "recommended_action": "Decide whether the plugin layer should register into the catalogue."
+    },
+    "scene_load": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": []
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "F_AUTHORING_ERROR",
+      "confidence": "high",
+      "rationale": "One of the 20 nodes of VictoryLogic.zlogic, which is 100% phantom: not one of its nodes exists in the catalogue. The graph uses a port vocabulary foreign to this engine -- 'exec' as both input and output, where the engine uses 'in'/'next'. No historical implementation under this id in any commit, and no plugin counterpart. The asset was authored against an API this engine never had.",
+      "recommended_action": "Decide the fate of the whole asset, not the ids in isolation."
+    },
+    "sprite.change_sprite": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/DoorLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": []
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "set_sprite",
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "A similarly named node 'set_sprite' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "string_format": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "args",
+          "exec"
+        ],
+        "out": [
+          "exec",
+          "result"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "F_AUTHORING_ERROR",
+      "confidence": "high",
+      "rationale": "One of the 20 nodes of VictoryLogic.zlogic, which is 100% phantom: not one of its nodes exists in the catalogue. The graph uses a port vocabulary foreign to this engine -- 'exec' as both input and output, where the engine uses 'in'/'next'. No historical implementation under this id in any commit, and no plugin counterpart. The asset was authored against an API this engine never had.",
+      "recommended_action": "Decide the fate of the whole asset, not the ids in isolation."
+    },
+    "ui.set_progress_bar": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "Assets/Logic/PlayerHealthLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "value"
+        ],
+        "out": []
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": "logic.ui.set_progress_bar",
+      "candidate": null,
+      "classification": "D_PLUGIN_OPTIONAL",
+      "confidence": "medium",
+      "rationale": "'logic.ui.set_progress_bar' is declared in engine/plugins/logic/nodes.py, a layer that does not feed the core catalogue. No historical implementation under this id. Copying it into the core just to clear the phantom would move a plugin's node into the engine.",
+      "recommended_action": "Decide whether the plugin layer should register into the catalogue."
+    },
+    "ui_get_widget": {
+      "instances": 4,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": [
+          "exec",
+          "value"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "F_AUTHORING_ERROR",
+      "confidence": "high",
+      "rationale": "One of the 20 nodes of VictoryLogic.zlogic, which is 100% phantom: not one of its nodes exists in the catalogue. The graph uses a port vocabulary foreign to this engine -- 'exec' as both input and output, where the engine uses 'in'/'next'. No historical implementation under this id in any commit, and no plugin counterpart. The asset was authored against an API this engine never had.",
+      "recommended_action": "Decide the fate of the whole asset, not the ids in isolation."
+    },
+    "ui_on_click": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": [
+          "exec"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "F_AUTHORING_ERROR",
+      "confidence": "high",
+      "rationale": "One of the 20 nodes of VictoryLogic.zlogic, which is 100% phantom: not one of its nodes exists in the catalogue. The graph uses a port vocabulary foreign to this engine -- 'exec' as both input and output, where the engine uses 'in'/'next'. No historical implementation under this id in any commit, and no plugin counterpart. The asset was authored against an API this engine never had.",
+      "recommended_action": "Decide the fate of the whole asset, not the ids in isolation."
+    },
+    "ui_set_text": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec",
+          "target",
+          "text"
+        ],
+        "out": [
+          "exec"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "F_AUTHORING_ERROR",
+      "confidence": "high",
+      "rationale": "One of the 20 nodes of VictoryLogic.zlogic, which is 100% phantom: not one of its nodes exists in the catalogue. The graph uses a port vocabulary foreign to this engine -- 'exec' as both input and output, where the engine uses 'in'/'next'. No historical implementation under this id in any commit, and no plugin counterpart. The asset was authored against an API this engine never had.",
+      "recommended_action": "Decide the fate of the whole asset, not the ids in isolation."
+    },
+    "variable": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/EnemyHealth.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": []
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": "get_variable",
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "A similarly named node 'get_variable' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    },
+    "variable.increment": {
+      "instances": 3,
+      "assets": [
+        "Assets/Logic/BossCombatLogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": [
+          "next"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": null,
+      "candidate": null,
+      "classification": "H_UNKNOWN",
+      "confidence": "n/a",
+      "rationale": "No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+      "recommended_action": "Further audit or a design decision."
+    }
+  }
+}

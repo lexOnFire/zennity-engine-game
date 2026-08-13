@@ -1,0 +1,305 @@
+"""What the 27 unclassified phantom node ids actually are.
+
+PHASE 9 recovery item 14B. An audit: no production changed, no alias created,
+no node implemented.
+
+Item 14A found 32 node ids used by shipping assets with no definition at all,
+restored the one with historical evidence, and left 27 as UNKNOWN rather than
+guess. This item audited those 27 individually.
+
+Three findings carried the result, and none of them came from name similarity:
+
+**Eight of them are one asset.** ``project_set``, ``project_get``,
+``ui_get_widget``, ``string_format``, ``ui_set_text``, ``ui_on_click``,
+``scene_load`` and ``every_frame`` -- 20 of the 52 instances -- appear only in
+``VictoryLogic.zlogic``, and that graph is **100% phantom**: not one of its 20
+nodes exists. It also uses a port vocabulary foreign to this engine, ``exec`` as
+both input and output where the engine uses ``in``/``next``. It was authored
+against an API this engine never had.
+
+**``math.divide`` is a hole in the migration map.** ``math.add``,
+``math.subtract``, ``math.multiply`` and ``math.clamp`` are all in
+``LEGACY_NODE_TYPES``, mapping onto ``*_number`` nodes that exist.
+``math.divide`` is the one sibling missing, ``divide_number`` exists, and it
+accepts every port the assets wire. The family is the evidence, not the name.
+
+**Three belong to a plugin.** ``logic.math.distance``, ``logic.scene.load`` and
+``logic.ui.set_progress_bar`` are declared in ``engine/plugins/logic/nodes.py``,
+a layer that does not feed the core catalogue.
+
+The remaining 15 stay ``H_UNKNOWN``. Several have a similarly named node in the
+catalogue, and that was deliberately not treated as evidence: either the
+candidate rejects the ports the assets wire, or so few ports are wired that the
+match is vacuous. Admitting ignorance is cheaper than inventing semantics --
+this phase has paid for the alternative three times.
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+
+import pytest
+
+from engine.logic.graph_asset import (
+    NODE_DEFINITIONS,
+    NODE_PORT_DEFINITIONS,
+    load_logic_graph,
+    normalize_logic_graph,
+)
+from engine.logic.node_definitions.catalogue import (
+    NODE_ID_ALIASES,
+    ensure_catalogue_loaded,
+    resolve_node_id,
+)
+from engine.logic.node_system import load_runtime_node_modules
+from engine.logic.runtime.registry import registry
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+AUDIT_PATH = REPO_ROOT / "tests" / "fixtures" / "stage2" / "phantom_unknown_audit.json"
+PHANTOM_PATH = REPO_ROOT / "tests" / "fixtures" / "stage2" / "phantom_node_baseline.json"
+AUDIT = json.loads(AUDIT_PATH.read_text(encoding="utf-8"))
+PHANTOM = json.loads(PHANTOM_PATH.read_text(encoding="utf-8"))
+
+VALID = {
+    "A_LOST_IMPLEMENTATION", "B_RENAMED_ALIAS_GAP", "C_LEGACY_MIGRATION_GAP",
+    "D_PLUGIN_OPTIONAL", "E_NEVER_IMPLEMENTED", "F_AUTHORING_ERROR",
+    "G_OBSOLETE", "H_UNKNOWN",
+}
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _loaded():
+    ensure_catalogue_loaded()
+    load_runtime_node_modules()
+
+
+# ---------------------------------------------------------------------------
+# Anti-vacuity: prove the audit examined all 27
+# ---------------------------------------------------------------------------
+
+def test_the_audit_covers_exactly_the_unknown_set():
+    unknown = {
+        node_id for node_id, record in PHANTOM["nodes"].items()
+        if record["classification"] == "UNKNOWN"
+    }
+    assert set(AUDIT["nodes"]) == unknown
+    assert len(unknown) == 27
+
+
+def test_the_instance_totals_reconcile():
+    assert AUDIT["total_ids"] == len(AUDIT["nodes"]) == 27
+    assert AUDIT["total_instances"] == sum(
+        record["instances"] for record in AUDIT["nodes"].values()
+    ) == 52
+    assert sum(g["ids"] for g in AUDIT["by_classification"].values()) == 27
+    assert sum(g["instances"] for g in AUDIT["by_classification"].values()) == 52
+
+
+@pytest.mark.parametrize("node_id", sorted(AUDIT["nodes"]))
+def test_every_id_carries_the_evidence_the_audit_required(node_id: str):
+    record = AUDIT["nodes"][node_id]
+    assert record["classification"] in VALID
+    assert record["assets"], "asset evidence is mandatory"
+    assert "ports_used" in record
+    assert record["historical_implementation"], "a history search result must be recorded"
+    assert len(record["rationale"]) > 80, "a one-liner is not a rationale"
+    assert record["recommended_action"]
+
+
+@pytest.mark.parametrize("node_id", sorted(AUDIT["nodes"]))
+def test_the_recorded_instance_count_matches_the_assets(node_id: str):
+    assert AUDIT["nodes"][node_id]["instances"] == PHANTOM["nodes"][node_id]["instances"]
+
+
+def test_no_id_was_classified_by_name_similarity_alone():
+    """Every confident classification rests on something checkable.
+
+    A candidate name may be recorded, but it can never be the whole case: each
+    non-UNKNOWN id must cite an asset cluster, a plugin declaration, or a
+    migration family -- all three of which other tests here re-derive. Where a
+    similarly named node was all the evidence there was, the id stayed
+    H_UNKNOWN.
+    """
+    grounded = {
+        "F_AUTHORING_ERROR": "VictoryLogic",
+        "D_PLUGIN_OPTIONAL": "plugins",
+        "C_LEGACY_MIGRATION_GAP": "LEGACY_NODE_TYPES",
+    }
+    for node_id, record in AUDIT["nodes"].items():
+        classification = record["classification"]
+        if classification == "H_UNKNOWN":
+            continue
+        marker = grounded[classification]
+        assert marker in record["rationale"], (
+            f"{node_id} is classified {classification} without citing {marker}"
+        )
+
+
+def test_every_candidate_that_was_rejected_says_why():
+    """An id with a named candidate that stayed UNKNOWN must justify it."""
+    for node_id, record in AUDIT["nodes"].items():
+        if record["classification"] != "H_UNKNOWN" or not record.get("candidate"):
+            continue
+        assert "name similarity" in record["rationale"], node_id
+
+
+# ---------------------------------------------------------------------------
+# The audit is still true of the tree
+# ---------------------------------------------------------------------------
+
+def _phantom_now() -> dict[str, int]:
+    found: dict[str, int] = {}
+    for path in sorted((REPO_ROOT / "Assets").rglob("*.zlogic")):
+        try:
+            graph = normalize_logic_graph(load_logic_graph(path))
+        except Exception:  # pragma: no cover
+            continue
+        for node in graph["nodes"]:
+            node_type = str(node["type"])
+            if node_type not in NODE_DEFINITIONS:
+                found[node_type] = found.get(node_type, 0) + 1
+    return found
+
+
+def test_no_audited_id_was_quietly_fixed():
+    """If one stops being phantom, the audit is stale and must be revisited."""
+    current = _phantom_now()
+    fixed = sorted(node_id for node_id in AUDIT["nodes"] if node_id not in current)
+    assert not fixed, f"{fixed} are no longer phantom; update {AUDIT_PATH.name}"
+
+
+def test_no_twenty_eighth_unknown_appeared():
+    current = set(_phantom_now())
+    known = set(PHANTOM["nodes"])
+    assert not current - known, sorted(current - known)
+
+
+@pytest.mark.parametrize("node_id", sorted(AUDIT["nodes"]))
+def test_nothing_was_implemented_or_aliased_by_this_item(node_id: str):
+    """The item forbids production changes, including obvious ones."""
+    assert node_id not in NODE_DEFINITIONS
+    assert node_id not in registry.executors
+    assert node_id not in registry.evaluators
+    assert node_id not in NODE_ID_ALIASES
+    assert resolve_node_id(node_id) == node_id
+
+
+# ---------------------------------------------------------------------------
+# The three findings, each re-derived rather than trusted
+# ---------------------------------------------------------------------------
+
+def test_victory_logic_is_entirely_phantom():
+    """The finding that classified eight ids at once."""
+    graph = normalize_logic_graph(
+        load_logic_graph(REPO_ROOT / "Assets" / "Logic" / "VictoryLogic.zlogic")
+    )
+    phantom = [n for n in graph["nodes"] if str(n["type"]) not in NODE_DEFINITIONS]
+    assert len(phantom) == len(graph["nodes"]) == 20
+
+
+def test_the_victory_cluster_uses_a_foreign_port_vocabulary():
+    """``exec`` as both input and output -- this engine uses ``in``/``next``."""
+    cluster = [
+        node_id for node_id, record in AUDIT["nodes"].items()
+        if record["classification"] == "F_AUTHORING_ERROR"
+    ]
+    assert len(cluster) == 8
+    for node_id in cluster:
+        assert AUDIT["nodes"][node_id]["assets"] == ["Assets/Logic/VictoryLogic.zlogic"]
+    wired = {
+        port
+        for node_id in cluster
+        for side in ("in", "out")
+        for port in AUDIT["nodes"][node_id]["ports_used"][side]
+    }
+    assert "exec" in wired
+    assert "next" not in wired
+
+
+def test_math_divide_is_the_one_sibling_missing_from_the_migration_map():
+    """Structural evidence, not a guess from the name."""
+    from engine.logic.legacy_visual_script import LEGACY_NODE_TYPES
+
+    siblings = {
+        key: target for key, target in LEGACY_NODE_TYPES.items()
+        if key.startswith("math.") and target.endswith("_number")
+    }
+    assert siblings, "the math.* family disappeared; revisit this classification"
+    mapped_and_real = {k for k, v in siblings.items() if v in NODE_DEFINITIONS}
+    assert {"math.add", "math.subtract", "math.multiply"} <= mapped_and_real
+    assert "math.divide" not in LEGACY_NODE_TYPES
+    assert "divide_number" in NODE_DEFINITIONS
+
+
+def test_math_divide_would_fit_its_candidate_exactly():
+    """Ports, not names: divide_number accepts everything the assets wire."""
+    used = AUDIT["nodes"]["math.divide"]["ports_used"]
+    ports = NODE_PORT_DEFINITIONS["divide_number"]
+    assert set(used["in"]) <= {name for name, _k in ports["inputs"]}
+    assert set(used["out"]) <= {name for name, _k in ports["outputs"]}
+
+
+def test_the_plugin_ids_really_live_in_the_plugin_layer():
+    import re
+
+    declared = set()
+    for path in (REPO_ROOT / "engine" / "plugins").rglob("*.py"):
+        declared |= set(re.findall(r'id="([^"]+)"', path.read_text(encoding="utf-8")))
+    for node_id, record in AUDIT["nodes"].items():
+        if record["classification"] != "D_PLUGIN_OPTIONAL":
+            continue
+        assert record["plugin"] in declared, node_id
+        assert record["plugin"] not in NODE_DEFINITIONS, (
+            "a plugin id that reached the core catalogue is no longer optional"
+        )
+
+
+# ---------------------------------------------------------------------------
+# The AI chase chain, re-measured
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("asset", ("BossAILogic", "EnemyAILogic"))
+def test_the_chase_chain_first_breaks_at_math_distance(asset: str):
+    """Recorded so a future item knows where to start, and that it is not move_by."""
+    graph = normalize_logic_graph(
+        load_logic_graph(REPO_ROOT / "Assets" / "Logic" / f"{asset}.zlogic")
+    )
+    types = {str(n["type"]) for n in graph["nodes"]}
+    assert "math.distance" in types
+    assert "math.distance" not in NODE_DEFINITIONS
+
+
+@pytest.mark.parametrize("asset", ("BossAILogic", "EnemyAILogic"))
+def test_nothing_reaches_move_by_velocity(asset: str):
+    """The value is None, so implementing the input would change nothing."""
+    from engine.logic.runtime.core import LogicGraphRuntime
+
+    graph = normalize_logic_graph(
+        load_logic_graph(REPO_ROOT / "Assets" / "Logic" / f"{asset}.zlogic")
+    )
+    source = next(
+        (str(e["from_node"]), str(e["from_port"]))
+        for e in graph["edges"] if str(e.get("to_port")) == "velocity"
+    )
+
+    class _Game:
+        name, x, y = "Enemy", 0.0, 0.0
+        _world: dict = {}
+
+        def find(self, name):
+            return None
+
+    runtime = LogicGraphRuntime(graph)
+    with pytest.raises(Exception):
+        runtime._evaluate_output(source[0], source[1], _Game(), 1 / 60, set())
+
+
+def test_no_asset_was_modified():
+    import subprocess
+
+    changed = subprocess.run(
+        ["git", "status", "--porcelain", "--", "Assets"],
+        cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert not changed, changed
