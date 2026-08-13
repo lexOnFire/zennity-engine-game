@@ -184,6 +184,7 @@ class EditorScenePersistence:
             "renderer_enabled", "material", "texture", "render_layer", "sort_order",
             "active", "static", "tag", "layer", "rigidbody", "collider", "camera",
             "audio", "scripts", "component_names", "ui", "logic_assets", "components",
+            "editor_data",
         }
         editor_data = {
             key: deepcopy(value) for key, value in snapshot.items()
