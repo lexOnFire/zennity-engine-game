@@ -186,52 +186,111 @@ def test_validation_reports_missing_event_and_disconnected_node():
     assert len([issue for issue in issues if "Disconnected node" in issue["message"]]) == 2
 
 
-def test_player_movement_demo_contains_expected_visual_flow():
+def test_the_player_graph_the_game_loads_is_the_one_tested():
+    """These two tests describe the asset the Player actually ships with.
+
+    PHASE 9 recovery item 15.1 repointed them. They used to load
+    ``Assets/Logic/PlayerMovement.zlogic`` and assert an eight-node demo --
+    seven node types, seven edges, ``move.speed`` 220 and ``jump.force`` 440.
+    That graph was real: it is in ``6a88b9ee``. But that commit is **not an
+    ancestor of this branch**, so the asset never arrived here; only the test
+    did. At the commit that introduced it the file at that path was already the
+    three-node stub it is today, which means the test could never have passed
+    here -- it was born orphaned, not made obsolete.
+
+    Rather than assert a shape that this lineage does not have, they now cover
+    the graph the game really runs: ``PlayerMovementLogic.zlogic``, which is
+    what ``Player.zprfb`` and ``Level1.zscene`` bind. The binding itself is
+    asserted, because a behavioural test on the wrong asset is exactly the
+    failure this item untangled.
+
+    The eight-node demo's ``jump`` and ``play_animation`` coverage is **not**
+    replaced here and is recorded as separate debt: restoring that asset would
+    change what ``CanonicalGameplayTest.zscene`` loads and is a content
+    decision, not a test fix. See
+    docs/PHASE9_RECOVERY_ITEM15_1_PLAYER_MOVEMENT_TEST_RECONCILIATION.md.
+    """
     root = Path(__file__).resolve().parents[2]
-    graph = load_logic_graph(root / "Assets/Logic/PlayerMovement.zlogic")
+    asset = root / "Assets/Logic/PlayerMovementLogic.zlogic"
+
+    for binding in ("Assets/Prefabs/Player.zprfb", "Assets/Scenes/Level1.zscene"):
+        text = (root / binding).read_text(encoding="utf-8")
+        assert "Assets/Logic/PlayerMovementLogic.zlogic" in text, binding
+
+    graph = load_logic_graph(asset)
     node_types = {node["type"] for node in graph["nodes"]}
-    assert {"event_update", "input_axis", "if_else", "move", "key_pressed", "is_grounded", "jump"} <= node_types
-    assert len(graph["edges"]) == 7
+    assert {"event_update", "input_axis", "if_else", "move"} <= node_types
     assert not validate_logic_graph(graph)
 
 
-def test_player_movement_demo_executes_move_and_jump_nodes():
+def test_the_player_graph_declares_every_port_it_wires():
+    """Structural integrity of the shipped Player graph, on its own terms.
+
+    No node count and no edge count: those are layout, and pinning them is what
+    made the previous version brittle. What matters is that every node exists in
+    the catalogue and every edge names a declared port -- the same rule the
+    shipping-asset gate applies everywhere else.
+    """
+    from engine.logic.graph_asset import node_port_definitions, normalize_logic_graph
+    from engine.logic.node_definitions import NODE_DEFINITIONS
+    from engine.logic.node_definitions.catalogue import resolve_node_id
+
     root = Path(__file__).resolve().parents[2]
-    runtime = LogicGraphRuntime(load_logic_graph(root / "Assets/Logic/PlayerMovement.zlogic"))
+    graph = normalize_logic_graph(
+        load_logic_graph(root / "Assets/Logic/PlayerMovementLogic.zlogic")
+    )
+    nodes = {str(node["id"]): node for node in graph["nodes"]}
 
-    class Animator:
-        def __init__(self):
-            self.states = []
+    assert [t for t in {str(n["type"]) for n in graph["nodes"]}
+            if resolve_node_id(t) not in NODE_DEFINITIONS] == [], "phantom node"
+    for edge in graph["edges"]:
+        source, target = nodes[str(edge["from_node"])], nodes[str(edge["to_node"])]
+        assert str(edge["from_port"]) in {n for n, _k in node_port_definitions(source)["outputs"]}
+        assert str(edge["to_port"]) in {n for n, _k in node_port_definitions(target)["inputs"]}
 
-        def play(self, state):
-            self.states.append(state)
+
+def test_the_player_graph_moves_the_player_both_ways_and_not_at_rest():
+    """End to end through the real asset, at the speed it authors.
+
+    Item 15 proves ``_condition`` handles numbers; this proves the shipped graph
+    turns an axis into displacement. The overlap is deliberate and small: this
+    one would still fail if the asset were rewired or its speed changed, which
+    is what it is here to protect.
+    """
+    root = Path(__file__).resolve().parents[2]
+    asset = root / "Assets/Logic/PlayerMovementLogic.zlogic"
 
     class Game:
-        grounded = True
+        """Declared explicitly: a catch-all would make ``rigidbody`` truthy."""
 
-        def __init__(self):
+        rigidbody = None
+        components: list = []
+
+        def __init__(self, axis_value):
             self.x = 0.0
-            self.jumps = []
-            self.animator = Animator()
-            self._pressed = True
+            self.y = 0.0
+            self._axis = axis_value
 
         def axis(self, negative, positive):
-            assert (negative, positive) == ("a", "d")
-            return 1
-
-        def key_pressed(self, key):
-            return self._pressed and key == "space"
+            return self._axis
 
         def move(self, amount, _dy=0.0):
             self.x += amount
 
-        def jump(self, force):
-            self.jumps.append(force)
+    # 220 px/s, authored on the graph's ``move`` node, over a half-second step.
+    right = Game(1.0)
+    LogicGraphRuntime(load_logic_graph(asset)).update(right, 0.5)
+    assert right.x == 110.0
 
-    game = Game()
-    runtime.update(game, 0.5)
-    assert game.x == 110.0
-    assert game.jumps == [440.0]
+    left = Game(-1.0)
+    LogicGraphRuntime(load_logic_graph(asset)).update(left, 0.5)
+    assert left.x == -110.0
+
+    still = Game(0.0)
+    runtime = LogicGraphRuntime(load_logic_graph(asset))
+    runtime.update(still, 0.5)
+    assert still.x == 0.0
+    assert "move" not in runtime.executed_nodes
 
 
 def test_condition_nodes_expose_named_typed_ports():
