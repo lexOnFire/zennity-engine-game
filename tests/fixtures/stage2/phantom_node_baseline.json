@@ -1,0 +1,484 @@
+{
+  "_comment": "PHASE 9 recovery item 14A. Node ids used by shipping .zlogic assets that have no definition in the catalogue at all -- measured on the NORMALIZED graph, so node-id aliases are already applied. These nodes load, produce nothing, and their edges are dead. This file bounds the class: the gate fails on any NEW id and on any recorded id that stops being phantom, so the set cannot grow or rot silently. Item 14A restored exactly one id, object.find_by_name, which had historical evidence; everything here is deliberately NOT restored. Crucially, the ids in 'never_implemented' are NOT lost runtime: a search across every commit found no definition and no executor for them, ever. They are new design work, and treating them as recovery would be inventing semantics.",
+  "_provenance": "PHASE 9 recovery item 14A, measured from normalize_logic_graph(load_logic_graph(...)). 0 assets modified.",
+  "total_ids": 32,
+  "total_instances": 63,
+  "never_implemented": [
+    "move_towards",
+    "normalize_vector",
+    "set_animator_parameter",
+    "subgraph_start",
+    "vector2"
+  ],
+  "nodes": {
+    "animation.on_event": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": [
+          "event"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "animator.set_trigger": {
+      "instances": 4,
+      "assets": [
+        "Assets/Logic/BossCombatLogic.zlogic",
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": [
+          "next"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "component.set_property": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "Assets/Logic/DoorLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "component",
+          "in"
+        ],
+        "out": [
+          "next"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "dialogue.start_dialogue_asset": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/GuardInteractionLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": []
+      },
+      "classification": "UNKNOWN"
+    },
+    "event.custom": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/GuardInteractionLogic.zlogic",
+        "Assets/Logic/PlayerHealthLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": []
+      },
+      "classification": "UNKNOWN"
+    },
+    "event.listen": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/DoorLogic.zlogic",
+        "Assets/Logic/GuardInteractionLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": [
+          "event_received"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "every_frame": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": [
+          "exec"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "math.distance": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossAILogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "point_a",
+          "point_b"
+        ],
+        "out": [
+          "distance"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "math.divide": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "Assets/Logic/PlayerHealthLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "a",
+          "b"
+        ],
+        "out": [
+          "value"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "move_towards": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/NebulaDefensePro/NebulaEnemyChaser.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": []
+      },
+      "classification": "NEVER_IMPLEMENTED"
+    },
+    "normalize_vector": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossAILogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "vector"
+        ],
+        "out": [
+          "value"
+        ]
+      },
+      "classification": "NEVER_IMPLEMENTED"
+    },
+    "object.get_component": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/DoorLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": [
+          "component"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "object.get_variable": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/LevelExitLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "object"
+        ],
+        "out": [
+          "value"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "object.set_variable": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "value"
+        ],
+        "out": []
+      },
+      "classification": "UNKNOWN"
+    },
+    "physics.get_raycast_hit": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "raycast"
+        ],
+        "out": [
+          "other"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "physics.raycast_2d": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/EnemyAttackLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "direction",
+          "max_distance",
+          "origin"
+        ],
+        "out": [
+          "hit"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "project_get": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": [
+          "exec",
+          "value"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "project_set": {
+      "instances": 5,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": [
+          "exec"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "save.save_game": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/LevelExitLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": []
+      },
+      "classification": "UNKNOWN"
+    },
+    "scene.load": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/BossHealthLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": []
+      },
+      "classification": "UNKNOWN"
+    },
+    "scene_load": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": []
+      },
+      "classification": "UNKNOWN"
+    },
+    "set_animator_parameter": {
+      "instances": 4,
+      "assets": [
+        "Assets/Logic/BossAILogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": []
+      },
+      "classification": "NEVER_IMPLEMENTED"
+    },
+    "sprite.change_sprite": {
+      "instances": 1,
+      "assets": [
+        "Assets/Logic/DoorLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": []
+      },
+      "classification": "UNKNOWN"
+    },
+    "string_format": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "args",
+          "exec"
+        ],
+        "out": [
+          "exec",
+          "result"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "subgraph_start": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/CalcularPontuacao.zlogic",
+        "Assets/Logic/Movimentar2D.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": [
+          "next"
+        ]
+      },
+      "classification": "NEVER_IMPLEMENTED"
+    },
+    "ui.set_progress_bar": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "Assets/Logic/PlayerHealthLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "value"
+        ],
+        "out": []
+      },
+      "classification": "UNKNOWN"
+    },
+    "ui_get_widget": {
+      "instances": 4,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": [
+          "exec",
+          "value"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "ui_on_click": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec"
+        ],
+        "out": [
+          "exec"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "ui_set_text": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "exec",
+          "target",
+          "text"
+        ],
+        "out": [
+          "exec"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "variable": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/EnemyHealth.zlogic"
+      ],
+      "ports_used": {
+        "in": [],
+        "out": []
+      },
+      "classification": "UNKNOWN"
+    },
+    "variable.increment": {
+      "instances": 3,
+      "assets": [
+        "Assets/Logic/BossCombatLogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in"
+        ],
+        "out": [
+          "next"
+        ]
+      },
+      "classification": "UNKNOWN"
+    },
+    "vector2": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossAILogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "in",
+          "x",
+          "y"
+        ],
+        "out": [
+          "vector"
+        ]
+      },
+      "classification": "NEVER_IMPLEMENTED"
+    }
+  }
+}

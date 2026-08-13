@@ -1,5 +1,5 @@
 {
-  "_comment": "Orphan graph edges present at commit 477feee, BEFORE PHASE 9.5B Stage 2. Each entry is an edge naming a port the node's contract does not declare. These are asset-authoring bugs (graphs saved against node types that no longer exist, or that never existed), not node-system bugs -- Stage 2 deliberately does not fix them, it only proves it introduces no new ones. EnemyAILogic's get_position.position is the known issue documented separately and explicitly out of scope. PHASE 9 recovery item 2: MainMenuLogic gained two entries, 72 -> 74. They are not new breakage. The asset wires game.load_game.in and game.has_save.next; those ids had no port contract before node-id resolution existed, so node_port_definitions fell back to a generic in/next pair and the edges appeared to resolve. Resolving the ids onto load_game/has_save revealed that their real contracts declare exec / exec_loaded / exec_exists instead. Reconciling those pin names is port normalization, which is a later item; no asset was edited. PHASE 9 recovery item 4.2: play_animation.in appears in PlayerCombatLogic (1) and PlayerMovement (3). This is the EXPECTED BLOCKER for recovery item 5, not asset breakage: the canonical contract from animation_nodes names the entry pin 'exec', the four saved edges name it 'in', and reconciling legacy flow-port spellings is port normalization's job. The contract is correct and no asset was edited; item 5 makes these resolve again. Keys are repo-relative paths from item 4.2 on: three distinct assets are named PlayerMovement.zlogic and a file-name key made all three share one recorded list. PHASE 9 recovery item 5: 76 -> 72. Port normalization resolved 6 edges against their node's own contract -- play_animation.in -> exec (4), load_game.in -> exec (1), start_behavior_tree.in -> exec (1) -- and created none. The play_animation entries are the blocker item 4.2 recorded deliberately, now cleared. has_save.next is NOT resolved and stays here on purpose: that node declares exec_exists / exec_not_exists / exec_failure, so 'next' names no outcome and attaching it to one would pick a behaviour silently. Its executor returns ['false'], which the contract does not declare either -- a contract/executor mismatch of the kind item 4.2 fixed for the animation nodes, and not something port normalization can repair. PHASE 9 recovery item 6: 72 -> 71. has_save.next resolved to exec_exists in MainMenuLogic, and that one is evidence rather than a guess: the edge feeds ui.set_widget_enabled with {widget_name: 'ContinueButton', enabled: true}, and Continue is enabled when a save exists. Recorded as a node-scoped alias with its justification, not through the generic resolver, which correctly refuses a node with three semantic outcomes. 0 created.",
+  "_comment": "Orphan graph edges present at commit 477feee, BEFORE PHASE 9.5B Stage 2. Each entry is an edge naming a port the node's contract does not declare. These are asset-authoring bugs (graphs saved against node types that no longer exist, or that never existed), not node-system bugs -- Stage 2 deliberately does not fix them, it only proves it introduces no new ones. EnemyAILogic's get_position.position is the known issue documented separately and explicitly out of scope. PHASE 9 recovery item 2: MainMenuLogic gained two entries, 72 -> 74. They are not new breakage. The asset wires game.load_game.in and game.has_save.next; those ids had no port contract before node-id resolution existed, so node_port_definitions fell back to a generic in/next pair and the edges appeared to resolve. Resolving the ids onto load_game/has_save revealed that their real contracts declare exec / exec_loaded / exec_exists instead. Reconciling those pin names is port normalization, which is a later item; no asset was edited. PHASE 9 recovery item 4.2: play_animation.in appears in PlayerCombatLogic (1) and PlayerMovement (3). This is the EXPECTED BLOCKER for recovery item 5, not asset breakage: the canonical contract from animation_nodes names the entry pin 'exec', the four saved edges name it 'in', and reconciling legacy flow-port spellings is port normalization's job. The contract is correct and no asset was edited; item 5 makes these resolve again. Keys are repo-relative paths from item 4.2 on: three distinct assets are named PlayerMovement.zlogic and a file-name key made all three share one recorded list. PHASE 9 recovery item 5: 76 -> 72. Port normalization resolved 6 edges against their node's own contract -- play_animation.in -> exec (4), load_game.in -> exec (1), start_behavior_tree.in -> exec (1) -- and created none. The play_animation entries are the blocker item 4.2 recorded deliberately, now cleared. has_save.next is NOT resolved and stays here on purpose: that node declares exec_exists / exec_not_exists / exec_failure, so 'next' names no outcome and attaching it to one would pick a behaviour silently. Its executor returns ['false'], which the contract does not declare either -- a contract/executor mismatch of the kind item 4.2 fixed for the animation nodes, and not something port normalization can repair. PHASE 9 recovery item 6: 72 -> 71. has_save.next resolved to exec_exists in MainMenuLogic, and that one is evidence rather than a guess: the edge feeds ui.set_widget_enabled with {widget_name: 'ContinueButton', enabled: true}, and Continue is enabled when a save exists. Recorded as a node-scoped alias with its justification, not through the generic resolver, which correctly refuses a node with three semantic outcomes. 0 created. PHASE 9 recovery item 14A: three orphans REMOVED, none added -- 71 -> 68. The edge 'object.find_by_name.object>out' was orphaned in BossAILogic, EnemyAILogic and EnemyAttackLogic because that node id had no definition, no contract and no runtime at all: four instances across four shipping assets were inert. 939764c had added 'object.find_by_name -> find_tag' to the visual-script migration map on a lineage that is not an ancestor of this branch, and these assets are saved in the current format so the migration would never have run on them. The alias now lives in NODE_ID_ALIASES, where node-id resolution actually looks. No asset was modified.",
   "orphan_edges_by_asset": {
     "Assets/Logic/BossAILogic.zlogic": [
       "get_position.in>in",
@@ -10,7 +10,6 @@
       "math.distance.distance>out",
       "math.distance.point_a>in",
       "math.distance.point_b>in",
-      "object.find_by_name.object>out",
       "vector2.in>in"
     ],
     "Assets/Logic/BossCombatLogic.zlogic": [
@@ -41,7 +40,6 @@
       "math.distance.distance>out",
       "math.distance.point_a>in",
       "math.distance.point_b>in",
-      "object.find_by_name.object>out",
       "vector2.in>in"
     ],
     "Assets/Logic/EnemyAttackLogic.zlogic": [
@@ -50,7 +48,6 @@
       "get_position.object>in",
       "get_position.position>out",
       "if_else.value>in",
-      "object.find_by_name.object>out",
       "object.get_variable.object>in",
       "object.get_variable.value>out",
       "object.set_variable.value>in",
@@ -93,6 +90,6 @@
       "ui_set_text.text>in"
     ]
   },
-  "total_assets_with_orphans": 11,
-  "total_orphan_edges": 71
+  "total_assets_with_orphans": 10,
+  "total_orphan_edges": 68
 }

@@ -389,6 +389,14 @@ NODE_ID_ALIASES: Mapping[str, str] = MappingProxyType({
     "button_clicked": "ui.button_clicked",
     "on_ui_click": "ui.button_clicked",
     "set_ui_enabled": "ui.set_widget_enabled",
+    # PHASE 9 recovery item 14A. Four instances across four shipping assets
+    # carried this id with no definition, no contract and no runtime, so the
+    # nodes were inert. ``939764c`` added ``object.find_by_name -> find_tag`` to
+    # the visual-script migration map, on a lineage that is not an ancestor of
+    # this branch -- and these assets are saved in the *current* format, so the
+    # migration would never have run on them anyway. The alias belongs here,
+    # which is where node-id resolution actually looks.
+    "object.find_by_name": "find_tag",
     "variable.set": "set_variable",
     "variables.set": "set_variable",
     "game.load_game": "load_game",
