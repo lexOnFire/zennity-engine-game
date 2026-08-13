@@ -74,7 +74,21 @@ def test_executor_multiple_outputs_simulation():
 
 
 def test_legacy_vs_new_contract_mismatch():
-    """Teste 3: Conflito de contrato - serializado como 'in', esperado 'exec'"""
+    """Teste 3: o conflito de contrato foi resolvido, e não pode voltar.
+
+    Este teste registrava um split brain: a projeção que o editor lia vinha de
+    uma entrada em ``_EXPLICIT_PORT_CONTRACTS`` que sombreava a declaração de
+    ``GetProgressBarValueNode``. Ele afirmava que o conflito *deve* existir,
+    porque na época existia.
+
+    PHASE 9 recovery item 13 removeu o override e reconciliou o contrato: a
+    declaração é a fonte única, ``next`` continua como pino próprio -- ele
+    dispara em toda execução, não é sinônimo de ``exec_success`` -- e os três
+    resultados que o runtime já sabia distinguir passaram a ser retornados.
+
+    A asserção foi invertida em vez de apagada: se as duas fontes divergirem de
+    novo, isto falha, que é exatamente o que o teste sempre existiu para pegar.
+    """
     from engine.logic.runtime.core import LogicGraphRuntime
     from engine.logic.node_definitions import NODE_DEFINITIONS
     from engine.logic.node_definitions.dynamic_ui_nodes import GetProgressBarValueNode
@@ -95,14 +109,25 @@ def test_legacy_vs_new_contract_mismatch():
     print(f"  Legacy outputs: {legacy_outputs}")
     print(f"  New outputs:    {new_outputs}")
 
-    # Problema confirmado
+    # Problema resolvido: uma fonte só.
     input_mismatch = set(legacy_inputs) != set(new_inputs)
     output_mismatch = set(legacy_outputs) != set(new_outputs)
 
     print(f"\n  CONFLITO DE INPUT: {input_mismatch}")
     print(f"  CONFLITO DE OUTPUT: {output_mismatch}")
 
-    assert input_mismatch or output_mismatch, "Deve haver conflito de contrato"
+    assert not input_mismatch, (
+        f"a projeção expõe inputs {legacy_inputs} e a declaração {new_inputs}; "
+        "um override voltou a sombrear a declaração"
+    )
+    assert not output_mismatch, (
+        f"a projeção expõe outputs {legacy_outputs} e a declaração {new_outputs}; "
+        "um override voltou a sombrear a declaração"
+    )
+    assert "next" in new_outputs, (
+        "``next`` é o pino que a edge de comidaLogic.zlogic usa; removê-lo "
+        "orfanaria uma edge real"
+    )
 
 
 def test_serialization_graph_asset_path():
