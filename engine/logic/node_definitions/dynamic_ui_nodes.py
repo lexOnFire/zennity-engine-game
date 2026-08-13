@@ -195,6 +195,16 @@ class GetProgressBarValueNode:
             PinDefinition(id="widget_name", label_key="Nome da ProgressBar", pin_type=PinType.STRING, default_value="progress"),
         ],
         outputs=[
+            # PHASE 9 recovery item 13. ``next`` first, then the three
+            # outcomes -- the same shape ``bind_ui_to_variable`` and
+            # ``update_ui_binding`` declare and return.
+            #
+            # ``next`` is not a synonym for ``exec_success``: it fires on every
+            # execution regardless of the result, which is exactly how
+            # comidaLogic.zlogic uses it (event_update -> here -> set_hud, every
+            # frame). Mapping it onto success would have been a lie, so it stays
+            # as its own pin.
+            PinDefinition(id="next", label_key="Próximo", pin_type=PinType.EXEC),
             PinDefinition(id="exec_success", label_key="Sucesso", pin_type=PinType.EXEC),
             PinDefinition(id="exec_not_found", label_key="Não Encontrado", pin_type=PinType.EXEC),
             PinDefinition(id="exec_failure", label_key="Falha", pin_type=PinType.EXEC),

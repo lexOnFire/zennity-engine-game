@@ -268,21 +268,24 @@ def test_find_tag_resolves_and_continues():
 # Recorded, not fixed
 # ---------------------------------------------------------------------------
 
-def test_the_progress_bar_declaration_still_shadows_its_contract():
-    """A debt with a name and a bound, deliberately left by item 11.
+def test_the_progress_bar_declaration_no_longer_shadows_its_contract():
+    """Item 11 recorded this debt; item 13 paid it.
 
-    ``dynamic_ui_nodes`` declares ``exec_success`` / ``exec_not_found`` /
-    ``exec_failure``; the effective contract, the restored executor and the one
-    shipping asset all speak ``next``. Nothing ever returned the three branches.
-    Removing them is an authoring-contract decision, and removing ``next``
-    instead would orphan the edge ``comidaLogic.zlogic`` already has.
+    The declaration promised ``exec_success`` / ``exec_not_found`` /
+    ``exec_failure`` while the effective contract, the restored executor and the
+    shipping asset all spoke ``next``. Item 13 found the three states were
+    distinguishable all along -- the evaluator already raised and swallowed
+    ``UIWidgetNotFoundError`` -- and that ``next`` means *continue whatever
+    happened*, so it stayed as its own pin rather than being aliased onto
+    success. Declaration and contract now agree, and every branch is reachable.
     """
     import engine.logic.node_definitions.dynamic_ui_nodes as declarations
     from engine.logic.graph_asset import declared_flow_outputs
 
-    declared = {
+    declared = [
         pin.id
         for pin in declarations.GetProgressBarValueNode.__node_definition__.outputs
-    }
-    assert {"exec_success", "exec_not_found", "exec_failure"} <= declared
-    assert declared_flow_outputs("get_progress_bar_value") == ("next",)
+        if str(getattr(pin.pin_type, "value", pin.pin_type)) == "exec"
+    ]
+    assert declared == list(declared_flow_outputs("get_progress_bar_value"))
+    assert set(declared) == {"next", "exec_success", "exec_not_found", "exec_failure"}

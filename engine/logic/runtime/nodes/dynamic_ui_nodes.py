@@ -365,19 +365,28 @@ def evaluate_get_progress_bar_value(runtime, node_id: str, port: str, node: Mapp
 
 @registry.register_executor('get_progress_bar_value')
 def execute_get_progress_bar_value(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Lê o valor e continua o fluxo.
+    """Lê o valor, continua o fluxo e diz qual foi o resultado.
 
-    PHASE 9 recovery item 11 -- restaurado da linhagem em que foi escrito
-    (``a80b1be``), que não é ancestral desta branch. O node declara ``in``/
-    ``next`` e só tinha evaluator, e a cobertura o dava por atendido porque
-    aceitava um evaluator para um ACTION.
+    PHASE 9 recovery item 11 restaurou o executor perdido; item 13 reconciliou o
+    contrato. A declaração prometia ``exec_success`` / ``exec_not_found`` /
+    ``exec_failure`` e o runtime só devolvia ``next`` -- três desenhos que
+    divergiram. Os três estados sempre foram distinguíveis: o evaluator já
+    levanta e engole ``UIWidgetNotFoundError``.
 
-    Dívida registrada, não resolvida aqui: a NodeDefinition declarativa promete
-    ``exec_success`` / ``exec_not_found`` / ``exec_failure``, enquanto o contrato
-    efetivo -- e o único asset que usa o node -- falam ``next``. Nada jamais
-    retornou os três ramos. Removê-los é decisão de contrato de authoring, e
-    apagar ``next`` orfanaria a edge que existe hoje.
+    ``next`` continua e **não** é sinônimo de ``exec_success``: ele dispara em
+    toda execução, seja qual for o resultado, que é exatamente como
+    ``comidaLogic.zlogic`` o usa -- ``event_update`` -> aqui -> ``set_hud``, a
+    cada frame. Mapeá-lo para sucesso teria sido uma mentira semântica, então
+    ele permanece como pino próprio e é sempre devolvido junto do resultado.
     """
     node_id = str(node['id'])
-    evaluate_get_progress_bar_value(runtime, node_id, "value", node, game, dt, set())
-    return ["next"]
+    try:
+        value = evaluate_get_progress_bar_value(runtime, node_id, "value", node, game, dt, set())
+    except Exception:
+        # ``exec_not_found`` is "the widget is not there"; this is "reading it
+        # went wrong", which is a different thing the author may want to handle.
+        runtime._store(node_id, "value", None)
+        return ["next", "exec_failure"]
+    if value is None:
+        return ["next", "exec_not_found"]
+    return ["next", "exec_success"]
