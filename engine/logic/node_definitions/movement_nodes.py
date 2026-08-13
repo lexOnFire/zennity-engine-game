@@ -14,8 +14,13 @@ class MoveNode(NodeDefinition):
         description_key="Move o objeto em uma direção específica",
         inputs=[
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
-            PinDefinition(id="direction_x", label_key="Direção X", pin_type=PinType.FLOAT, default_value=1.0),
-            PinDefinition(id="direction_y", label_key="Direção Y", pin_type=PinType.FLOAT, default_value=0.0),
+            # ``direction_x`` / ``direction_y`` were authorable and the executor
+            # never read either: it calls ``game.move(amount * speed * dt)`` on
+            # a single axis. An author could set a direction in the Inspector
+            # and nothing whatsoever happened. Removed rather than implemented,
+            # because moving in 2D changes what the five shipping graphs do and
+            # would need a different ``game.move`` signature. All five carry the
+            # seeded default (1.0, 0.0), so no authored value was discarded.
             PinDefinition(id="speed", label_key="Velocidade", pin_type=PinType.FLOAT, default_value=100.0),
         ],
         outputs=[
@@ -29,13 +34,21 @@ class MoveByNode(NodeDefinition):
 
     __node_definition__ = NodeDefinition(
         id="move_by",
-        title_key="Mover Por",
+        # The node applies a *velocity*: the executor multiplies by ``dt`` and
+        # writes ``rigidbody.velocity``. The declaration used to say
+        # displacement -- "Mover Por", "Delta X" -- while the 24 shipping
+        # instances set values like 240 and 380, which are only sensible as
+        # pixels per second. The names now say what the node does.
+        title_key="Mover (Velocidade)",
         category_key="Movement",
-        description_key="Move o objeto por um deslocamento específico",
+        description_key="Move o objeto continuamente na velocidade indicada",
         inputs=[
             PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
-            PinDefinition(id="delta_x", label_key="Delta X", pin_type=PinType.FLOAT, default_value=0.0),
-            PinDefinition(id="delta_y", label_key="Delta Y", pin_type=PinType.FLOAT, default_value=0.0),
+            # ``x`` / ``y``, not ``delta_x`` / ``delta_y``: these are the fields
+            # the executor reads and every asset authors. The delta pair was
+            # declared and authorable and moved the object zero pixels.
+            PinDefinition(id="x", label_key="Velocidade X", pin_type=PinType.FLOAT, default_value=0.0),
+            PinDefinition(id="y", label_key="Velocidade Y", pin_type=PinType.FLOAT, default_value=0.0),
         ],
         outputs=[
             PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),

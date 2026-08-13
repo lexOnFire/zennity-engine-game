@@ -250,7 +250,13 @@ _EXPLICIT_PORT_CONTRACTS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "move": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},
     "jump": {"inputs": [("in", "flow"), ("force", "number")], "outputs": [("next", "flow")]},
     "get_position": {"inputs": [("target", "object")], "outputs": [("x", "number"), ("y", "number")]},
-    "move_by": {"inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
+    # One entry: this key was declared TWICE with different pins and the second
+    # silently won, which is how delta_x/delta_y reached the palette at all.
+    # ``velocity`` stays declared -- BossAILogic and EnemyAILogic wire
+    # multiply_number.value into it, so dropping the pin would orphan two
+    # shipping edges. The executor does not read it; that is recorded debt, not
+    # something to hide by deleting the port the assets use.
+    "move_by": {"inputs": [("in", "flow"), ("target", "object"), ("velocity", "vector2"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
     "start_continuous_motion": {
         "inputs": [("in", "flow"), ("target", "object"), ("x", "number"), ("y", "number")],
         "outputs": [("next", "flow"), ("movement", "movement")],
@@ -315,7 +321,6 @@ _EXPLICIT_PORT_CONTRACTS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "normalize_vector": {"inputs": [("vector", "vector2")], "outputs": [("value", "vector2")]},
     "magnitude_vector": {"inputs": [("vector", "vector2")], "outputs": [("value", "number")]},
     "sign_number": {"inputs": [("value", "number")], "outputs": [("value", "number")]},
-    "move_by": {"inputs": [("in", "flow"), ("velocity", "vector2"), ("delta_x", "number"), ("delta_y", "number"), ("x", "number"), ("y", "number")], "outputs": [("next", "flow")]},
     "move_x": {"inputs": [("in", "flow"), ("target", "object"), ("speed", "number"), ("x", "number")], "outputs": [("next", "flow"), ("movement", "movement")]},
     "move_y": {"inputs": [("in", "flow"), ("target", "object"), ("speed", "number"), ("y", "number")], "outputs": [("next", "flow"), ("movement", "movement")]},
     "move_towards": {"inputs": [("in", "flow"), ("target", "object"), ("destination_x", "number"), ("destination_y", "number"), ("speed", "number")], "outputs": [("next", "flow"), ("handle", "movement")]},

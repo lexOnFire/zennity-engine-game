@@ -11,7 +11,11 @@ def execute_move(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
     fallback = runtime.values.get("axis", 0.0)
     amount = float(runtime._read_input(node_id, "value", fallback, game, dt, set()))
-    game.move(amount * float(properties.get("speed", 200.0)) * dt)
+    # 100.0, matching the declared default. The fallback said 200.0 and was
+    # unreachable: the catalogue seeds ``speed`` into every normalized node, so
+    # this literal only ever applied to a graph that had none -- and all five
+    # shipping graphs author it explicitly. Measured identical before and after.
+    game.move(amount * float(properties.get("speed", 100.0)) * dt)
     return ["next"]
 
 @registry.register_executor('move_by')
