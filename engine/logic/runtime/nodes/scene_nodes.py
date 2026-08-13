@@ -20,6 +20,22 @@ def evaluate_get_tag(runtime, node_id: str, port: str, node: Mapping[str, Any], 
     return value
 
 
+@registry.register_evaluator('get_object_name')
+def evaluate_get_object_name(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
+    """Nome do objeto alvo.
+
+    PHASE 9 recovery item 10. ``get_tag`` era a única forma de identificar um
+    objeto num grafo, e tags são compartilhadas entre vários objetos -- não
+    servem para dizer *qual* deles foi atingido.
+
+    O node declara ``pure_data`` e não tem pino de fluxo, então é um evaluator,
+    não um executor: o mesmo formato do ``get_tag`` logo acima. Um objeto sem
+    ``name`` devolve string vazia em vez de ``repr`` ou nome de classe.
+    """
+    target = runtime._read_target(node_id, game, dt, branch)
+    return str(getattr(target, "name", ""))
+
+
 @registry.register_executor(('scene.load_scene', 'open_scene', 'load_scene'))
 def execute_scene_load_scene(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
     node_id = str(node['id'])

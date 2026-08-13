@@ -288,14 +288,16 @@ def test_a_node_with_a_runtime_is_never_reported_as_missing():
     assert everything == len(NODE_DEFINITIONS), "the classification lost or duplicated a node"
 
 
-def test_the_remaining_runtime_gaps_are_the_two_known_ones():
-    """find_nearest_object and get_object_name declare a contract nothing implements.
+def test_no_declared_node_is_left_without_a_runtime():
+    """There is no longer any node declaring a contract nothing implements.
 
-    They arrived with Stage 1's scene_nodes in recovery item 1; their executors
-    live on the Stage 1 runtime lineage, which is not integrated. Implementing
-    them is gameplay work and explicitly out of this item's scope, so the gap is
-    recorded here rather than hidden.
+    This recorded two gaps when item 3 wrote it: ``find_nearest_object`` and
+    ``get_object_name`` arrived with Stage 1's scene_nodes while their runtime
+    stayed on the Stage 1 lineage, which is not an ancestor of this branch.
+    Recovery item 10 restored both from that lineage -- the contracts were
+    byte-identical, so nothing was invented -- and the set is now empty.
+
+    Asserted as empty rather than deleted: a node added tomorrow with no runtime
+    fails here, which is the whole reason the check existed.
     """
-    assert set(classify_runtime_coverage()["missing_runtime"]) == {
-        "find_nearest_object", "get_object_name",
-    }
+    assert classify_runtime_coverage()["missing_runtime"] == []
