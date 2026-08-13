@@ -96,10 +96,22 @@ def test_the_recorded_edge_counts_are_still_true(name: str):
 
 
 @pytest.mark.parametrize("name", GRAPHS)
-def test_most_of_the_graph_does_not_resolve(name: str):
-    """Not one missing node -- the majority of edges dangle."""
+def test_most_of_the_graph_now_resolves(name: str):
+    """Inverted by item 14E, which is what this gate existed to authorize.
+
+    The original reading was the finding: the chase did not fail at one missing
+    node, the majority of its edges dangled (Boss 16/23, Enemy 20/25). That is
+    why item 14C refused a point fix and item 14D chose reauthoring.
+
+    Both assets are now reauthored, so the relation flips. The pre-14E counts
+    are kept in the fixture under ``_before_item14E`` so the finding is not
+    erased by being fixed.
+    """
     recorded = AUDIT["chains"][name]
-    assert recorded["unresolved_edges"] > recorded["resolved_edges"]
+    assert recorded["resolved_edges"] > recorded["unresolved_edges"]
+    before = recorded["_before_item14E"]
+    assert before["unresolved_edges"] > before["resolved_edges"]
+    assert recorded["unresolved_edges"] < before["unresolved_edges"]
 
 
 def test_the_decision_is_recorded_and_is_not_the_vector_api():
@@ -128,10 +140,27 @@ def test_if_else_exists_but_offers_a_different_shape():
 
 
 @pytest.mark.parametrize("name", GRAPHS)
-def test_those_two_mismatches_are_present_in_the_assets(name: str):
+def test_those_two_mismatches_are_gone_from_the_assets(name: str):
+    """Inverted by item 14E: the phantom pins it named have been rewired.
+
+    ``get_position.position`` / ``.object`` and ``if_else.value`` were edges
+    into pins that never existed. Item 14E rewired positions onto
+    ``target``/``x``/``y`` and replaced the ``if_else`` comparators with
+    ``compare_number`` fed by a subtraction, so none of the three appears.
+
+    Everything still unresolved must be animation, which item 14E left as
+    declared debt -- asserting that keeps this from passing for the wrong
+    reason if some other edge breaks later.
+    """
     broken = " ".join(_unresolved(name))
-    assert "get_position.position" in broken
-    assert "if_else.value" in broken or "get_position.object" in broken
+    assert "get_position.position" not in broken
+    assert "get_position.object" not in broken
+    assert "if_else.value" not in broken
+    for entry in _unresolved(name):
+        assert any(
+            token in entry
+            for token in ("set_animator_parameter", "animator.set_trigger", "variable.increment")
+        ), entry
 
 
 # ---------------------------------------------------------------------------

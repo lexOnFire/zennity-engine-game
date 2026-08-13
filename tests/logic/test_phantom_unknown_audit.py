@@ -75,8 +75,20 @@ def _loaded():
 
 
 # ---------------------------------------------------------------------------
-# Anti-vacuity: prove the audit examined all 27
+# Anti-vacuity: prove the audit examined every UNKNOWN id
+#
+# The set was 27 when item 14B measured it. PHASE 9 recovery item 14E removed
+# ``math.distance`` from both AI graphs, so it is no longer used by any shipping
+# asset and left the audit -- a recovered id leaves the record, the same rule the
+# phantom baseline follows. The count is asserted rather than derived so the next
+# change to it has to be deliberate.
 # ---------------------------------------------------------------------------
+
+#: 27 at item 14B, minus ``math.distance`` recovered by item 14E.
+EXPECTED_UNKNOWN_IDS = 26
+
+#: 52 at item 14B, minus the two ``math.distance`` instances (one per AI graph).
+EXPECTED_UNKNOWN_INSTANCES = 50
 
 def test_the_audit_covers_exactly_the_unknown_set():
     unknown = {
@@ -84,16 +96,16 @@ def test_the_audit_covers_exactly_the_unknown_set():
         if record["classification"] == "UNKNOWN"
     }
     assert set(AUDIT["nodes"]) == unknown
-    assert len(unknown) == 27
+    assert len(unknown) == EXPECTED_UNKNOWN_IDS
 
 
 def test_the_instance_totals_reconcile():
-    assert AUDIT["total_ids"] == len(AUDIT["nodes"]) == 27
+    assert AUDIT["total_ids"] == len(AUDIT["nodes"]) == EXPECTED_UNKNOWN_IDS
     assert AUDIT["total_instances"] == sum(
         record["instances"] for record in AUDIT["nodes"].values()
-    ) == 52
-    assert sum(g["ids"] for g in AUDIT["by_classification"].values()) == 27
-    assert sum(g["instances"] for g in AUDIT["by_classification"].values()) == 52
+    ) == EXPECTED_UNKNOWN_INSTANCES
+    assert sum(g["ids"] for g in AUDIT["by_classification"].values()) == EXPECTED_UNKNOWN_IDS
+    assert sum(g["instances"] for g in AUDIT["by_classification"].values()) == EXPECTED_UNKNOWN_INSTANCES
 
 
 @pytest.mark.parametrize("node_id", sorted(AUDIT["nodes"]))
@@ -260,39 +272,53 @@ def test_the_plugin_ids_really_live_in_the_plugin_layer():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("asset", ("BossAILogic", "EnemyAILogic"))
-def test_the_chase_chain_first_breaks_at_math_distance(asset: str):
-    """Recorded so a future item knows where to start, and that it is not move_by."""
+def test_the_chase_chain_no_longer_breaks_at_math_distance(asset: str):
+    """Inverted by item 14E: the break this recorded has been removed.
+
+    It used to assert that the chase chain broke at ``math.distance`` -- the
+    point a future item should start from, and proof that ``move_by`` was not
+    the culprit. Item 14E started exactly there and replaced it with
+    ``distance_to_point``, which does exist and whose declared inputs item
+    14D.1 taught it to read.
+
+    ``math.distance`` is still absent from the palette; what changed is that
+    the assets stopped asking for it.
+    """
     graph = normalize_logic_graph(
         load_logic_graph(REPO_ROOT / "Assets" / "Logic" / f"{asset}.zlogic")
     )
     types = {str(n["type"]) for n in graph["nodes"]}
-    assert "math.distance" in types
+    assert "math.distance" not in types
     assert "math.distance" not in NODE_DEFINITIONS
+    assert "distance_to_point" in types
 
 
 @pytest.mark.parametrize("asset", ("BossAILogic", "EnemyAILogic"))
-def test_nothing_reaches_move_by_velocity(asset: str):
-    """The value is None, so implementing the input would change nothing."""
-    from engine.logic.runtime.core import LogicGraphRuntime
+def test_no_edge_targets_move_by_velocity(asset: str):
+    """Inverted by item 14E: there is no longer an edge to invert against.
 
+    This used to resolve the value feeding ``move_by.velocity`` and assert it
+    raised -- the chain behind it ran through nodes that do not exist, so
+    implementing the input would have fed ``None`` into movement.
+
+    Item 14E rewired both assets onto ``move_by.x`` / ``move_by.y``, so nothing
+    targets ``velocity`` at all. The port stays on the node and the executor
+    still ignores it; item 14F owns that decision. What this now guards is that
+    the reauthored graphs do not drift back onto it.
+    """
     graph = normalize_logic_graph(
         load_logic_graph(REPO_ROOT / "Assets" / "Logic" / f"{asset}.zlogic")
     )
-    source = next(
-        (str(e["from_node"]), str(e["from_port"]))
-        for e in graph["edges"] if str(e.get("to_port")) == "velocity"
-    )
-
-    class _Game:
-        name, x, y = "Enemy", 0.0, 0.0
-        _world: dict = {}
-
-        def find(self, name):
-            return None
-
-    runtime = LogicGraphRuntime(graph)
-    with pytest.raises(Exception):
-        runtime._evaluate_output(source[0], source[1], _Game(), 1 / 60, set())
+    velocity_edges = [e for e in graph["edges"] if str(e.get("to_port")) == "velocity"]
+    assert velocity_edges == []
+    driven = {
+        str(e["to_port"])
+        for e in graph["edges"]
+        if str(e.get("to_node")) in {
+            str(n["id"]) for n in graph["nodes"] if str(n["type"]) == "move_by"
+        }
+    }
+    assert {"x", "y"} <= driven
 
 
 def test_no_asset_was_modified():

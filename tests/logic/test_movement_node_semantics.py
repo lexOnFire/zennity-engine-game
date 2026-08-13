@@ -233,8 +233,18 @@ def test_the_velocity_pin_is_declared_but_unread():
     assert "velocity" not in _executor_reads("move_by")
 
 
-def test_the_graphs_that_wire_velocity_are_still_exactly_two():
-    """If a third appears, the gap grew and the decision cannot keep waiting."""
+def test_no_graph_wires_velocity_any_more():
+    """Inverted by item 14E: the two graphs that wired it stopped.
+
+    This counted the assets feeding ``move_by.velocity`` -- an input the
+    executor never reads -- and held at exactly two so a third would force the
+    decision. Item 14E reauthored both onto ``move_by.x`` / ``move_by.y``, so
+    the set is now empty.
+
+    That makes ``velocity`` a port with no producer and no consumer, which is
+    precisely the question item 14F was left to answer. The assertion is kept
+    so a graph reaching for it again is caught immediately.
+    """
     wired = set()
     for path in sorted((REPO_ROOT / "Assets").rglob("*.zlogic")):
         graph = normalize_logic_graph(load_logic_graph(path))
@@ -247,7 +257,7 @@ def test_the_graphs_that_wire_velocity_are_still_exactly_two():
                 and str(edge.get("to_port")) == "velocity"
             ):
                 wired.add(path.name)
-    assert wired == {"BossAILogic.zlogic", "EnemyAILogic.zlogic"}, wired
+    assert wired == set(), wired
 
 
 # ---------------------------------------------------------------------------

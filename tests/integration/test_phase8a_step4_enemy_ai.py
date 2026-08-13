@@ -228,14 +228,31 @@ class TestEnemyAILogic:
         assert "check_detected" in node_ids
 
     def test_logic_has_chase_nodes(self):
-        """Verify logic has chase/movement nodes."""
+        """Verify logic has chase/movement nodes.
+
+        This used to name ``calculate_direction`` and ``normalize_direction``.
+        Those were a ``vector2`` and a ``normalize_vector`` node -- types this
+        engine never implemented -- so the test was pinning an authored shape
+        that could not run, not a contract anyone could rely on.
+
+        PHASE 9 recovery item 14E replaced that pair with the scalar
+        normalization proven in item 14D.2: two subtractions for the component
+        deltas and two divisions by the measured distance. The intent of the
+        test is unchanged -- the graph must still contain a chase -- so it now
+        names the nodes that actually perform one.
+        """
         logic_path = project_root / "Assets" / "Logic" / "EnemyAILogic.zlogic"
         data = json.loads(logic_path.read_text(encoding="utf-8"))
 
         node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "calculate_direction" in node_ids
-        assert "normalize_direction" in node_ids
+        node_types = {n.get("type") for n in data.get("nodes", [])}
+
+        for chase_node in ("enemy_dx", "enemy_dy", "enemy_nx", "enemy_ny"):
+            assert chase_node in node_ids, chase_node
         assert "set_enemy_velocity" in node_ids
+        assert "calculate_distance" in node_ids
+
+        assert not node_types & {"math.vector2_create", "math.vector2_normalize"}
 
     def test_logic_has_attack_range_check(self):
         """Verify logic checks attack range."""

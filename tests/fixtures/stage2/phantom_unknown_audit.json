@@ -1,24 +1,24 @@
 {
-  "_comment": "PHASE 9 recovery item 14B. Individual audit of the 27 phantom node ids that item 14A could not classify. This is an AUDIT: no production changed, no alias created, no node implemented. Every classification records the evidence it rests on, and 'a node with a similar name exists' was explicitly rejected as evidence -- where that is all there is, the id stays H_UNKNOWN. H is a valid result: inventing semantics would be worse than admitting ignorance.",
-  "_provenance": "PHASE 9 recovery item 14B. Measured on normalized graphs; history searched across all commits.",
-  "total_ids": 27,
-  "total_instances": 52,
+  "_comment": "PHASE 9 recovery item 14B. Individual audit of the 27 phantom node ids that item 14A could not classify. This is an AUDIT: no production changed, no alias created, no node implemented. Every classification records the evidence it rests on, and 'a node with a similar name exists' was explicitly rejected as evidence -- where that is all there is, the id stays H_UNKNOWN. H is a valid result: inventing semantics would be worse than admitting ignorance. PHASE 9 recovery item 14E reauthored BossAILogic.zlogic and EnemyAILogic.zlogic onto the canonical scalar chase chain proven in item 14D.2, which removed every instance of math.distance, vector2 and normalize_vector. Those three ids left this file because a recovered id must leave the baseline -- this is debt, not exemption. Entries unrelated to the two AI graphs are untouched.",
+  "_provenance": "PHASE 9 recovery item 14E, regenerated after reauthoring the two AI graphs.",
+  "total_ids": 26,
+  "total_instances": 50,
   "by_classification": {
-    "H_UNKNOWN": {
-      "ids": 15,
-      "instances": 25
+    "C_LEGACY_MIGRATION_GAP": {
+      "ids": 1,
+      "instances": 2
+    },
+    "D_PLUGIN_OPTIONAL": {
+      "ids": 2,
+      "instances": 3
     },
     "F_AUTHORING_ERROR": {
       "ids": 8,
       "instances": 20
     },
-    "D_PLUGIN_OPTIONAL": {
-      "ids": 3,
-      "instances": 5
-    },
-    "C_LEGACY_MIGRATION_GAP": {
-      "ids": 1,
-      "instances": 2
+    "H_UNKNOWN": {
+      "ids": 15,
+      "instances": 25
     }
   },
   "nodes": {
@@ -160,29 +160,6 @@
       "confidence": "high",
       "rationale": "One of the 20 nodes of VictoryLogic.zlogic, which is 100% phantom: not one of its nodes exists in the catalogue. The graph uses a port vocabulary foreign to this engine -- 'exec' as both input and output, where the engine uses 'in'/'next'. No historical implementation under this id in any commit, and no plugin counterpart. The asset was authored against an API this engine never had.",
       "recommended_action": "Decide the fate of the whole asset, not the ids in isolation."
-    },
-    "math.distance": {
-      "instances": 2,
-      "assets": [
-        "Assets/Logic/BossAILogic.zlogic",
-        "Assets/Logic/EnemyAILogic.zlogic"
-      ],
-      "ports_used": {
-        "in": [
-          "point_a",
-          "point_b"
-        ],
-        "out": [
-          "distance"
-        ]
-      },
-      "historical_implementation": "none found under this id in any commit",
-      "plugin": "logic.math.distance",
-      "candidate": null,
-      "classification": "D_PLUGIN_OPTIONAL",
-      "confidence": "medium",
-      "rationale": "'logic.math.distance' is declared in engine/plugins/logic/nodes.py, a layer that does not feed the core catalogue. No historical implementation under this id. Copying it into the core just to clear the phantom would move a plugin's node into the engine.",
-      "recommended_action": "Decide whether the plugin layer should register into the catalogue."
     },
     "math.divide": {
       "instances": 2,
@@ -577,6 +554,31 @@
       "confidence": "n/a",
       "rationale": "No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
       "recommended_action": "Further audit or a design decision."
+    }
+  },
+  "_recovered_by_item_14E": {
+    "math.distance": {
+      "instances": 2,
+      "assets": [
+        "Assets/Logic/BossAILogic.zlogic",
+        "Assets/Logic/EnemyAILogic.zlogic"
+      ],
+      "ports_used": {
+        "in": [
+          "point_a",
+          "point_b"
+        ],
+        "out": [
+          "distance"
+        ]
+      },
+      "historical_implementation": "none found under this id in any commit",
+      "plugin": "logic.math.distance",
+      "candidate": null,
+      "classification": "D_PLUGIN_OPTIONAL",
+      "confidence": "medium",
+      "rationale": "'logic.math.distance' is declared in engine/plugins/logic/nodes.py, a layer that does not feed the core catalogue. No historical implementation under this id. Copying it into the core just to clear the phantom would move a plugin's node into the engine.",
+      "recommended_action": "Decide whether the plugin layer should register into the catalogue."
     }
   }
 }

@@ -191,16 +191,27 @@ def test_the_success_branch_fires_on_a_normal_calculation():
 # Why this was safe to change
 # ---------------------------------------------------------------------------
 
-def test_no_shipping_asset_uses_the_node():
-    """Zero instances, so the fix enables the promised case rather than altering one."""
-    seen = 0
+def test_the_shipping_assets_that_use_the_node_are_the_two_ai_graphs():
+    """Inverted by item 14E: the promised case arrived.
+
+    At item 14D.1 no shipping asset used this node at all, which is exactly why
+    fixing it was safe -- the change enabled a future use rather than altering
+    a live one. Item 14E is that future use: BossAILogic and EnemyAILogic now
+    measure their distance to the player with it.
+
+    Naming the two assets rather than counting them keeps the check specific:
+    a third graph picking the node up is a fact worth noticing, not a number
+    that quietly drifts.
+    """
+    users = set()
     for path in sorted((REPO_ROOT / "Assets").rglob("*.zlogic")):
         try:
             graph = normalize_logic_graph(load_logic_graph(path))
         except Exception:  # pragma: no cover
             continue
-        seen += sum(1 for n in graph["nodes"] if str(n["type"]) == NODE)
-    assert seen == 0
+        if any(str(n["type"]) == NODE for n in graph["nodes"]):
+            users.add(path.name)
+    assert users == {"BossAILogic.zlogic", "EnemyAILogic.zlogic"}, users
 
 
 def test_the_node_is_still_the_one_the_catalogue_declares():

@@ -1,14 +1,12 @@
 {
-  "_comment": "PHASE 9 recovery item 14A. Node ids used by shipping .zlogic assets that have no definition in the catalogue at all -- measured on the NORMALIZED graph, so node-id aliases are already applied. These nodes load, produce nothing, and their edges are dead. This file bounds the class: the gate fails on any NEW id and on any recorded id that stops being phantom, so the set cannot grow or rot silently. Item 14A restored exactly one id, object.find_by_name, which had historical evidence; everything here is deliberately NOT restored. Crucially, the ids in 'never_implemented' are NOT lost runtime: a search across every commit found no definition and no executor for them, ever. They are new design work, and treating them as recovery would be inventing semantics.",
-  "_provenance": "PHASE 9 recovery item 14A, measured from normalize_logic_graph(load_logic_graph(...)). 0 assets modified.",
-  "total_ids": 32,
-  "total_instances": 63,
+  "_comment": "PHASE 9 recovery item 14A. Node ids used by shipping .zlogic assets that have no definition in the catalogue at all -- measured on the NORMALIZED graph, so node-id aliases are already applied. These nodes load, produce nothing, and their edges are dead. This file bounds the class: the gate fails on any NEW id and on any recorded id that stops being phantom, so the set cannot grow or rot silently. Item 14A restored exactly one id, object.find_by_name, which had historical evidence; everything here is deliberately NOT restored. Crucially, the ids in 'never_implemented' are NOT lost runtime: a search across every commit found no definition and no executor for them, ever. They are new design work, and treating them as recovery would be inventing semantics. PHASE 9 recovery item 14E reauthored BossAILogic.zlogic and EnemyAILogic.zlogic onto the canonical scalar chase chain proven in item 14D.2, which removed every instance of math.distance, vector2 and normalize_vector. Those three ids left this file because a recovered id must leave the baseline -- this is debt, not exemption. Entries unrelated to the two AI graphs are untouched.",
+  "_provenance": "PHASE 9 recovery item 14E, regenerated after reauthoring the two AI graphs.",
+  "total_ids": 29,
+  "total_instances": 57,
   "never_implemented": [
     "move_towards",
-    "normalize_vector",
     "set_animator_parameter",
-    "subgraph_start",
-    "vector2"
+    "subgraph_start"
   ],
   "nodes": {
     "animation.on_event": {
@@ -108,23 +106,6 @@
       },
       "classification": "UNKNOWN"
     },
-    "math.distance": {
-      "instances": 2,
-      "assets": [
-        "Assets/Logic/BossAILogic.zlogic",
-        "Assets/Logic/EnemyAILogic.zlogic"
-      ],
-      "ports_used": {
-        "in": [
-          "point_a",
-          "point_b"
-        ],
-        "out": [
-          "distance"
-        ]
-      },
-      "classification": "UNKNOWN"
-    },
     "math.divide": {
       "instances": 2,
       "assets": [
@@ -152,22 +133,6 @@
           "in"
         ],
         "out": []
-      },
-      "classification": "NEVER_IMPLEMENTED"
-    },
-    "normalize_vector": {
-      "instances": 2,
-      "assets": [
-        "Assets/Logic/BossAILogic.zlogic",
-        "Assets/Logic/EnemyAILogic.zlogic"
-      ],
-      "ports_used": {
-        "in": [
-          "vector"
-        ],
-        "out": [
-          "value"
-        ]
       },
       "classification": "NEVER_IMPLEMENTED"
     },
@@ -461,24 +426,68 @@
         ]
       },
       "classification": "UNKNOWN"
+    }
+  },
+  "_recovered_by_item_14E": {
+    "math.distance": {
+      "was": {
+        "instances": 2,
+        "assets": [
+          "Assets/Logic/BossAILogic.zlogic",
+          "Assets/Logic/EnemyAILogic.zlogic"
+        ],
+        "ports_used": {
+          "in": [
+            "point_a",
+            "point_b"
+          ],
+          "out": [
+            "distance"
+          ]
+        },
+        "classification": "UNKNOWN"
+      },
+      "replacement": "distance_to_point"
     },
     "vector2": {
-      "instances": 2,
-      "assets": [
-        "Assets/Logic/BossAILogic.zlogic",
-        "Assets/Logic/EnemyAILogic.zlogic"
-      ],
-      "ports_used": {
-        "in": [
-          "in",
-          "x",
-          "y"
+      "was": {
+        "instances": 2,
+        "assets": [
+          "Assets/Logic/BossAILogic.zlogic",
+          "Assets/Logic/EnemyAILogic.zlogic"
         ],
-        "out": [
-          "vector"
-        ]
+        "ports_used": {
+          "in": [
+            "in",
+            "x",
+            "y"
+          ],
+          "out": [
+            "vector"
+          ]
+        },
+        "classification": "NEVER_IMPLEMENTED"
       },
-      "classification": "NEVER_IMPLEMENTED"
+      "replacement": "subtract_number pair (dx, dy)"
+    },
+    "normalize_vector": {
+      "was": {
+        "instances": 2,
+        "assets": [
+          "Assets/Logic/BossAILogic.zlogic",
+          "Assets/Logic/EnemyAILogic.zlogic"
+        ],
+        "ports_used": {
+          "in": [
+            "vector"
+          ],
+          "out": [
+            "value"
+          ]
+        },
+        "classification": "NEVER_IMPLEMENTED"
+      },
+      "replacement": "divide_number pair (dx/distance, dy/distance)"
     }
   }
 }

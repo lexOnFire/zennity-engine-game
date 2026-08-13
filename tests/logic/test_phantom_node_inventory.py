@@ -255,21 +255,31 @@ def test_no_asset_was_modified():
 # What item 14 originally set out to do, and why it stopped
 # ---------------------------------------------------------------------------
 
-def test_the_chase_chain_is_still_broken_upstream_of_move_by():
-    """Recorded so that ``move_by.velocity`` is not "fixed" against a None.
+def test_the_chase_chain_no_longer_runs_through_phantom_nodes():
+    """The debt this recorded was paid; the assertion is inverted, not deleted.
 
-    BossAILogic and EnemyAILogic wire ``multiply_number.value`` into
-    ``move_by.velocity``, and the chain that computes it runs through nodes that
-    do not exist. Implementing the input would feed ``None`` into movement.
+    It used to say the chase chain *must* be broken, because at the time it
+    was: BossAILogic and EnemyAILogic wired ``multiply_number.value`` into
+    ``move_by.velocity`` through ``vector2`` / ``normalize_vector`` /
+    ``math.distance``, none of which exist. That was recorded so nobody would
+    "fix" ``move_by.velocity`` against a value that was really ``None``.
+
+    PHASE 9 recovery item 14E reauthored both graphs onto the scalar chain
+    proven in item 14D.2. The three phantom types are gone from both assets and
+    the direction is now built from ``subtract_number`` / ``divide_number`` /
+    ``multiply_number``. Keeping the check inverted means a regression that
+    reintroduces the vector API fails here, which is what this test was always
+    for.
     """
     for name in ("BossAILogic", "EnemyAILogic"):
         graph = normalize_logic_graph(
             load_logic_graph(REPO_ROOT / "Assets" / "Logic" / f"{name}.zlogic")
         )
         types = {str(n["type"]) for n in graph["nodes"]}
-        assert types & {"vector2", "normalize_vector", "math.distance"}, (
-            f"{name} no longer uses the phantom chain -- revisit move_by.velocity"
+        assert not types & {"vector2", "normalize_vector", "math.distance"}, (
+            f"{name} reintroduced the phantom vector chain"
         )
+        assert "distance_to_point" in types, f"{name} lost its distance node"
 
 
 def test_move_by_still_does_not_read_velocity():
