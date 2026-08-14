@@ -52,6 +52,9 @@ VARIABLES = {
         "phase": 1,
         "health": 500,
         "max_health": 500,
+        # Item 17 wired the phase-2 gate to this scene variable instead of
+        # comparing health against max_health, which was true at full health.
+        "phase2_threshold": 0.5,
     },
     "enemy": {
         "move_speed": 100,
@@ -71,9 +74,13 @@ REJECTED_TYPES = frozenset({"vector2", "normalize_vector", "math.distance"})
 #: Animation stays debt (item 14E section 14). Listed so that a phantom which
 #: is NOT one of these fails the test: this is a named debt, not a blanket
 #: exemption.
+#: Item 17 mapped animator.set_trigger onto the canonical animator_set_trigger,
+#: so it left this set on both graphs -- a recovered id must leave the baseline.
+#: variable.increment stays for the enemy: it is still NEVER_IMPLEMENTED, and
+#: only the boss graph was reauthored off it.
 ACCEPTED_PHANTOM_DEBT = {
     "boss": {"set_animator_parameter"},
-    "enemy": {"set_animator_parameter", "animator.set_trigger", "variable.increment"},
+    "enemy": {"set_animator_parameter", "variable.increment"},
 }
 
 

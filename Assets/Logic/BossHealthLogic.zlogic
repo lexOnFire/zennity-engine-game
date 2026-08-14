@@ -74,7 +74,8 @@
         180
       ],
       "config": {
-        "trigger_name": "dead"
+        "trigger_name": "dead",
+        "target": "Boss"
       }
     },
     {
@@ -143,74 +144,86 @@
   "edges": [
     {
       "from": "frame_loop",
+      "from_pin": "frame",
       "to": "get_boss_health",
-      "from_pin": "frame",
-      "to_pin": "execute"
-    },
-    {
-      "from": "frame_loop",
-      "to": "get_max_health",
-      "from_pin": "frame",
       "to_pin": "execute"
     },
     {
       "from": "get_boss_health",
-      "to": "calc_health_percent",
+      "from_pin": "done",
+      "to": "get_max_health",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_max_health",
+      "from_pin": "done",
+      "to": "update_boss_hud",
+      "to_pin": "execute"
+    },
+    {
+      "from": "update_boss_hud",
+      "from_pin": "done",
+      "to": "check_dead",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_boss_health",
       "from_pin": "value",
+      "to": "calc_health_percent",
       "to_pin": "a"
     },
     {
       "from": "get_max_health",
-      "to": "calc_health_percent",
       "from_pin": "value",
+      "to": "calc_health_percent",
       "to_pin": "b"
     },
     {
       "from": "calc_health_percent",
+      "from_pin": "value",
       "to": "update_boss_hud",
-      "from_pin": "result",
       "to_pin": "value"
     },
     {
       "from": "get_boss_health",
-      "to": "check_dead",
       "from_pin": "value",
+      "to": "check_dead",
       "to_pin": "value"
     },
     {
       "from": "check_dead",
-      "to": "set_dead_trigger",
       "from_pin": "true",
+      "to": "set_dead_trigger",
       "to_pin": "execute"
     },
     {
-      "from": "set_dead_trigger",
-      "to": "wait_death_animation",
-      "from_pin": "done",
-      "to_pin": "execute"
-    },
-    {
-      "from": "wait_death_animation",
+      "from": "check_dead",
+      "from_pin": "true",
       "to": "set_boss_defeated",
-      "from_pin": "done",
       "to_pin": "execute"
     },
     {
       "from": "set_boss_defeated",
+      "from_pin": "done",
       "to": "disable_collider",
-      "from_pin": "success",
       "to_pin": "execute"
     },
     {
       "from": "disable_collider",
-      "to": "stop_velocity",
       "from_pin": "done",
+      "to": "stop_velocity",
       "to_pin": "execute"
     },
     {
       "from": "stop_velocity",
-      "to": "load_victory",
       "from_pin": "done",
+      "to": "wait_death_animation",
+      "to_pin": "execute"
+    },
+    {
+      "from": "wait_death_animation",
+      "from_pin": "done",
+      "to": "load_victory",
       "to_pin": "execute"
     }
   ]

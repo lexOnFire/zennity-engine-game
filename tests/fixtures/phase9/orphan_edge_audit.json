@@ -1,15 +1,15 @@
 {
   "_comment": "Phase 9 Recovery Item 16A. Final orphan edge audit and root-cause classification. Inventory only; not an allow-list and does not weaken tools/audit_node_system.py --ci.",
-  "_provenance": "Phase 9 Recovery Item 16A; base 3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8 | Item 16B removed only the numeric RC-01 edges it resolved.",
+  "_provenance": "Phase 9 Recovery Item 16A; base 3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8 | Item 16B removed only the numeric RC-01 edges it resolved. | Item 17 restored boss combat state progression and remeasured.",
   "base_commit": "3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8",
   "baseline_after_pre16a": {
     "shipping_graphs": 55,
     "orphan_occurrences": 73,
     "unique_orphan_edges": 43,
-    "phantom_ids": 27,
-    "phantom_instances": 53,
+    "phantom_ids": 26,
+    "phantom_instances": 47,
     "assets_with_orphans": 6,
-    "assets_with_phantoms": 14
+    "assets_with_phantoms": 13
   },
   "delta_vs_previous_known_state": {
     "orphans_unique": "50 -> 50",
@@ -80,15 +80,6 @@
       "instances": 1,
       "assets": [
         "Assets/Logic/EnemyAttackLogic.zlogic"
-      ],
-      "item14b_classification": "H_UNKNOWN"
-    },
-    "animator.set_trigger": {
-      "instances": 4,
-      "assets": [
-        "Assets/Logic/BossCombatLogic.zlogic",
-        "Assets/Logic/BossHealthLogic.zlogic",
-        "Assets/Logic/EnemyAILogic.zlogic"
       ],
       "item14b_classification": "H_UNKNOWN"
     },
@@ -267,9 +258,8 @@
       "item14b_classification": "H_UNKNOWN"
     },
     "variable.increment": {
-      "instances": 3,
+      "instances": 1,
       "assets": [
-        "Assets/Logic/BossCombatLogic.zlogic",
         "Assets/Logic/EnemyAILogic.zlogic"
       ],
       "item14b_classification": "H_UNKNOWN"
@@ -7164,5 +7154,9 @@
         "ui.set_progress_bar.value>in"
       ]
     ]
+  },
+  "_item17": {
+    "animator.set_trigger": "mapped to animator_set_trigger; left the inventory entirely",
+    "variable.increment": "BossCombatLogic reauthored onto get_variable -> add_number/subtract_number -> set_variable; EnemyAILogic still carries one"
   }
 }

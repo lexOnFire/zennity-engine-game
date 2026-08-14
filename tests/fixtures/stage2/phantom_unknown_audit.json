@@ -1,8 +1,8 @@
 {
   "_comment": "PHASE 9 recovery item 14B. Individual audit of the 27 phantom node ids that item 14A could not classify. This is an AUDIT: no production changed, no alias created, no node implemented. Every classification records the evidence it rests on, and 'a node with a similar name exists' was explicitly rejected as evidence -- where that is all there is, the id stays H_UNKNOWN. H is a valid result: inventing semantics would be worse than admitting ignorance. PHASE 9 recovery item 14E reauthored BossAILogic.zlogic and EnemyAILogic.zlogic onto the canonical scalar chase chain proven in item 14D.2, which removed every instance of math.distance, vector2 and normalize_vector. Those three ids left this file because a recovered id must leave the baseline -- this is debt, not exemption. Entries unrelated to the two AI graphs are untouched. PHASE 9 recovery item 16C added math.divide -> divide_number and ui.set_progress_bar -> set_ui_progress_bar to the legacy migration map, so both ids stopped being phantom. A recovered id leaves the record.",
-  "_provenance": "PHASE 9 recovery item 14E, regenerated after reauthoring the two AI graphs.",
-  "total_ids": 24,
-  "total_instances": 46,
+  "_provenance": "PHASE 9 recovery item 14E, regenerated after reauthoring the two AI graphs. | Item 17 recovered animator.set_trigger.",
+  "total_ids": 23,
+  "total_instances": 40,
   "by_classification": {
     "D_PLUGIN_OPTIONAL": {
       "ids": 1,
@@ -13,8 +13,8 @@
       "instances": 20
     },
     "H_UNKNOWN": {
-      "ids": 15,
-      "instances": 25
+      "ids": 14,
+      "instances": 19
     }
   },
   "nodes": {
@@ -35,29 +35,6 @@
       "classification": "H_UNKNOWN",
       "confidence": "n/a",
       "rationale": "A similarly named node 'on_animation_event' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
-      "recommended_action": "Further audit or a design decision."
-    },
-    "animator.set_trigger": {
-      "instances": 4,
-      "assets": [
-        "Assets/Logic/BossCombatLogic.zlogic",
-        "Assets/Logic/BossHealthLogic.zlogic",
-        "Assets/Logic/EnemyAILogic.zlogic"
-      ],
-      "ports_used": {
-        "in": [
-          "in"
-        ],
-        "out": [
-          "next"
-        ]
-      },
-      "historical_implementation": "none found under this id in any commit",
-      "plugin": null,
-      "candidate": "animator_set_trigger",
-      "classification": "H_UNKNOWN",
-      "confidence": "n/a",
-      "rationale": "A similarly named node 'animator_set_trigger' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
       "recommended_action": "Further audit or a design decision."
     },
     "component.set_property": {
@@ -487,9 +464,8 @@
       "recommended_action": "Further audit or a design decision."
     },
     "variable.increment": {
-      "instances": 3,
+      "instances": 1,
       "assets": [
-        "Assets/Logic/BossCombatLogic.zlogic",
         "Assets/Logic/EnemyAILogic.zlogic"
       ],
       "ports_used": {
@@ -577,6 +553,35 @@
       "confidence": "medium",
       "rationale": "'logic.ui.set_progress_bar' is declared in engine/plugins/logic/nodes.py, a layer that does not feed the core catalogue. No historical implementation under this id. Copying it into the core just to clear the phantom would move a plugin's node into the engine.",
       "recommended_action": "Decide whether the plugin layer should register into the catalogue."
+    }
+  },
+  "_recovered_by_item_17": {
+    "animator.set_trigger": {
+      "was": {
+        "instances": 4,
+        "assets": [
+          "Assets/Logic/BossCombatLogic.zlogic",
+          "Assets/Logic/BossHealthLogic.zlogic",
+          "Assets/Logic/EnemyAILogic.zlogic"
+        ],
+        "ports_used": {
+          "in": [
+            "in"
+          ],
+          "out": [
+            "next"
+          ]
+        },
+        "historical_implementation": "none found under this id in any commit",
+        "plugin": null,
+        "candidate": "animator_set_trigger",
+        "classification": "H_UNKNOWN",
+        "confidence": "n/a",
+        "rationale": "A similarly named node 'animator_set_trigger' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
+        "recommended_action": "Further audit or a design decision."
+      },
+      "replacement": "animator_set_trigger",
+      "evidence": "definition engine/logic/node_definitions/animation_nodes.py id=animator_set_trigger and executor engine/logic/runtime/nodes/animation_nodes.py both predate this item; only the LEGACY_NODE_TYPES entry was missing, so every use resolved to a phantom"
     }
   }
 }

@@ -41,7 +41,7 @@
         85
       ],
       "config": {
-        "operator": ">=",
+        "operator": "<=",
         "value": 0.0
       }
     },
@@ -80,26 +80,56 @@
       }
     },
     {
-      "id": "check_heavy",
-      "type": "compare_number",
+      "id": "get_heavy_interval",
+      "type": "variable.get",
       "position": [
-        500,
-        200
+        200,
+        350
       ],
       "config": {
-        "operator": "==",
-        "value": 3
+        "variable_name": "heavy_attack_interval"
       }
     },
     {
-      "id": "set_heavy_attack",
-      "type": "animator.set_trigger",
+      "id": "sum_count",
+      "type": "math.add",
       "position": [
-        650,
-        200
+        350,
+        280
       ],
       "config": {
-        "trigger_name": "heavy_attack"
+        "b": 1
+      }
+    },
+    {
+      "id": "heavy_margin",
+      "type": "math.subtract",
+      "position": [
+        500,
+        315
+      ]
+    },
+    {
+      "id": "reset_timer",
+      "type": "variable.set",
+      "position": [
+        500,
+        85
+      ],
+      "config": {
+        "variable_name": "cooldown_timer"
+      }
+    },
+    {
+      "id": "check_heavy",
+      "type": "compare_number",
+      "position": [
+        650,
+        280
+      ],
+      "config": {
+        "operator": ">=",
+        "value": 0.0
       }
     },
     {
@@ -107,7 +137,7 @@
       "type": "variable.set",
       "position": [
         800,
-        200
+        220
       ],
       "config": {
         "variable_name": "attack_count",
@@ -115,26 +145,72 @@
       }
     },
     {
+      "id": "increment_count",
+      "type": "variable.set",
+      "position": [
+        800,
+        340
+      ],
+      "config": {
+        "variable_name": "attack_count"
+      }
+    },
+    {
+      "id": "set_heavy_attack",
+      "type": "animator.set_trigger",
+      "position": [
+        950,
+        220
+      ],
+      "config": {
+        "target": "Boss",
+        "trigger_name": "heavy_attack"
+      }
+    },
+    {
       "id": "set_normal_attack",
       "type": "animator.set_trigger",
       "position": [
-        650,
-        100
+        950,
+        340
       ],
       "config": {
+        "target": "Boss",
         "trigger_name": "attack"
       }
     },
     {
-      "id": "increment_count",
-      "type": "variable.increment",
+      "id": "sub_timer",
+      "type": "math.subtract",
       "position": [
-        800,
-        100
+        350,
+        440
       ],
       "config": {
-        "variable_name": "attack_count",
-        "increment": 1
+        "b": 0.016
+      }
+    },
+    {
+      "id": "clamp_timer",
+      "type": "math.clamp",
+      "position": [
+        500,
+        440
+      ],
+      "config": {
+        "minimum": 0,
+        "maximum": 999
+      }
+    },
+    {
+      "id": "decrease_timer",
+      "type": "variable.set",
+      "position": [
+        650,
+        440
+      ],
+      "config": {
+        "variable_name": "cooldown_timer"
       }
     },
     {
@@ -142,7 +218,7 @@
       "type": "variable.get",
       "position": [
         200,
-        360
+        520
       ],
       "config": {
         "variable_name": "attack_cooldown"
@@ -153,152 +229,162 @@
       "type": "math.multiply",
       "position": [
         350,
-        360
+        520
       ],
       "config": {
         "a": 0.8
       }
-    },
-    {
-      "id": "reset_timer",
-      "type": "variable.set",
-      "position": [
-        900,
-        180
-      ],
-      "config": {
-        "variable_name": "cooldown_timer",
-        "value": 0
-      }
-    },
-    {
-      "id": "decrease_timer",
-      "type": "variable.increment",
-      "position": [
-        200,
-        440
-      ],
-      "config": {
-        "variable_name": "cooldown_timer",
-        "increment": -0.016
-      }
-    },
-    {
-      "id": "clamp_timer",
-      "type": "math.clamp",
-      "position": [
-        350,
-        440
-      ],
-      "config": {
-        "min": 0,
-        "max": 999
-      }
-    },
-    {
-      "id": "margin_cooldown",
-      "type": "math.subtract",
-      "position": [
-        275,
-        85
-      ]
     }
   ],
   "edges": [
     {
       "from": "frame_loop",
-      "to": "get_cooldown_timer",
       "from_pin": "frame",
+      "to": "get_cooldown_timer",
       "to_pin": "execute"
     },
     {
       "from": "get_cooldown_timer",
+      "from_pin": "done",
       "to": "get_cooldown",
-      "from_pin": "value",
       "to_pin": "execute"
     },
     {
+      "from": "get_cooldown",
+      "from_pin": "done",
+      "to": "check_can_attack",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_cooldown_timer",
+      "from_pin": "value",
+      "to": "check_can_attack",
+      "to_pin": "value"
+    },
+    {
       "from": "check_can_attack",
-      "to": "get_phase",
       "from_pin": "true",
+      "to": "get_phase",
       "to_pin": "execute"
     },
     {
       "from": "get_phase",
-      "to": "check_phase2",
       "from_pin": "value",
+      "to": "check_phase2",
       "to_pin": "value"
     },
     {
+      "from": "get_phase",
+      "from_pin": "done",
+      "to": "check_phase2",
+      "to_pin": "execute"
+    },
+    {
       "from": "check_can_attack",
-      "to": "get_attack_count",
       "from_pin": "true",
+      "to": "get_attack_count",
       "to_pin": "execute"
     },
     {
       "from": "get_attack_count",
-      "to": "check_heavy",
+      "from_pin": "done",
+      "to": "get_heavy_interval",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_heavy_interval",
+      "from_pin": "done",
+      "to": "reset_timer",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_cooldown",
       "from_pin": "value",
+      "to": "reset_timer",
+      "to_pin": "value"
+    },
+    {
+      "from": "reset_timer",
+      "from_pin": "done",
+      "to": "check_heavy",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_attack_count",
+      "from_pin": "value",
+      "to": "sum_count",
+      "to_pin": "a"
+    },
+    {
+      "from": "sum_count",
+      "from_pin": "value",
+      "to": "heavy_margin",
+      "to_pin": "a"
+    },
+    {
+      "from": "get_heavy_interval",
+      "from_pin": "value",
+      "to": "heavy_margin",
+      "to_pin": "b"
+    },
+    {
+      "from": "heavy_margin",
+      "from_pin": "value",
+      "to": "check_heavy",
       "to_pin": "value"
     },
     {
       "from": "check_heavy",
-      "to": "set_heavy_attack",
       "from_pin": "true",
-      "to_pin": "execute"
-    },
-    {
-      "from": "set_heavy_attack",
       "to": "reset_count",
-      "from_pin": "done",
-      "to_pin": "execute"
-    },
-    {
-      "from": "check_heavy",
-      "to": "set_normal_attack",
-      "from_pin": "false",
-      "to_pin": "execute"
-    },
-    {
-      "from": "set_normal_attack",
-      "to": "increment_count",
-      "from_pin": "done",
-      "to_pin": "execute"
-    },
-    {
-      "from": "check_can_attack",
-      "to": "decrease_timer",
-      "from_pin": "false",
       "to_pin": "execute"
     },
     {
       "from": "reset_count",
-      "to": "reset_timer",
-      "from_pin": "success",
+      "from_pin": "done",
+      "to": "set_heavy_attack",
       "to_pin": "execute"
     },
     {
+      "from": "check_heavy",
+      "from_pin": "false",
+      "to": "increment_count",
+      "to_pin": "execute"
+    },
+    {
+      "from": "sum_count",
+      "from_pin": "value",
+      "to": "increment_count",
+      "to_pin": "value"
+    },
+    {
       "from": "increment_count",
-      "to": "reset_timer",
       "from_pin": "done",
+      "to": "set_normal_attack",
+      "to_pin": "execute"
+    },
+    {
+      "from": "check_can_attack",
+      "from_pin": "false",
+      "to": "decrease_timer",
       "to_pin": "execute"
     },
     {
       "from": "get_cooldown_timer",
       "from_pin": "value",
-      "to": "margin_cooldown",
+      "to": "sub_timer",
       "to_pin": "a"
     },
     {
-      "from": "get_cooldown",
+      "from": "sub_timer",
       "from_pin": "value",
-      "to": "margin_cooldown",
-      "to_pin": "b"
+      "to": "clamp_timer",
+      "to_pin": "value"
     },
     {
-      "from": "margin_cooldown",
+      "from": "clamp_timer",
       "from_pin": "value",
-      "to": "check_can_attack",
+      "to": "decrease_timer",
       "to_pin": "value"
     }
   ]

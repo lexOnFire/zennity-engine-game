@@ -86,10 +86,15 @@ def _loaded():
 
 #: 27 at item 14B, minus ``math.distance`` recovered by item 14E.
 #: 26 after item 14E; item 16C recovered math.divide and ui.set_progress_bar.
-EXPECTED_UNKNOWN_IDS = 24
+#: 23 after item 17 recovered ``animator.set_trigger``, which had a definition
+#: and an executor all along and was missing only its legacy map entry.
+EXPECTED_UNKNOWN_IDS = 23
 
 #: 52 at item 14B, minus the two ``math.distance`` instances (one per AI graph).
-EXPECTED_UNKNOWN_INSTANCES = 46
+#: 40 after item 17: four ``animator.set_trigger`` instances recovered, and two
+#: of the three ``variable.increment`` instances reauthored off the phantom in
+#: BossCombatLogic. The enemy still carries one, so the id stays.
+EXPECTED_UNKNOWN_INSTANCES = 40
 
 def test_the_audit_covers_exactly_the_unknown_set():
     unknown = {

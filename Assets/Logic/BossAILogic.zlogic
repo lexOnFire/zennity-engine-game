@@ -276,6 +276,25 @@
         950,
         550
       ]
+    },
+    {
+      "id": "get_phase2_threshold",
+      "type": "variable.get",
+      "position": [
+        200,
+        600
+      ],
+      "config": {
+        "variable_name": "phase2_threshold"
+      }
+    },
+    {
+      "id": "phase_limit",
+      "type": "math.multiply",
+      "position": [
+        350,
+        600
+      ]
     }
   ],
   "edges": [
@@ -314,12 +333,6 @@
       "from_pin": "next",
       "to": "get_max_health",
       "to_pin": "execute"
-    },
-    {
-      "from": "get_max_health",
-      "from_pin": "next",
-      "to": "check_phase2",
-      "to_pin": "in"
     },
     {
       "from": "check_phase2",
@@ -430,12 +443,6 @@
       "to_pin": "a"
     },
     {
-      "from": "get_max_health",
-      "from_pin": "value",
-      "to": "margin_phase",
-      "to_pin": "b"
-    },
-    {
       "from": "margin_phase",
       "from_pin": "value",
       "to": "check_phase2",
@@ -530,6 +537,36 @@
       "from_pin": "value",
       "to": "set_velocity",
       "to_pin": "y"
+    },
+    {
+      "from": "get_max_health",
+      "from_pin": "out",
+      "to": "get_phase2_threshold",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_phase2_threshold",
+      "from_pin": "out",
+      "to": "check_phase2",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_max_health",
+      "from_pin": "value",
+      "to": "phase_limit",
+      "to_pin": "a"
+    },
+    {
+      "from": "get_phase2_threshold",
+      "from_pin": "value",
+      "to": "phase_limit",
+      "to_pin": "b"
+    },
+    {
+      "from": "phase_limit",
+      "from_pin": "value",
+      "to": "margin_phase",
+      "to_pin": "b"
     }
   ]
 }

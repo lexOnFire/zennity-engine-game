@@ -51,6 +51,12 @@ LEGACY_NODE_TYPES = {
     "math.sign": "sign_number",
     "math.vector2_magnitude": "magnitude_vector",
     "animator.set_parameter": "set_animator_parameter",
+    # PHASE 9 recovery item 17. animator_set_trigger exists, has a runtime
+    # executor and a declared exec/target/trigger_name contract; only the map
+    # entry was missing, so every boss and enemy trigger resolved to a phantom
+    # that silently did nothing. The neighbouring set_animator_parameter target
+    # does NOT exist -- see the item 17 doc; that one is still debt.
+    "animator.set_trigger": "animator_set_trigger",
     "input.keyboard_key_down": "key_pressed",
 }
 

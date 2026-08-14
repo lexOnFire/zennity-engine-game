@@ -141,15 +141,35 @@ def test_the_graph_still_builds_a_runtime(asset: str):
     assert LogicGraphRuntime(graph(asset)) is not None
 
 
-def test_the_boss_combat_flow_was_preserved():
+def test_the_boss_combat_branches_still_fan_out_the_same_way():
     """Reauthoring a comparison must not rewire the branches around it."""
     g = graph("BossCombatLogic")
     edges = {(str(e["from_node"]), str(e["from_port"]), str(e["to_node"])) for e in g["edges"]}
     assert ("check_can_attack", "true", "get_phase") in edges
     assert ("check_can_attack", "true", "get_attack_count") in edges
     assert ("check_can_attack", "false", "decrease_timer") in edges
-    assert ("check_heavy", "true", "set_heavy_attack") in edges
-    assert ("check_heavy", "false", "set_normal_attack") in edges
+
+
+def test_the_attack_state_is_written_before_the_animation_is_asked_for():
+    """Item 17. Both branches update state first and trigger the animator last.
+
+    ``animator_set_trigger`` returns ``exec_failure`` when the object has no
+    AnimationController, and a failed flow port continues nothing. With the
+    trigger in the middle of the chain -- where the asset had it -- an object
+    without an animator would stop counting attacks and stop resetting its
+    cooldown. So the counter write and the timer reset happen upstream of it,
+    and the trigger is a leaf: gameplay cannot depend on animation succeeding.
+    """
+    g = graph("BossCombatLogic")
+    edges = {(str(e["from_node"]), str(e["from_port"]), str(e["to_node"])) for e in g["edges"]}
+    assert ("check_heavy", "true", "reset_count") in edges
+    assert ("reset_count", "next", "set_heavy_attack") in edges
+    assert ("check_heavy", "false", "increment_count") in edges
+    assert ("increment_count", "next", "set_normal_attack") in edges
+
+    sources = {str(e["from_node"]) for e in g["edges"]}
+    for trigger in ("set_heavy_attack", "set_normal_attack"):
+        assert trigger not in sources, f"{trigger} must stay a leaf"
 
 
 def test_the_boss_health_death_chain_was_preserved():
@@ -163,22 +183,29 @@ def test_the_boss_health_death_chain_was_preserved():
 # ---------------------------------------------------------------------------
 
 BOSS = {"cooldown_timer": 2.0, "attack_cooldown": 1.5, "phase": 2,
-        "attack_count": 3, "health": 10, "max_health": 500}
+        "attack_count": 3, "health": 10, "max_health": 500,
+        # Item 17 wired the heavy-attack threshold to the scene variable.
+        "heavy_attack_interval": 3}
 
 
 @pytest.mark.parametrize("timer,expected", [
-    (2.0, "true"),
-    (1.5, "true"),   # boundary: >= is inclusive
-    (1.4999, "false"),
-    (0.0, "false"),
+    (0.0, "true"),      # boundary: <= is inclusive, and 0 means ready
+    (-0.1, "true"),
+    (0.0001, "false"),
+    (1.5, "false"),
 ])
-def test_can_attack_compares_two_wired_operands(timer: float, expected: str):
-    """``cooldown_timer >= attack_cooldown``, both arriving on edges.
+def test_can_attack_reads_the_cooldown_as_a_countdown(timer: float, expected: str):
+    """``cooldown_timer <= 0``, the reading item 17 settled on.
 
-    ``compare_number`` takes its right operand from a property, so a threshold
-    that comes down a wire needs the margin trick: subtract first, compare the
-    remainder against zero. The boundary case is the one that would silently
-    flip if ``>=`` were written as ``>``.
+    The asset held both readings at once: it compared ``cooldown_timer -
+    attack_cooldown >= 0`` (count up) while decrementing the timer every frame
+    and resetting it to 0 after an attack (count down). Under the count-up
+    reading the boss attacked once and never again, because the timer only ever
+    moved away from the threshold. Level2 seeds ``cooldown_timer`` at 1.5, the
+    same value as ``attack_cooldown``, which is what a countdown looks like at
+    rest -- so countdown is what the scene authored, and the graph now matches:
+    the timer falls to zero, the attack fires, and the reset puts it back at
+    ``attack_cooldown`` rather than at 0.
     """
     assert _branch("BossCombatLogic", "check_can_attack",
                    dict(BOSS, cooldown_timer=timer)) == expected
@@ -190,8 +217,20 @@ def test_phase_two_compares_against_a_literal(phase: int, expected: str):
     assert _branch("BossCombatLogic", "check_phase2", dict(BOSS, phase=phase)) == expected
 
 
-@pytest.mark.parametrize("count,expected", [(3, "true"), (2, "false"), (4, "false")])
-def test_heavy_attack_compares_against_a_literal(count: int, expected: str):
+@pytest.mark.parametrize("count,expected", [(0, "false"), (1, "false"), (2, "true"), (3, "true")])
+def test_heavy_attack_compares_against_the_authored_interval(count: int, expected: str):
+    """``attack_count + 1 >= heavy_attack_interval``, both operands wired.
+
+    Two changes from the literal ``== 3`` the asset carried. The threshold is
+    now the scene's ``heavy_attack_interval``, which was declared and ignored;
+    since ``compare_number`` takes its right operand from a property, a wired
+    threshold needs the margin trick -- subtract, then compare the remainder
+    against zero. And the comparison is on the *incremented* count, because the
+    attack about to happen is the one being numbered: with the stored count,
+    an interval of 3 fired the heavy attack on the fourth attack, not the third.
+    ``>=`` rather than ``==`` so a count that somehow overshoots still fires
+    instead of locking the heavy attack out forever.
+    """
     assert _branch("BossCombatLogic", "check_heavy", dict(BOSS, attack_count=count)) == expected
 
 
