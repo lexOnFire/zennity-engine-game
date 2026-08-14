@@ -84,7 +84,8 @@
         ]
       },
       "logic_assets": [
-        "Assets/Logic/PlayerMovementLogic.zlogic"
+        "Assets/Logic/PlayerMovementLogic.zlogic",
+        "Assets/Logic/PlayerHealthLogic.zlogic"
       ],
       "variables": {
         "move_speed": 200,
@@ -99,6 +100,10 @@
           {
             "path": "Assets/Logic/PlayerMovementLogic.zlogic",
             "name": "PlayerMovementLogic"
+          },
+          {
+            "path": "Assets/Logic/PlayerHealthLogic.zlogic",
+            "name": "PlayerHealthLogic"
           }
         ]
       }

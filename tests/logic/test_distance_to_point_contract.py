@@ -191,7 +191,7 @@ def test_the_success_branch_fires_on_a_normal_calculation():
 # Why this was safe to change
 # ---------------------------------------------------------------------------
 
-def test_the_shipping_assets_that_use_the_node_are_the_two_ai_graphs():
+def test_the_shipping_assets_that_use_the_node_are_named_not_counted():
     """Inverted by item 14E: the promised case arrived.
 
     At item 14D.1 no shipping asset used this node at all, which is exactly why
@@ -199,9 +199,11 @@ def test_the_shipping_assets_that_use_the_node_are_the_two_ai_graphs():
     a live one. Item 14E is that future use: BossAILogic and EnemyAILogic now
     measure their distance to the player with it.
 
-    Naming the two assets rather than counting them keeps the check specific:
-    a third graph picking the node up is a fact worth noticing, not a number
-    that quietly drifts.
+    Naming the assets rather than counting them keeps the check specific: a
+    third graph picking the node up is a fact worth noticing, not a number that
+    quietly drifts. That is exactly what happened -- PHASE 9 recovery item 18
+    gave BossCombatLogic a range guard built on the same chain, so the node now
+    has three users and this record says which.
     """
     users = set()
     for path in sorted((REPO_ROOT / "Assets").rglob("*.zlogic")):
@@ -211,7 +213,8 @@ def test_the_shipping_assets_that_use_the_node_are_the_two_ai_graphs():
             continue
         if any(str(n["type"]) == NODE for n in graph["nodes"]):
             users.add(path.name)
-    assert users == {"BossAILogic.zlogic", "EnemyAILogic.zlogic"}, users
+    assert users == {"BossAILogic.zlogic", "BossCombatLogic.zlogic",
+                     "EnemyAILogic.zlogic"}, users
 
 
 def test_the_node_is_still_the_one_the_catalogue_declares():

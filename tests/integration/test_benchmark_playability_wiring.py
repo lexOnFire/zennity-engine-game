@@ -183,7 +183,14 @@ def test_benchmark_level2_flow_wiring() -> None:
     scene = _scene("Level2")
     objects = {obj["name"]: obj for obj in scene["objects"]}
 
-    assert objects["Player"]["logic_assets"] in (["Assets/Logic/PlayerMovementLogic.zlogic"], ["Assets/Logic/PlayerMovement_wasd.zlogic"])
+    # Membership rather than an exact list, matching the Level1 assertion
+    # above. PHASE 9 recovery item 18 gave the Player its health graph, which
+    # is what receives the boss's damage event -- an exact match here would
+    # forbid the player from ever gaining a second graph.
+    player_logic = objects["Player"]["logic_assets"]
+    assert ("Assets/Logic/PlayerMovementLogic.zlogic" in player_logic
+            or "Assets/Logic/PlayerMovement_wasd.zlogic" in player_logic)
+    assert "Assets/Logic/PlayerHealthLogic.zlogic" in player_logic
     assert objects["Boss"]["logic_assets"] == [
         "Assets/Logic/BossAILogic.zlogic",
         "Assets/Logic/BossCombatLogic.zlogic",

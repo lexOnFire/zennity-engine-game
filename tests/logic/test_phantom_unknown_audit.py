@@ -94,7 +94,9 @@ EXPECTED_UNKNOWN_IDS = 23
 #: 40 after item 17: four ``animator.set_trigger`` instances recovered, and two
 #: of the three ``variable.increment`` instances reauthored off the phantom in
 #: BossCombatLogic. The enemy still carries one, so the id stays.
-EXPECTED_UNKNOWN_INSTANCES = 40
+#: 39 after item 18 authored PlayerHealthLogic, which had used ``event.custom``
+#: -- a node with no inputs -- as an emitter. GuardInteractionLogic still has one.
+EXPECTED_UNKNOWN_INSTANCES = 39
 
 def test_the_audit_covers_exactly_the_unknown_set():
     unknown = {

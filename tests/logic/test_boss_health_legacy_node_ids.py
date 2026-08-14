@@ -181,27 +181,27 @@ def test_the_boss_percentage_chain_resolves_end_to_end():
     assert consumers and nodes[consumers[0]]["type"] == "set_ui_progress_bar"
 
 
-def test_the_player_divide_node_is_disconnected_and_that_is_recorded():
-    """A finding, not something this item fixes.
+def test_the_player_divide_node_is_now_wired_and_the_debt_is_paid():
+    """This assertion was inverted, not deleted.
 
-    ``PlayerHealthLogic`` carries a ``divide_number`` with no edges at all and
-    ``a``/``b`` both defaulting to 0.0. Migrating the id made the node real, so
-    it is worth stating plainly that it is still wired to nothing: it never
-    evaluates, so the zero divisor never raises, and no orphan edge is involved
-    because there is no edge. Fixing it would be authoring, not migration.
+    It used to record that ``PlayerHealthLogic``'s ``divide_number`` had no
+    edges at all and both operands defaulting to 0.0 -- migrating the id made
+    the node real without making it reachable, and that was worth stating so
+    nobody "fixed" a divisor that never evaluated.
+
+    PHASE 9 recovery item 18 authored the graph: the divide now takes health
+    and max_health and feeds the HUD bar. The debt is gone, so the record says
+    so rather than quietly continuing to pass.
     """
     g = graph("PlayerHealthLogic")
     nodes = {str(n["id"]): n for n in g["nodes"]}
     divide = [i for i, n in nodes.items() if str(n["type"]) == "divide_number"]
     assert len(divide) == 1
 
-    touching = [
-        e for e in g["edges"]
-        if str(e.get("to_node")) in divide or str(e.get("from_node")) in divide
-    ]
-    assert touching == [], "the node gained wiring; update this record"
-    assert nodes[divide[0]]["properties"]["a"] == 0.0
-    assert nodes[divide[0]]["properties"]["b"] == 0.0
+    incoming = {str(e["to_port"]) for e in g["edges"] if str(e["to_node"]) in divide}
+    outgoing = {str(e["from_port"]) for e in g["edges"] if str(e["from_node"]) in divide}
+    assert incoming == {"a", "b"}, "both operands must arrive on edges"
+    assert outgoing == {"value"}
 
 
 def test_boss_health_has_no_orphan_edge_left():
@@ -230,12 +230,17 @@ def test_save_and_reopen_does_not_reintroduce_the_legacy_ids(name: str, tmp_path
     assert "math.divide" not in types and "ui.set_progress_bar" not in types
 
 
-def test_the_assets_on_disk_were_not_edited():
-    """The whole point: the graphs were right, the migration map had a hole."""
+def test_the_legacy_spelling_is_still_exercised_on_disk():
+    """The whole point of item 16C: the graph was right, the map had a hole.
+
+    ``PlayerHealthLogic`` left this list in item 18, which authored it onto
+    canonical ids -- so the legacy spelling is no longer on disk there. The
+    assertion narrows rather than disappears: BossHealthLogic still carries
+    ``math.divide``, so the alias is still load-bearing and still covered.
+    """
     import json
 
-    for name in USERS:
-        raw = json.loads((REPO_ROOT / "Assets" / "Logic" / f"{name}.zlogic").read_text(encoding="utf-8"))
-        types = {str(n.get("type")) for n in raw.get("nodes", [])}
-        assert "math.divide" in types, "the legacy spelling must still be on disk"
-        assert "ui.set_progress_bar" in types
+    raw = json.loads((REPO_ROOT / "Assets" / "Logic" / "BossHealthLogic.zlogic").read_text(encoding="utf-8"))
+    types = {str(n.get("type")) for n in raw.get("nodes", [])}
+    assert "math.divide" in types, "the legacy spelling must still be on disk"
+    assert "ui.set_progress_bar" in types

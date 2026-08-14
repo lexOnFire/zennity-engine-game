@@ -91,14 +91,38 @@ class _Animator:
         return self.parameters.get(str(name), default)
 
 
+class _Target:
+    """A stand-in Player, close enough for item 18's range guard to pass."""
+
+    def __init__(self, x: float = 40.0, y: float = 0.0) -> None:
+        self.x = float(x)
+        self.y = float(y)
+        self.name = "Player"
+        self.tag = "Player"
+        self.rigidbody = None
+        self.components: list = []
+
+    def get_component(self, _component_type):
+        return None
+
+    def move(self, delta_x: float, delta_y: float = 0.0) -> None:
+        self.x += float(delta_x)
+        self.y += float(delta_y)
+
+
 class _Boss:
     def __init__(self, *, animator: bool = True) -> None:
         self.x = 0.0
         self.y = 0.0
         self.tag = "Boss"
+        self.name = "Boss"
         self.rigidbody = None
         self.components: list = []
         self.animator = _Animator() if animator else None
+        # Item 18 put a range guard in front of the attack, so a boss with no
+        # target no longer attacks. These tests are about the state machine,
+        # not about targeting, so they keep a player within attack_range.
+        self.player = _Target()
 
     def get_component(self, _component_type):
         return self.animator
@@ -107,11 +131,11 @@ class _Boss:
         self.x += float(delta_x)
         self.y += float(delta_y)
 
-    def find(self, _name: str):
-        return None
+    def find(self, name: str):
+        return self.player if str(name).lower() == "player" else self
 
-    def find_object(self, name: str):
-        return self if str(name).lower() == "boss" else None
+    find_object = find
+    find_by_tag = find
 
 
 class _Run:

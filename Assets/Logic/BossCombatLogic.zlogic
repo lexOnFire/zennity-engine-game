@@ -46,6 +46,72 @@
       }
     },
     {
+      "id": "find_player",
+      "type": "object.find_by_name",
+      "position": [
+        500,
+        50
+      ],
+      "config": {
+        "object_name": "Player"
+      }
+    },
+    {
+      "id": "get_player_pos",
+      "type": "object.get_position",
+      "position": [
+        650,
+        20
+      ]
+    },
+    {
+      "id": "get_boss_pos",
+      "type": "transform.get_position",
+      "position": [
+        650,
+        90
+      ]
+    },
+    {
+      "id": "calc_distance",
+      "type": "distance_to_point",
+      "position": [
+        800,
+        55
+      ]
+    },
+    {
+      "id": "get_attack_range",
+      "type": "variable.get",
+      "position": [
+        650,
+        160
+      ],
+      "config": {
+        "variable_name": "attack_range"
+      }
+    },
+    {
+      "id": "margin_attack",
+      "type": "math.subtract",
+      "position": [
+        950,
+        110
+      ]
+    },
+    {
+      "id": "check_in_range",
+      "type": "compare_number",
+      "position": [
+        1100,
+        55
+      ],
+      "config": {
+        "operator": "<=",
+        "value": 0.0
+      }
+    },
+    {
       "id": "get_phase",
       "type": "variable.get",
       "position": [
@@ -72,7 +138,7 @@
       "id": "get_attack_count",
       "type": "variable.get",
       "position": [
-        200,
+        1250,
         280
       ],
       "config": {
@@ -83,7 +149,7 @@
       "id": "get_heavy_interval",
       "type": "variable.get",
       "position": [
-        200,
+        1250,
         350
       ],
       "config": {
@@ -94,7 +160,7 @@
       "id": "sum_count",
       "type": "math.add",
       "position": [
-        350,
+        1400,
         280
       ],
       "config": {
@@ -105,7 +171,7 @@
       "id": "heavy_margin",
       "type": "math.subtract",
       "position": [
-        500,
+        1550,
         315
       ]
     },
@@ -113,7 +179,7 @@
       "id": "reset_timer",
       "type": "variable.set",
       "position": [
-        500,
+        1400,
         85
       ],
       "config": {
@@ -124,7 +190,7 @@
       "id": "check_heavy",
       "type": "compare_number",
       "position": [
-        650,
+        1700,
         280
       ],
       "config": {
@@ -136,8 +202,8 @@
       "id": "reset_count",
       "type": "variable.set",
       "position": [
-        800,
-        220
+        1850,
+        200
       ],
       "config": {
         "variable_name": "attack_count",
@@ -148,19 +214,63 @@
       "id": "increment_count",
       "type": "variable.set",
       "position": [
-        800,
-        340
+        1850,
+        380
       ],
       "config": {
         "variable_name": "attack_count"
       }
     },
     {
+      "id": "get_heavy_damage",
+      "type": "variable.get",
+      "position": [
+        1850,
+        140
+      ],
+      "config": {
+        "variable_name": "heavy_attack_damage"
+      }
+    },
+    {
+      "id": "get_attack_damage",
+      "type": "variable.get",
+      "position": [
+        1850,
+        450
+      ],
+      "config": {
+        "variable_name": "attack_damage"
+      }
+    },
+    {
+      "id": "emit_heavy_damage",
+      "type": "emit_event",
+      "position": [
+        2000,
+        200
+      ],
+      "config": {
+        "name": "player_damage"
+      }
+    },
+    {
+      "id": "emit_normal_damage",
+      "type": "emit_event",
+      "position": [
+        2000,
+        380
+      ],
+      "config": {
+        "name": "player_damage"
+      }
+    },
+    {
       "id": "set_heavy_attack",
       "type": "animator.set_trigger",
       "position": [
-        950,
-        220
+        2150,
+        200
       ],
       "config": {
         "target": "Boss",
@@ -171,8 +281,8 @@
       "id": "set_normal_attack",
       "type": "animator.set_trigger",
       "position": [
-        950,
-        340
+        2150,
+        380
       ],
       "config": {
         "target": "Boss",
@@ -184,7 +294,7 @@
       "type": "math.subtract",
       "position": [
         350,
-        440
+        520
       ],
       "config": {
         "b": 0.016
@@ -195,7 +305,7 @@
       "type": "math.clamp",
       "position": [
         500,
-        440
+        520
       ],
       "config": {
         "minimum": 0,
@@ -207,7 +317,7 @@
       "type": "variable.set",
       "position": [
         650,
-        440
+        520
       ],
       "config": {
         "variable_name": "cooldown_timer"
@@ -218,7 +328,7 @@
       "type": "variable.get",
       "position": [
         200,
-        520
+        600
       ],
       "config": {
         "variable_name": "attack_cooldown"
@@ -229,10 +339,22 @@
       "type": "math.multiply",
       "position": [
         350,
-        520
+        600
       ],
       "config": {
         "a": 0.8
+      }
+    },
+    {
+      "id": "target_guard",
+      "type": "compare_number",
+      "position": [
+        950,
+        20
+      ],
+      "config": {
+        "operator": ">",
+        "value": 0.0
       }
     }
   ],
@@ -264,6 +386,66 @@
     {
       "from": "check_can_attack",
       "from_pin": "true",
+      "to": "find_player",
+      "to_pin": "execute"
+    },
+    {
+      "from": "find_player",
+      "from_pin": "done",
+      "to": "calc_distance",
+      "to_pin": "exec"
+    },
+    {
+      "from": "find_player",
+      "from_pin": "object",
+      "to": "get_player_pos",
+      "to_pin": "target"
+    },
+    {
+      "from": "get_boss_pos",
+      "from_pin": "x",
+      "to": "calc_distance",
+      "to_pin": "x1"
+    },
+    {
+      "from": "get_boss_pos",
+      "from_pin": "y",
+      "to": "calc_distance",
+      "to_pin": "y1"
+    },
+    {
+      "from": "get_player_pos",
+      "from_pin": "x",
+      "to": "calc_distance",
+      "to_pin": "x2"
+    },
+    {
+      "from": "get_player_pos",
+      "from_pin": "y",
+      "to": "calc_distance",
+      "to_pin": "y2"
+    },
+    {
+      "from": "calc_distance",
+      "from_pin": "distance",
+      "to": "margin_attack",
+      "to_pin": "a"
+    },
+    {
+      "from": "get_attack_range",
+      "from_pin": "value",
+      "to": "margin_attack",
+      "to_pin": "b"
+    },
+    {
+      "from": "margin_attack",
+      "from_pin": "value",
+      "to": "check_in_range",
+      "to_pin": "value"
+    },
+    {
+      "from": "check_in_range",
+      "from_pin": "true",
       "to": "get_phase",
       "to_pin": "execute"
     },
@@ -280,7 +462,7 @@
       "to_pin": "execute"
     },
     {
-      "from": "check_can_attack",
+      "from": "check_in_range",
       "from_pin": "true",
       "to": "get_attack_count",
       "to_pin": "execute"
@@ -342,6 +524,18 @@
     {
       "from": "reset_count",
       "from_pin": "done",
+      "to": "emit_heavy_damage",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_heavy_damage",
+      "from_pin": "value",
+      "to": "emit_heavy_damage",
+      "to_pin": "payload"
+    },
+    {
+      "from": "emit_heavy_damage",
+      "from_pin": "done",
       "to": "set_heavy_attack",
       "to_pin": "execute"
     },
@@ -359,6 +553,18 @@
     },
     {
       "from": "increment_count",
+      "from_pin": "done",
+      "to": "emit_normal_damage",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_attack_damage",
+      "from_pin": "value",
+      "to": "emit_normal_damage",
+      "to_pin": "payload"
+    },
+    {
+      "from": "emit_normal_damage",
       "from_pin": "done",
       "to": "set_normal_attack",
       "to_pin": "execute"
@@ -386,6 +592,24 @@
       "from_pin": "value",
       "to": "decrease_timer",
       "to_pin": "value"
+    },
+    {
+      "from": "calc_distance",
+      "from_pin": "exec_calculated",
+      "to": "target_guard",
+      "to_pin": "execute"
+    },
+    {
+      "from": "calc_distance",
+      "from_pin": "distance",
+      "to": "target_guard",
+      "to_pin": "value"
+    },
+    {
+      "from": "target_guard",
+      "from_pin": "true",
+      "to": "check_in_range",
+      "to_pin": "execute"
     }
   ]
 }

@@ -1,13 +1,13 @@
 {
   "_comment": "Phase 9 Recovery Item 16A. Final orphan edge audit and root-cause classification. Inventory only; not an allow-list and does not weaken tools/audit_node_system.py --ci.",
-  "_provenance": "Phase 9 Recovery Item 16A; base 3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8 | Item 16B removed only the numeric RC-01 edges it resolved. | Item 17 restored boss combat state progression and remeasured.",
+  "_provenance": "Phase 9 Recovery Item 16A; base 3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8 | Item 16B removed only the numeric RC-01 edges it resolved. | Item 17 restored boss combat state progression and remeasured. | Item 18 restored the boss damage pipeline and remeasured.",
   "base_commit": "3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8",
   "baseline_after_pre16a": {
     "shipping_graphs": 55,
     "orphan_occurrences": 73,
     "unique_orphan_edges": 43,
     "phantom_ids": 26,
-    "phantom_instances": 47,
+    "phantom_instances": 46,
     "assets_with_orphans": 6,
     "assets_with_phantoms": 13
   },
@@ -99,10 +99,9 @@
       "item14b_classification": "H_UNKNOWN"
     },
     "event.custom": {
-      "instances": 2,
+      "instances": 1,
       "assets": [
-        "Assets/Logic/GuardInteractionLogic.zlogic",
-        "Assets/Logic/PlayerHealthLogic.zlogic"
+        "Assets/Logic/GuardInteractionLogic.zlogic"
       ],
       "item14b_classification": "H_UNKNOWN"
     },
@@ -7158,5 +7157,8 @@
   "_item17": {
     "animator.set_trigger": "mapped to animator_set_trigger; left the inventory entirely",
     "variable.increment": "BossCombatLogic reauthored onto get_variable -> add_number/subtract_number -> set_variable; EnemyAILogic still carries one"
+  },
+  "_item18": {
+    "event.custom": "PlayerHealthLogic used it as an emitter; item 18 authored the graph onto emit_event"
   }
 }

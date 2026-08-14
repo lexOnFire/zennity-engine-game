@@ -145,8 +145,12 @@ def test_the_boss_combat_branches_still_fan_out_the_same_way():
     """Reauthoring a comparison must not rewire the branches around it."""
     g = graph("BossCombatLogic")
     edges = {(str(e["from_node"]), str(e["from_port"]), str(e["to_node"])) for e in g["edges"]}
-    assert ("check_can_attack", "true", "get_phase") in edges
-    assert ("check_can_attack", "true", "get_attack_count") in edges
+    # Item 18 put a target/range guard between the cooldown check and the
+    # attack, so the fan-out moved one node downstream. The shape is the same:
+    # one branch attacks, the other keeps counting the cooldown down.
+    assert ("check_can_attack", "true", "find_player") in edges
+    assert ("check_in_range", "true", "get_phase") in edges
+    assert ("check_in_range", "true", "get_attack_count") in edges
     assert ("check_can_attack", "false", "decrease_timer") in edges
 
 
@@ -162,10 +166,15 @@ def test_the_attack_state_is_written_before_the_animation_is_asked_for():
     """
     g = graph("BossCombatLogic")
     edges = {(str(e["from_node"]), str(e["from_port"]), str(e["to_node"])) for e in g["edges"]}
+    # Item 18 inserted the damage emit between the state write and the
+    # animation, which keeps the same ordering guarantee: by the time the
+    # animator is asked for anything, the counter and the damage are done.
     assert ("check_heavy", "true", "reset_count") in edges
-    assert ("reset_count", "next", "set_heavy_attack") in edges
+    assert ("reset_count", "next", "emit_heavy_damage") in edges
+    assert ("emit_heavy_damage", "next", "set_heavy_attack") in edges
     assert ("check_heavy", "false", "increment_count") in edges
-    assert ("increment_count", "next", "set_normal_attack") in edges
+    assert ("increment_count", "next", "emit_normal_damage") in edges
+    assert ("emit_normal_damage", "next", "set_normal_attack") in edges
 
     sources = {str(e["from_node"]) for e in g["edges"]}
     for trigger in ("set_heavy_attack", "set_normal_attack"):
