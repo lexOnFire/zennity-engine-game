@@ -237,3 +237,61 @@ def test_non_ascii_asset_paths_are_decoded_correctly():
     for meta in accented:
         assert "Ã" not in meta.name, f"mojibake: {meta.name}"
         assert _asset_for(meta).exists(), f"{meta.name} does not resolve to its asset"
+
+
+# ---------------------------------------------------------------------------
+# Case collisions
+# ---------------------------------------------------------------------------
+
+
+def _tracked_paths() -> list[str]:
+    out = subprocess.run(
+        ["git", "-c", "core.quotepath=off", "ls-files", "-z"],
+        cwd=REPO_ROOT, capture_output=True, check=True,
+    ).stdout
+    return [p for p in out.decode("utf-8", errors="surrogateescape").split("\0") if p]
+
+
+def _case_collisions(paths) -> dict[str, list[str]]:
+    """Paths that a case-insensitive filesystem cannot tell apart."""
+    groups: dict[str, list[str]] = {}
+    for path in paths:
+        groups.setdefault(path.casefold(), []).append(path)
+    return {key: sorted(v) for key, v in groups.items() if len(v) > 1}
+
+
+def test_no_two_tracked_paths_collide_when_casefolded():
+    """Windows and macOS cannot check out both, so only one ever lands.
+
+    Item 16D removed the ``assets/scripts`` tree, which duplicated all ten files
+    of ``Assets/Scripts`` byte for byte. Cloning on Windows printed a collision
+    warning and silently dropped one side, which is why the ``Assets/Scripts``
+    metadata hashes looked stale there: the file on disk was the other copy.
+
+    Checked over the whole repository rather than that one directory -- the
+    defect is a property of the path set, not of a folder.
+    """
+    collisions = _case_collisions(_tracked_paths())
+    assert collisions == {}, (
+        "paths differing only by case cannot both exist on Windows/macOS:\n"
+        + "\n".join(f"  {k}: {v}" for k, v in sorted(collisions.items()))
+    )
+
+
+def test_the_collision_check_is_not_vacuous():
+    """The detector must actually detect; proven on a synthetic pair."""
+    assert _case_collisions(["Assets/Scripts/a.py", "assets/scripts/a.py"])
+    assert _case_collisions(["A/B.PY", "a/b.py"])
+    assert _case_collisions(["x.py", "y.py"]) == {}
+    assert len(_tracked_paths()) > 1000, "the real sweep would be vacuous"
+
+
+def test_the_lowercase_assets_root_is_gone():
+    """The canonical root is ``Assets/``, decided before this item.
+
+    ``docs/architecture/ASSETS_CASING_MIGRATION.md`` recorded the choice and
+    said the lowercase tree had been removed. It had not: all ten files were
+    still tracked, and ``test_canonical_assets_root`` had been failing ever
+    since. Item 16D finished the migration the document described.
+    """
+    assert not any(p.startswith("assets/") for p in _tracked_paths())
