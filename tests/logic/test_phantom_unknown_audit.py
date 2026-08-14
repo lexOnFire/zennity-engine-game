@@ -85,10 +85,11 @@ def _loaded():
 # ---------------------------------------------------------------------------
 
 #: 27 at item 14B, minus ``math.distance`` recovered by item 14E.
-EXPECTED_UNKNOWN_IDS = 26
+#: 26 after item 14E; item 16C recovered math.divide and ui.set_progress_bar.
+EXPECTED_UNKNOWN_IDS = 24
 
 #: 52 at item 14B, minus the two ``math.distance`` instances (one per AI graph).
-EXPECTED_UNKNOWN_INSTANCES = 50
+EXPECTED_UNKNOWN_INSTANCES = 46
 
 def test_the_audit_covers_exactly_the_unknown_set():
     unknown = {
@@ -229,27 +230,41 @@ def test_the_victory_cluster_uses_a_foreign_port_vocabulary():
     assert "next" not in wired
 
 
-def test_math_divide_is_the_one_sibling_missing_from_the_migration_map():
-    """Structural evidence, not a guess from the name."""
+def test_math_divide_is_no_longer_missing_from_the_migration_map():
+    """Inverted by item 16C: the omission this recorded has been filled.
+
+    It used to assert that math.add, math.subtract and math.multiply were in the
+    legacy migration map while math.divide was not -- the finding that made the
+    fix a one-line table gap rather than a design question. Keeping it inverted
+    means removing the entry again fails here, where the gap was first named.
+    """
     from engine.logic.legacy_visual_script import LEGACY_NODE_TYPES
 
-    siblings = {
-        key: target for key, target in LEGACY_NODE_TYPES.items()
-        if key.startswith("math.") and target.endswith("_number")
-    }
-    assert siblings, "the math.* family disappeared; revisit this classification"
-    mapped_and_real = {k for k, v in siblings.items() if v in NODE_DEFINITIONS}
-    assert {"math.add", "math.subtract", "math.multiply"} <= mapped_and_real
-    assert "math.divide" not in LEGACY_NODE_TYPES
-    assert "divide_number" in NODE_DEFINITIONS
+    for legacy, canonical in (
+        ("math.add", "add_number"),
+        ("math.subtract", "subtract_number"),
+        ("math.multiply", "multiply_number"),
+        ("math.divide", "divide_number"),
+    ):
+        assert LEGACY_NODE_TYPES[legacy] == canonical
 
+def test_math_divide_left_the_audit_because_it_was_recovered():
+    """Inverted by item 16C: the id it examined is no longer unknown.
 
-def test_math_divide_would_fit_its_candidate_exactly():
-    """Ports, not names: divide_number accepts everything the assets wire."""
-    used = AUDIT["nodes"]["math.divide"]["ports_used"]
+    This checked that ``divide_number`` accepted every port the assets wired
+    into ``math.divide`` -- the port-level evidence that made the migration a
+    safe one-line fix rather than a guess. The fix landed, so the id left this
+    audit, and its record moved to ``_recovered_by_item_16C``.
+    """
+    from engine.logic.legacy_visual_script import LEGACY_NODE_TYPES
+
+    assert "math.divide" not in AUDIT["nodes"]
+    recovered = AUDIT["_recovered_by_item_16C"]["math.divide"]
+    assert LEGACY_NODE_TYPES["math.divide"] == "divide_number"
+
     ports = NODE_PORT_DEFINITIONS["divide_number"]
-    assert set(used["in"]) <= {name for name, _k in ports["inputs"]}
-    assert set(used["out"]) <= {name for name, _k in ports["outputs"]}
+    assert set(recovered["ports_used"]["in"]) <= {n for n, _k in ports["inputs"]}
+    assert set(recovered["ports_used"]["out"]) <= {n for n, _k in ports["outputs"]}
 
 
 def test_the_plugin_ids_really_live_in_the_plugin_layer():

@@ -4,11 +4,11 @@
   "base_commit": "3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8",
   "baseline_after_pre16a": {
     "shipping_graphs": 55,
-    "orphan_occurrences": 77,
-    "unique_orphan_edges": 47,
-    "phantom_ids": 29,
-    "phantom_instances": 57,
-    "assets_with_orphans": 7,
+    "orphan_occurrences": 73,
+    "unique_orphan_edges": 43,
+    "phantom_ids": 27,
+    "phantom_instances": 53,
+    "assets_with_orphans": 6,
     "assets_with_phantoms": 14
   },
   "delta_vs_previous_known_state": {
@@ -19,12 +19,6 @@
     "reason": "PRE-16A added scene bindings only; normalized .zlogic graph baseline remains 50 unique orphan keys. This fixture additionally records 82 edge-side occurrences."
   },
   "unique_orphan_edges_by_asset": {
-    "Assets/Logic/BossHealthLogic.zlogic": [
-      "math.divide.a>in",
-      "math.divide.b>in",
-      "math.divide.value>out",
-      "ui.set_progress_bar.value>in"
-    ],
     "Assets/Logic/CoinCollectionLogic.zlogic": [
       "if_else.value>in"
     ],
@@ -136,14 +130,6 @@
       ],
       "item14b_classification": "F_AUTHORING_ERROR"
     },
-    "math.divide": {
-      "instances": 2,
-      "assets": [
-        "Assets/Logic/BossHealthLogic.zlogic",
-        "Assets/Logic/PlayerHealthLogic.zlogic"
-      ],
-      "item14b_classification": "C_LEGACY_MIGRATION_GAP"
-    },
     "move_towards": {
       "instances": 1,
       "assets": [
@@ -252,14 +238,6 @@
       ],
       "item14b_classification": "NEVER_IMPLEMENTED"
     },
-    "ui.set_progress_bar": {
-      "instances": 2,
-      "assets": [
-        "Assets/Logic/BossHealthLogic.zlogic",
-        "Assets/Logic/PlayerHealthLogic.zlogic"
-      ],
-      "item14b_classification": "D_PLUGIN_OPTIONAL"
-    },
     "ui_get_widget": {
       "instances": 4,
       "assets": [
@@ -349,8 +327,8 @@
       ],
       "can_fix_in_isolation": true,
       "order_recommended": 2,
-      "unique_edge_count": 3,
-      "occurrence_count": 3,
+      "unique_edge_count": 0,
+      "occurrence_count": 0,
       "safe_recovery_or_needs_design": "SAFE RECOVERY"
     },
     {
@@ -373,8 +351,8 @@
       ],
       "can_fix_in_isolation": true,
       "order_recommended": 3,
-      "unique_edge_count": 1,
-      "occurrence_count": 1,
+      "unique_edge_count": 0,
+      "occurrence_count": 0,
       "safe_recovery_or_needs_design": "NEEDS DESIGN"
     },
     {
@@ -512,290 +490,6 @@
     }
   ],
   "orphan_occurrences": [
-    {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "edge_index": 2,
-      "edge_id": "5d754aa053464ea98ff761b579fabf2d",
-      "side": "target",
-      "orphan_key": "math.divide.a>in",
-      "raw_source_node_id": "get_boss_health",
-      "raw_source_port": "value",
-      "normalized_source_node_id": "get_boss_health",
-      "normalized_source_port": "value",
-      "raw_target_node_id": "calc_health_percent",
-      "raw_target_port": "a",
-      "normalized_target_node_id": "calc_health_percent",
-      "normalized_target_port": "a",
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_target_type": "math.divide",
-      "normalized_target_type": "math.divide",
-      "source_definition_exists": true,
-      "target_definition_exists": false,
-      "source_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ],
-          [
-            "value",
-            "any"
-          ]
-        ]
-      },
-      "target_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ]
-        ]
-      },
-      "source_port_declared": true,
-      "target_port_declared": false,
-      "source_executor": true,
-      "source_evaluator": true,
-      "target_executor": false,
-      "target_evaluator": false,
-      "source_phantom": false,
-      "target_phantom": true,
-      "node_id_alias_involved": false,
-      "port_alias_involved": false,
-      "legacy_migration_involved": false,
-      "historical_evidence": "none found under this id in any commit",
-      "plugin_evidence": null,
-      "classification": "J",
-      "root_cause": "RC-02-MATH-DIVIDE-MIGRATION-GAP",
-      "priority": "P1",
-      "confidence": "high",
-      "recommended_action": "Consider a later migration-map entry math.divide -> divide_number; do not apply in 16A.",
-      "evidence_summary": "math.divide is the one missing math.* sibling while divide_number exists and accepts a,b -> value.",
-      "rationale": "math.divide is the one missing math.* sibling while divide_number exists and accepts a,b -> value."
-    },
-    {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "edge_index": 3,
-      "edge_id": "1cdd7723e2784db883799ec0ef7912eb",
-      "side": "target",
-      "orphan_key": "math.divide.b>in",
-      "raw_source_node_id": "get_max_health",
-      "raw_source_port": "value",
-      "normalized_source_node_id": "get_max_health",
-      "normalized_source_port": "value",
-      "raw_target_node_id": "calc_health_percent",
-      "raw_target_port": "b",
-      "normalized_target_node_id": "calc_health_percent",
-      "normalized_target_port": "b",
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_target_type": "math.divide",
-      "normalized_target_type": "math.divide",
-      "source_definition_exists": true,
-      "target_definition_exists": false,
-      "source_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ],
-          [
-            "value",
-            "any"
-          ]
-        ]
-      },
-      "target_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ]
-        ]
-      },
-      "source_port_declared": true,
-      "target_port_declared": false,
-      "source_executor": true,
-      "source_evaluator": true,
-      "target_executor": false,
-      "target_evaluator": false,
-      "source_phantom": false,
-      "target_phantom": true,
-      "node_id_alias_involved": false,
-      "port_alias_involved": false,
-      "legacy_migration_involved": false,
-      "historical_evidence": "none found under this id in any commit",
-      "plugin_evidence": null,
-      "classification": "J",
-      "root_cause": "RC-02-MATH-DIVIDE-MIGRATION-GAP",
-      "priority": "P1",
-      "confidence": "high",
-      "recommended_action": "Consider a later migration-map entry math.divide -> divide_number; do not apply in 16A.",
-      "evidence_summary": "math.divide is the one missing math.* sibling while divide_number exists and accepts a,b -> value.",
-      "rationale": "math.divide is the one missing math.* sibling while divide_number exists and accepts a,b -> value."
-    },
-    {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "edge_index": 4,
-      "edge_id": "ef63421c1aae4f16bef6aeea2c39ae33",
-      "side": "source",
-      "orphan_key": "math.divide.value>out",
-      "raw_source_node_id": "calc_health_percent",
-      "raw_source_port": "value",
-      "normalized_source_node_id": "calc_health_percent",
-      "normalized_source_port": "value",
-      "raw_target_node_id": "update_boss_hud",
-      "raw_target_port": "value",
-      "normalized_target_node_id": "update_boss_hud",
-      "normalized_target_port": "value",
-      "raw_source_type": "math.divide",
-      "normalized_source_type": "math.divide",
-      "raw_target_type": "ui.set_progress_bar",
-      "normalized_target_type": "ui.set_progress_bar",
-      "source_definition_exists": false,
-      "target_definition_exists": false,
-      "source_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ]
-        ]
-      },
-      "target_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ]
-        ]
-      },
-      "source_port_declared": false,
-      "target_port_declared": false,
-      "source_executor": false,
-      "source_evaluator": false,
-      "target_executor": false,
-      "target_evaluator": false,
-      "source_phantom": true,
-      "target_phantom": true,
-      "node_id_alias_involved": false,
-      "port_alias_involved": false,
-      "legacy_migration_involved": false,
-      "historical_evidence": "none found under this id in any commit",
-      "plugin_evidence": null,
-      "classification": "J",
-      "root_cause": "RC-02-MATH-DIVIDE-MIGRATION-GAP",
-      "priority": "P1",
-      "confidence": "high",
-      "recommended_action": "Consider a later migration-map entry math.divide -> divide_number; do not apply in 16A.",
-      "evidence_summary": "math.divide is the one missing math.* sibling while divide_number exists and accepts a,b -> value.",
-      "rationale": "math.divide is the one missing math.* sibling while divide_number exists and accepts a,b -> value."
-    },
-    {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "edge_index": 4,
-      "edge_id": "ef63421c1aae4f16bef6aeea2c39ae33",
-      "side": "target",
-      "orphan_key": "ui.set_progress_bar.value>in",
-      "raw_source_node_id": "calc_health_percent",
-      "raw_source_port": "value",
-      "normalized_source_node_id": "calc_health_percent",
-      "normalized_source_port": "value",
-      "raw_target_node_id": "update_boss_hud",
-      "raw_target_port": "value",
-      "normalized_target_node_id": "update_boss_hud",
-      "normalized_target_port": "value",
-      "raw_source_type": "math.divide",
-      "normalized_source_type": "math.divide",
-      "raw_target_type": "ui.set_progress_bar",
-      "normalized_target_type": "ui.set_progress_bar",
-      "source_definition_exists": false,
-      "target_definition_exists": false,
-      "source_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ]
-        ]
-      },
-      "target_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ]
-        ]
-      },
-      "source_port_declared": false,
-      "target_port_declared": false,
-      "source_executor": false,
-      "source_evaluator": false,
-      "target_executor": false,
-      "target_evaluator": false,
-      "source_phantom": true,
-      "target_phantom": true,
-      "node_id_alias_involved": false,
-      "port_alias_involved": false,
-      "legacy_migration_involved": false,
-      "historical_evidence": "none found under this id in any commit",
-      "plugin_evidence": "logic.ui.set_progress_bar",
-      "classification": "G",
-      "root_cause": "RC-03-PLUGIN-OPTIONAL-LOGIC-NODES",
-      "priority": "P3",
-      "confidence": "medium",
-      "recommended_action": "Decide plugin/provider registration policy; do not copy plugin nodes into core here.",
-      "evidence_summary": "Node is declared in plugin/optional layer, not in the core catalogue.",
-      "rationale": "Node is declared in plugin/optional layer, not in the core catalogue."
-    },
     {
       "asset": "Assets/Logic/CoinCollectionLogic.zlogic",
       "edge_index": 0,
@@ -6127,110 +5821,6 @@
   ],
   "unique_orphan_edges": [
     {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "orphan_key": "math.divide.a>in",
-      "occurrence_count": 1,
-      "occurrences": [
-        {
-          "edge_index": 2,
-          "edge_id": "5d754aa053464ea98ff761b579fabf2d",
-          "side": "target"
-        }
-      ],
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_source_port": "value",
-      "normalized_source_port": "value",
-      "raw_target_type": "math.divide",
-      "normalized_target_type": "math.divide",
-      "raw_target_port": "a",
-      "normalized_target_port": "a",
-      "classification": "J",
-      "root_cause": "RC-02-MATH-DIVIDE-MIGRATION-GAP",
-      "priority": "P1",
-      "confidence": "high",
-      "recommended_action": "Consider a later migration-map entry math.divide -> divide_number; do not apply in 16A.",
-      "evidence_summary": "math.divide is the one missing math.* sibling while divide_number exists and accepts a,b -> value."
-    },
-    {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "orphan_key": "math.divide.b>in",
-      "occurrence_count": 1,
-      "occurrences": [
-        {
-          "edge_index": 3,
-          "edge_id": "1cdd7723e2784db883799ec0ef7912eb",
-          "side": "target"
-        }
-      ],
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_source_port": "value",
-      "normalized_source_port": "value",
-      "raw_target_type": "math.divide",
-      "normalized_target_type": "math.divide",
-      "raw_target_port": "b",
-      "normalized_target_port": "b",
-      "classification": "J",
-      "root_cause": "RC-02-MATH-DIVIDE-MIGRATION-GAP",
-      "priority": "P1",
-      "confidence": "high",
-      "recommended_action": "Consider a later migration-map entry math.divide -> divide_number; do not apply in 16A.",
-      "evidence_summary": "math.divide is the one missing math.* sibling while divide_number exists and accepts a,b -> value."
-    },
-    {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "orphan_key": "math.divide.value>out",
-      "occurrence_count": 1,
-      "occurrences": [
-        {
-          "edge_index": 4,
-          "edge_id": "ef63421c1aae4f16bef6aeea2c39ae33",
-          "side": "source"
-        }
-      ],
-      "raw_source_type": "math.divide",
-      "normalized_source_type": "math.divide",
-      "raw_source_port": "value",
-      "normalized_source_port": "value",
-      "raw_target_type": "ui.set_progress_bar",
-      "normalized_target_type": "ui.set_progress_bar",
-      "raw_target_port": "value",
-      "normalized_target_port": "value",
-      "classification": "J",
-      "root_cause": "RC-02-MATH-DIVIDE-MIGRATION-GAP",
-      "priority": "P1",
-      "confidence": "high",
-      "recommended_action": "Consider a later migration-map entry math.divide -> divide_number; do not apply in 16A.",
-      "evidence_summary": "math.divide is the one missing math.* sibling while divide_number exists and accepts a,b -> value."
-    },
-    {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "orphan_key": "ui.set_progress_bar.value>in",
-      "occurrence_count": 1,
-      "occurrences": [
-        {
-          "edge_index": 4,
-          "edge_id": "ef63421c1aae4f16bef6aeea2c39ae33",
-          "side": "target"
-        }
-      ],
-      "raw_source_type": "math.divide",
-      "normalized_source_type": "math.divide",
-      "raw_source_port": "value",
-      "normalized_source_port": "value",
-      "raw_target_type": "ui.set_progress_bar",
-      "normalized_target_type": "ui.set_progress_bar",
-      "raw_target_port": "value",
-      "normalized_target_port": "value",
-      "classification": "G",
-      "root_cause": "RC-03-PLUGIN-OPTIONAL-LOGIC-NODES",
-      "priority": "P3",
-      "confidence": "medium",
-      "recommended_action": "Decide plugin/provider registration policy; do not copy plugin nodes into core here.",
-      "evidence_summary": "Node is declared in plugin/optional layer, not in the core catalogue."
-    },
-    {
       "asset": "Assets/Logic/CoinCollectionLogic.zlogic",
       "orphan_key": "if_else.value>in",
       "occurrence_count": 1,
@@ -7550,5 +7140,29 @@
       "KeyCollectionLogic/check_player": "tag text comparison, not numeric",
       "EnemyAttackLogic/check_hit_player": "source physics.raycast_2d is phantom (RC-03)"
     }
+  },
+  "_item16c": {
+    "resolved_unique": 4,
+    "resolved_occurrences": 4,
+    "fix": "LEGACY_NODE_TYPES gained math.divide -> divide_number and ui.set_progress_bar -> set_ui_progress_bar",
+    "assets_edited": 0,
+    "removed": [
+      [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "math.divide.a>in"
+      ],
+      [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "math.divide.b>in"
+      ],
+      [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "math.divide.value>out"
+      ],
+      [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "ui.set_progress_bar.value>in"
+      ]
+    ]
   }
 }

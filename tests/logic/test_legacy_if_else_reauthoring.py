@@ -114,12 +114,14 @@ def test_boss_combat_has_no_orphan_edge_left_at_all():
     assert _orphans(graph("BossCombatLogic")) == []
 
 
-def test_boss_health_keeps_only_its_unrelated_debt():
-    """math.divide and ui.set_progress_bar are RC-04/RC-05 -- not this item."""
-    remaining = _orphans(graph("BossHealthLogic"))
-    assert remaining, "expected the unrelated debt to still be recorded"
-    for orphan in remaining:
-        assert orphan.startswith(("math.divide.", "ui.set_progress_bar.")), orphan
+def test_boss_health_has_no_orphan_edge_left_either():
+    """Inverted by item 16C, which paid the debt this recorded.
+
+    Item 16B left BossHealthLogic with only its unrelated math.divide /
+    ui.set_progress_bar orphans, and asserted exactly that. Item 16C added both
+    to the legacy migration map -- one line each -- so the asset now has none.
+    """
+    assert _orphans(graph("BossHealthLogic")) == []
 
 
 @pytest.mark.parametrize("asset", REAUTHORED)

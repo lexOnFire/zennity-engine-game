@@ -27,10 +27,20 @@ LEGACY_NODE_TYPES = {
     "math.add": "add_number",
     "math.subtract": "subtract_number",
     "math.multiply": "multiply_number",
+    # PHASE 9 recovery item 16C. The three siblings above were mapped and this
+    # one was not, which is the whole defect: divide_number exists, declares the
+    # same a/b -> value contract, and has the same evaluator. Two graphs author
+    # math.divide and both were left with a phantom node and orphan edges only
+    # because of the omission.
+    "math.divide": "divide_number",
     "math.clamp": "clamp_number",
     "audio.play_sound": "play_sound",
     "ui.update_label": "set_ui_text",
     "ui.update_progress": "set_ui_progress_bar",
+    # Same family, second spelling. The line above already establishes
+    # set_ui_progress_bar as the canonical target for the legacy ui.* progress
+    # bar; BossHealthLogic and PlayerHealthLogic simply use the other name.
+    "ui.set_progress_bar": "set_ui_progress_bar",
     "object.destroy": "destroy_object",
     "object.get_position": "get_position",
     "transform.get_position": "get_position",
