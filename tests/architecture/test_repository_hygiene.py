@@ -33,11 +33,16 @@ ASSETS = REPO_ROOT / "Assets"
 
 
 def _tracked_meta_files() -> list[Path]:
-    # -z: asset paths contain spaces, so splitting on whitespace mangles them.
+    # -z because asset paths contain spaces, and bytes because they also
+    # contain accents. ``text=True`` decodes with the locale encoding, which on
+    # Windows is cp1252: git emits UTF-8, so "Cenário" came back as "CenÃ¡rio"
+    # and the file lookup failed for three PNG sidecars. The paths are fine; the
+    # decoding was not. ``-c core.quotepath=off`` keeps git from escaping the
+    # non-ASCII bytes before we ever see them.
     out = subprocess.run(
-        ["git", "ls-files", "-z", "--", "Assets"],
-        cwd=REPO_ROOT, capture_output=True, text=True, check=True,
-    ).stdout.split("\0")
+        ["git", "-c", "core.quotepath=off", "ls-files", "-z", "--", "Assets"],
+        cwd=REPO_ROOT, capture_output=True, check=True,
+    ).stdout.decode("utf-8", errors="surrogateescape").split("\0")
     return [REPO_ROOT / line for line in out if line.endswith(".meta")]
 
 
@@ -216,3 +221,19 @@ def test_scanning_the_assets_twice_writes_nothing(tmp_path):
     second = (project / "Assets" / "Prefabs" / "Boss.zprfb.meta").read_bytes()
 
     assert first == second, "a second scan rewrote metadata; the hash is not stable"
+
+
+def test_non_ascii_asset_paths_are_decoded_correctly():
+    """The bug this file shipped with, kept from coming back.
+
+    Three PNG sidecars under ``Assets/Scenes`` have accented names. Reading
+    ``git ls-files`` with the locale encoding turned "Cenário" into "CenÃ¡rio"
+    on Windows, so their assets appeared to be missing and they were reported as
+    orphans. Linux never showed it, which is exactly why it needs a test rather
+    than a memory.
+    """
+    accented = [p for p in _tracked_meta_files() if "\u00e1" in p.name or "\u00e3" in p.name]
+    assert accented, "no accented asset path found; this check would be vacuous"
+    for meta in accented:
+        assert "Ã" not in meta.name, f"mojibake: {meta.name}"
+        assert _asset_for(meta).exists(), f"{meta.name} does not resolve to its asset"

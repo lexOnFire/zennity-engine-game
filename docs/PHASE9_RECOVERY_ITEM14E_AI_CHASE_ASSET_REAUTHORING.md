@@ -134,6 +134,33 @@ proved only that it does not block movement.
 
 `run_state` (Enemy) remains unconnected, exactly as authored.
 
+### The debt is not visual-only, and the Boss playtest is what showed it
+
+Item 16A classified this debt ANIMATION/VISUAL ONLY on the evidence that the
+chase works without it. That holds for movement and is wrong in general.
+
+The author played the Boss and could not tell whether the attacks were
+happening. They were right not to guess: **there is nothing to observe.** The
+attack branch runs five nodes and three of them are phantom.
+
+| node | type | effect |
+|---|---|---|
+| `set_normal_attack` | `animator.set_trigger` | **nothing** |
+| `set_heavy_attack` | `animator.set_trigger` | **nothing** |
+| `increment_count` | `variable.increment` | **nothing** |
+| `reset_count` | `set_variable` | works |
+| `reset_timer` | `set_variable` | works |
+
+The consequence goes past appearance. `increment_count` never runs, so
+`attack_count` never increases, so `check_heavy` (`attack_count == 3`) can never
+be true: **the heavy attack is unreachable**. Not because of item 16B -- its
+comparison is correct -- but because the counter feeding it does not exist.
+
+So `variable.increment` breaks *state logic*, not just visuals, and belongs in a
+different bucket from `set_animator_parameter` and `animator.set_trigger`.
+Whoever takes the animation item should reclassify it rather than inherit the
+16A label.
+
 ## Remaining phantom ids in these two assets
 
 | id | why it remains | scope |
@@ -142,7 +169,7 @@ proved only that it does not block movement.
 | `animator.set_trigger` | animation not implemented | out (declared debt) |
 | `variable.increment` | no canonical increment node; cooldown logic | out |
 
-## Manual acceptance — Enemy PASSED
+## Manual acceptance — Enemy PASSED, Boss PASSED
 
 Played by the author in `Level1.zscene`. Result, in their words: the enemies
 follow when they see the player, stop following once the player leaves the
@@ -164,12 +191,18 @@ Worth recording plainly: this chase had **never run**. No flow edge reached any
 branch node, and the chain went through three node types the engine does not
 have. This playtest is the first time it executed at all.
 
-### Still unconfirmed
+### Boss, played later
 
-- **Boss** (`Level2.zscene`, speed 80, detection 500, attack 72). The thresholds
-  differ enough from the Enemy's that the feel may differ; the automated
-  measurements pass identically, but no one has played it.
-- **Stop → Play** repeat from a clean state.
+Confirmed by the author after item 16B: the Boss chases, stops on reaching the
+player, and does not push. Same three behaviours as the Enemy, at its own
+thresholds (speed 80, detection 500, attack 72).
+
+What could **not** be observed is the attack rhythm, and that turned out not to
+be a gap in the testing -- see the animation debt section above. The
+comparisons item 16B reauthored fire correctly, proven against the real asset
+including boundaries; what they trigger is not implemented.
+
+Still unconfirmed: **Stop → Play** repeat from a clean state.
 
 Expect **no animation change**: enemies chase without a run/idle transition.
 That is the declared debt above, not a regression from this item.
