@@ -1,14 +1,14 @@
 {
   "_comment": "Phase 9 Recovery Item 16A. Final orphan edge audit and root-cause classification. Inventory only; not an allow-list and does not weaken tools/audit_node_system.py --ci.",
-  "_provenance": "Phase 9 Recovery Item 16A; base 3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8",
+  "_provenance": "Phase 9 Recovery Item 16A; base 3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8 | Item 16B removed only the numeric RC-01 edges it resolved.",
   "base_commit": "3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8",
   "baseline_after_pre16a": {
     "shipping_graphs": 55,
-    "orphan_occurrences": 82,
-    "unique_orphan_edges": 50,
+    "orphan_occurrences": 77,
+    "unique_orphan_edges": 47,
     "phantom_ids": 29,
     "phantom_instances": 57,
-    "assets_with_orphans": 8,
+    "assets_with_orphans": 7,
     "assets_with_phantoms": 14
   },
   "delta_vs_previous_known_state": {
@@ -19,12 +19,7 @@
     "reason": "PRE-16A added scene bindings only; normalized .zlogic graph baseline remains 50 unique orphan keys. This fixture additionally records 82 edge-side occurrences."
   },
   "unique_orphan_edges_by_asset": {
-    "Assets/Logic/BossCombatLogic.zlogic": [
-      "if_else.compare_value>in",
-      "if_else.value>in"
-    ],
     "Assets/Logic/BossHealthLogic.zlogic": [
-      "if_else.value>in",
       "math.divide.a>in",
       "math.divide.b>in",
       "math.divide.value>out",
@@ -438,8 +433,8 @@
       ],
       "can_fix_in_isolation": true,
       "order_recommended": 5,
-      "unique_edge_count": 6,
-      "occurrence_count": 8,
+      "unique_edge_count": 3,
+      "occurrence_count": 3,
       "safe_recovery_or_needs_design": "SAFE RECOVERY"
     },
     {
@@ -517,330 +512,6 @@
     }
   ],
   "orphan_occurrences": [
-    {
-      "asset": "Assets/Logic/BossCombatLogic.zlogic",
-      "edge_index": 2,
-      "edge_id": "658973c7995442958e9d94626491eaeb",
-      "side": "target",
-      "orphan_key": "if_else.compare_value>in",
-      "raw_source_node_id": "get_cooldown",
-      "raw_source_port": "value",
-      "normalized_source_node_id": "get_cooldown",
-      "normalized_source_port": "value",
-      "raw_target_node_id": "check_can_attack",
-      "raw_target_port": "compare_value",
-      "normalized_target_node_id": "check_can_attack",
-      "normalized_target_port": "compare_value",
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_target_type": "if_else",
-      "normalized_target_type": "if_else",
-      "source_definition_exists": true,
-      "target_definition_exists": true,
-      "source_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ],
-          [
-            "value",
-            "any"
-          ]
-        ]
-      },
-      "target_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ],
-          [
-            "condition",
-            "any"
-          ]
-        ],
-        "outputs": [
-          [
-            "true",
-            "flow"
-          ],
-          [
-            "false",
-            "flow"
-          ]
-        ]
-      },
-      "source_port_declared": true,
-      "target_port_declared": false,
-      "source_executor": true,
-      "source_evaluator": true,
-      "target_executor": true,
-      "target_evaluator": true,
-      "source_phantom": false,
-      "target_phantom": false,
-      "node_id_alias_involved": false,
-      "port_alias_involved": false,
-      "legacy_migration_involved": false,
-      "historical_evidence": "not found or not required for non-phantom port gap",
-      "plugin_evidence": null,
-      "classification": "D",
-      "root_cause": "RC-05-STALE-IF-ELSE-VALUE-PORTS",
-      "priority": "P1",
-      "confidence": "medium",
-      "recommended_action": "Reauthor or migrate value/compare_value condition wiring to the current if_else contract in a later item.",
-      "evidence_summary": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports.",
-      "rationale": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports."
-    },
-    {
-      "asset": "Assets/Logic/BossCombatLogic.zlogic",
-      "edge_index": 3,
-      "edge_id": "d1a1b3d3ea03473482b75b3ab50eae66",
-      "side": "target",
-      "orphan_key": "if_else.value>in",
-      "raw_source_node_id": "get_cooldown_timer",
-      "raw_source_port": "value",
-      "normalized_source_node_id": "get_cooldown_timer",
-      "normalized_source_port": "value",
-      "raw_target_node_id": "check_can_attack",
-      "raw_target_port": "value",
-      "normalized_target_node_id": "check_can_attack",
-      "normalized_target_port": "value",
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_target_type": "if_else",
-      "normalized_target_type": "if_else",
-      "source_definition_exists": true,
-      "target_definition_exists": true,
-      "source_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ],
-          [
-            "value",
-            "any"
-          ]
-        ]
-      },
-      "target_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ],
-          [
-            "condition",
-            "any"
-          ]
-        ],
-        "outputs": [
-          [
-            "true",
-            "flow"
-          ],
-          [
-            "false",
-            "flow"
-          ]
-        ]
-      },
-      "source_port_declared": true,
-      "target_port_declared": false,
-      "source_executor": true,
-      "source_evaluator": true,
-      "target_executor": true,
-      "target_evaluator": true,
-      "source_phantom": false,
-      "target_phantom": false,
-      "node_id_alias_involved": false,
-      "port_alias_involved": false,
-      "legacy_migration_involved": false,
-      "historical_evidence": "not found or not required for non-phantom port gap",
-      "plugin_evidence": null,
-      "classification": "D",
-      "root_cause": "RC-05-STALE-IF-ELSE-VALUE-PORTS",
-      "priority": "P1",
-      "confidence": "medium",
-      "recommended_action": "Reauthor or migrate value/compare_value condition wiring to the current if_else contract in a later item.",
-      "evidence_summary": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports.",
-      "rationale": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports."
-    },
-    {
-      "asset": "Assets/Logic/BossCombatLogic.zlogic",
-      "edge_index": 5,
-      "edge_id": "cb06968b2d6b4757bd90ac7e7c40e1ec",
-      "side": "target",
-      "orphan_key": "if_else.value>in",
-      "raw_source_node_id": "get_phase",
-      "raw_source_port": "value",
-      "normalized_source_node_id": "get_phase",
-      "normalized_source_port": "value",
-      "raw_target_node_id": "check_phase2",
-      "raw_target_port": "value",
-      "normalized_target_node_id": "check_phase2",
-      "normalized_target_port": "value",
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_target_type": "if_else",
-      "normalized_target_type": "if_else",
-      "source_definition_exists": true,
-      "target_definition_exists": true,
-      "source_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ],
-          [
-            "value",
-            "any"
-          ]
-        ]
-      },
-      "target_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ],
-          [
-            "condition",
-            "any"
-          ]
-        ],
-        "outputs": [
-          [
-            "true",
-            "flow"
-          ],
-          [
-            "false",
-            "flow"
-          ]
-        ]
-      },
-      "source_port_declared": true,
-      "target_port_declared": false,
-      "source_executor": true,
-      "source_evaluator": true,
-      "target_executor": true,
-      "target_evaluator": true,
-      "source_phantom": false,
-      "target_phantom": false,
-      "node_id_alias_involved": false,
-      "port_alias_involved": false,
-      "legacy_migration_involved": false,
-      "historical_evidence": "not found or not required for non-phantom port gap",
-      "plugin_evidence": null,
-      "classification": "D",
-      "root_cause": "RC-05-STALE-IF-ELSE-VALUE-PORTS",
-      "priority": "P1",
-      "confidence": "medium",
-      "recommended_action": "Reauthor or migrate value/compare_value condition wiring to the current if_else contract in a later item.",
-      "evidence_summary": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports.",
-      "rationale": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports."
-    },
-    {
-      "asset": "Assets/Logic/BossCombatLogic.zlogic",
-      "edge_index": 7,
-      "edge_id": "66c0b252fd01483ab74397294d9de755",
-      "side": "target",
-      "orphan_key": "if_else.value>in",
-      "raw_source_node_id": "get_attack_count",
-      "raw_source_port": "value",
-      "normalized_source_node_id": "get_attack_count",
-      "normalized_source_port": "value",
-      "raw_target_node_id": "check_heavy",
-      "raw_target_port": "value",
-      "normalized_target_node_id": "check_heavy",
-      "normalized_target_port": "value",
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_target_type": "if_else",
-      "normalized_target_type": "if_else",
-      "source_definition_exists": true,
-      "target_definition_exists": true,
-      "source_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ],
-          [
-            "value",
-            "any"
-          ]
-        ]
-      },
-      "target_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ],
-          [
-            "condition",
-            "any"
-          ]
-        ],
-        "outputs": [
-          [
-            "true",
-            "flow"
-          ],
-          [
-            "false",
-            "flow"
-          ]
-        ]
-      },
-      "source_port_declared": true,
-      "target_port_declared": false,
-      "source_executor": true,
-      "source_evaluator": true,
-      "target_executor": true,
-      "target_evaluator": true,
-      "source_phantom": false,
-      "target_phantom": false,
-      "node_id_alias_involved": false,
-      "port_alias_involved": false,
-      "legacy_migration_involved": false,
-      "historical_evidence": "not found or not required for non-phantom port gap",
-      "plugin_evidence": null,
-      "classification": "D",
-      "root_cause": "RC-05-STALE-IF-ELSE-VALUE-PORTS",
-      "priority": "P1",
-      "confidence": "medium",
-      "recommended_action": "Reauthor or migrate value/compare_value condition wiring to the current if_else contract in a later item.",
-      "evidence_summary": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports.",
-      "rationale": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports."
-    },
     {
       "asset": "Assets/Logic/BossHealthLogic.zlogic",
       "edge_index": 2,
@@ -1124,87 +795,6 @@
       "recommended_action": "Decide plugin/provider registration policy; do not copy plugin nodes into core here.",
       "evidence_summary": "Node is declared in plugin/optional layer, not in the core catalogue.",
       "rationale": "Node is declared in plugin/optional layer, not in the core catalogue."
-    },
-    {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "edge_index": 5,
-      "edge_id": "84432a89a74f476493dcd320cd1b298e",
-      "side": "target",
-      "orphan_key": "if_else.value>in",
-      "raw_source_node_id": "get_boss_health",
-      "raw_source_port": "value",
-      "normalized_source_node_id": "get_boss_health",
-      "normalized_source_port": "value",
-      "raw_target_node_id": "check_dead",
-      "raw_target_port": "value",
-      "normalized_target_node_id": "check_dead",
-      "normalized_target_port": "value",
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_target_type": "if_else",
-      "normalized_target_type": "if_else",
-      "source_definition_exists": true,
-      "target_definition_exists": true,
-      "source_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ]
-        ],
-        "outputs": [
-          [
-            "next",
-            "flow"
-          ],
-          [
-            "value",
-            "any"
-          ]
-        ]
-      },
-      "target_effective_contract": {
-        "inputs": [
-          [
-            "in",
-            "flow"
-          ],
-          [
-            "condition",
-            "any"
-          ]
-        ],
-        "outputs": [
-          [
-            "true",
-            "flow"
-          ],
-          [
-            "false",
-            "flow"
-          ]
-        ]
-      },
-      "source_port_declared": true,
-      "target_port_declared": false,
-      "source_executor": true,
-      "source_evaluator": true,
-      "target_executor": true,
-      "target_evaluator": true,
-      "source_phantom": false,
-      "target_phantom": false,
-      "node_id_alias_involved": false,
-      "port_alias_involved": false,
-      "legacy_migration_involved": false,
-      "historical_evidence": "not found or not required for non-phantom port gap",
-      "plugin_evidence": null,
-      "classification": "D",
-      "root_cause": "RC-05-STALE-IF-ELSE-VALUE-PORTS",
-      "priority": "P1",
-      "confidence": "medium",
-      "recommended_action": "Reauthor or migrate value/compare_value condition wiring to the current if_else contract in a later item.",
-      "evidence_summary": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports.",
-      "rationale": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports."
     },
     {
       "asset": "Assets/Logic/CoinCollectionLogic.zlogic",
@@ -6537,94 +6127,6 @@
   ],
   "unique_orphan_edges": [
     {
-      "asset": "Assets/Logic/BossCombatLogic.zlogic",
-      "orphan_key": "if_else.compare_value>in",
-      "occurrence_count": 1,
-      "occurrences": [
-        {
-          "edge_index": 2,
-          "edge_id": "658973c7995442958e9d94626491eaeb",
-          "side": "target"
-        }
-      ],
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_source_port": "value",
-      "normalized_source_port": "value",
-      "raw_target_type": "if_else",
-      "normalized_target_type": "if_else",
-      "raw_target_port": "compare_value",
-      "normalized_target_port": "compare_value",
-      "classification": "D",
-      "root_cause": "RC-05-STALE-IF-ELSE-VALUE-PORTS",
-      "priority": "P1",
-      "confidence": "medium",
-      "recommended_action": "Reauthor or migrate value/compare_value condition wiring to the current if_else contract in a later item.",
-      "evidence_summary": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports."
-    },
-    {
-      "asset": "Assets/Logic/BossCombatLogic.zlogic",
-      "orphan_key": "if_else.value>in",
-      "occurrence_count": 3,
-      "occurrences": [
-        {
-          "edge_index": 3,
-          "edge_id": "d1a1b3d3ea03473482b75b3ab50eae66",
-          "side": "target"
-        },
-        {
-          "edge_index": 5,
-          "edge_id": "cb06968b2d6b4757bd90ac7e7c40e1ec",
-          "side": "target"
-        },
-        {
-          "edge_index": 7,
-          "edge_id": "66c0b252fd01483ab74397294d9de755",
-          "side": "target"
-        }
-      ],
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_source_port": "value",
-      "normalized_source_port": "value",
-      "raw_target_type": "if_else",
-      "normalized_target_type": "if_else",
-      "raw_target_port": "value",
-      "normalized_target_port": "value",
-      "classification": "D",
-      "root_cause": "RC-05-STALE-IF-ELSE-VALUE-PORTS",
-      "priority": "P1",
-      "confidence": "medium",
-      "recommended_action": "Reauthor or migrate value/compare_value condition wiring to the current if_else contract in a later item.",
-      "evidence_summary": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports."
-    },
-    {
-      "asset": "Assets/Logic/BossHealthLogic.zlogic",
-      "orphan_key": "if_else.value>in",
-      "occurrence_count": 1,
-      "occurrences": [
-        {
-          "edge_index": 5,
-          "edge_id": "84432a89a74f476493dcd320cd1b298e",
-          "side": "target"
-        }
-      ],
-      "raw_source_type": "get_variable",
-      "normalized_source_type": "get_variable",
-      "raw_source_port": "value",
-      "normalized_source_port": "value",
-      "raw_target_type": "if_else",
-      "normalized_target_type": "if_else",
-      "raw_target_port": "value",
-      "normalized_target_port": "value",
-      "classification": "D",
-      "root_cause": "RC-05-STALE-IF-ELSE-VALUE-PORTS",
-      "priority": "P1",
-      "confidence": "medium",
-      "recommended_action": "Reauthor or migrate value/compare_value condition wiring to the current if_else contract in a later item.",
-      "evidence_summary": "Current if_else contract does not declare value/compare_value; assets use stale condition-style data ports."
-    },
-    {
       "asset": "Assets/Logic/BossHealthLogic.zlogic",
       "orphan_key": "math.divide.a>in",
       "occurrence_count": 1,
@@ -8020,5 +7522,33 @@
     "P1": 29,
     "P3": 1,
     "P2": 52
+  },
+  "_item16b": {
+    "resolved_unique": 3,
+    "resolved_occurrences": 5,
+    "assets": [
+      "Assets/Logic/BossCombatLogic.zlogic",
+      "Assets/Logic/BossHealthLogic.zlogic"
+    ],
+    "transformation": "numeric logic.branch comparisons -> compare_number; subtract_number only where both operands arrive on wires",
+    "removed": [
+      [
+        "Assets/Logic/BossCombatLogic.zlogic",
+        "if_else.compare_value>in"
+      ],
+      [
+        "Assets/Logic/BossCombatLogic.zlogic",
+        "if_else.value>in"
+      ],
+      [
+        "Assets/Logic/BossHealthLogic.zlogic",
+        "if_else.value>in"
+      ]
+    ],
+    "held_back": {
+      "CoinCollectionLogic/check_player": "tag text comparison, not numeric",
+      "KeyCollectionLogic/check_player": "tag text comparison, not numeric",
+      "EnemyAttackLogic/check_hit_player": "source physics.raycast_2d is phantom (RC-03)"
+    }
   }
 }

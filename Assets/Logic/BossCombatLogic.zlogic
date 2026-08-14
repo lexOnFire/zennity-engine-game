@@ -3,39 +3,303 @@
   "category": "Logic",
   "name": "BossCombatLogic",
   "nodes": [
-    {"id": "frame_loop", "type": "event.every_frame", "position": [50, 50]},
-    {"id": "get_cooldown_timer", "type": "variable.get", "position": [200, 50], "config": {"variable_name": "cooldown_timer"}},
-    {"id": "get_cooldown", "type": "variable.get", "position": [200, 120], "config": {"variable_name": "attack_cooldown"}},
-    {"id": "check_can_attack", "type": "logic.branch", "position": [350, 85], "config": {"condition": "greater_equal"}},
-    {"id": "get_phase", "type": "variable.get", "position": [200, 200], "config": {"variable_name": "phase"}},
-    {"id": "check_phase2", "type": "logic.branch", "position": [350, 200], "config": {"condition": "equal", "compare_value": 2}},
-    {"id": "get_attack_count", "type": "variable.get", "position": [200, 280], "config": {"variable_name": "attack_count"}},
-    {"id": "check_heavy", "type": "logic.branch", "position": [500, 200], "config": {"condition": "equal", "compare_value": 3}},
-    {"id": "set_heavy_attack", "type": "animator.set_trigger", "position": [650, 200], "config": {"trigger_name": "heavy_attack"}},
-    {"id": "reset_count", "type": "variable.set", "position": [800, 200], "config": {"variable_name": "attack_count", "value": 0}},
-    {"id": "set_normal_attack", "type": "animator.set_trigger", "position": [650, 100], "config": {"trigger_name": "attack"}},
-    {"id": "increment_count", "type": "variable.increment", "position": [800, 100], "config": {"variable_name": "attack_count", "increment": 1}},
-    {"id": "get_phase2_cooldown", "type": "variable.get", "position": [200, 360], "config": {"variable_name": "attack_cooldown"}},
-    {"id": "calc_phase2_cooldown", "type": "math.multiply", "position": [350, 360], "config": {"a": 0.8}},
-    {"id": "reset_timer", "type": "variable.set", "position": [900, 180], "config": {"variable_name": "cooldown_timer", "value": 0}},
-    {"id": "decrease_timer", "type": "variable.increment", "position": [200, 440], "config": {"variable_name": "cooldown_timer", "increment": -0.016}},
-    {"id": "clamp_timer", "type": "math.clamp", "position": [350, 440], "config": {"min": 0, "max": 999}}
+    {
+      "id": "frame_loop",
+      "type": "event.every_frame",
+      "position": [
+        50,
+        50
+      ]
+    },
+    {
+      "id": "get_cooldown_timer",
+      "type": "variable.get",
+      "position": [
+        200,
+        50
+      ],
+      "config": {
+        "variable_name": "cooldown_timer"
+      }
+    },
+    {
+      "id": "get_cooldown",
+      "type": "variable.get",
+      "position": [
+        200,
+        120
+      ],
+      "config": {
+        "variable_name": "attack_cooldown"
+      }
+    },
+    {
+      "id": "check_can_attack",
+      "type": "compare_number",
+      "position": [
+        350,
+        85
+      ],
+      "config": {
+        "operator": ">=",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "get_phase",
+      "type": "variable.get",
+      "position": [
+        200,
+        200
+      ],
+      "config": {
+        "variable_name": "phase"
+      }
+    },
+    {
+      "id": "check_phase2",
+      "type": "compare_number",
+      "position": [
+        350,
+        200
+      ],
+      "config": {
+        "operator": "==",
+        "value": 2
+      }
+    },
+    {
+      "id": "get_attack_count",
+      "type": "variable.get",
+      "position": [
+        200,
+        280
+      ],
+      "config": {
+        "variable_name": "attack_count"
+      }
+    },
+    {
+      "id": "check_heavy",
+      "type": "compare_number",
+      "position": [
+        500,
+        200
+      ],
+      "config": {
+        "operator": "==",
+        "value": 3
+      }
+    },
+    {
+      "id": "set_heavy_attack",
+      "type": "animator.set_trigger",
+      "position": [
+        650,
+        200
+      ],
+      "config": {
+        "trigger_name": "heavy_attack"
+      }
+    },
+    {
+      "id": "reset_count",
+      "type": "variable.set",
+      "position": [
+        800,
+        200
+      ],
+      "config": {
+        "variable_name": "attack_count",
+        "value": 0
+      }
+    },
+    {
+      "id": "set_normal_attack",
+      "type": "animator.set_trigger",
+      "position": [
+        650,
+        100
+      ],
+      "config": {
+        "trigger_name": "attack"
+      }
+    },
+    {
+      "id": "increment_count",
+      "type": "variable.increment",
+      "position": [
+        800,
+        100
+      ],
+      "config": {
+        "variable_name": "attack_count",
+        "increment": 1
+      }
+    },
+    {
+      "id": "get_phase2_cooldown",
+      "type": "variable.get",
+      "position": [
+        200,
+        360
+      ],
+      "config": {
+        "variable_name": "attack_cooldown"
+      }
+    },
+    {
+      "id": "calc_phase2_cooldown",
+      "type": "math.multiply",
+      "position": [
+        350,
+        360
+      ],
+      "config": {
+        "a": 0.8
+      }
+    },
+    {
+      "id": "reset_timer",
+      "type": "variable.set",
+      "position": [
+        900,
+        180
+      ],
+      "config": {
+        "variable_name": "cooldown_timer",
+        "value": 0
+      }
+    },
+    {
+      "id": "decrease_timer",
+      "type": "variable.increment",
+      "position": [
+        200,
+        440
+      ],
+      "config": {
+        "variable_name": "cooldown_timer",
+        "increment": -0.016
+      }
+    },
+    {
+      "id": "clamp_timer",
+      "type": "math.clamp",
+      "position": [
+        350,
+        440
+      ],
+      "config": {
+        "min": 0,
+        "max": 999
+      }
+    },
+    {
+      "id": "margin_cooldown",
+      "type": "math.subtract",
+      "position": [
+        275,
+        85
+      ]
+    }
   ],
   "edges": [
-    {"from": "frame_loop", "to": "get_cooldown_timer", "from_pin": "frame", "to_pin": "execute"},
-    {"from": "get_cooldown_timer", "to": "get_cooldown", "from_pin": "value", "to_pin": "execute"},
-    {"from": "get_cooldown", "to": "check_can_attack", "from_pin": "value", "to_pin": "compare_value"},
-    {"from": "get_cooldown_timer", "to": "check_can_attack", "from_pin": "value", "to_pin": "value"},
-    {"from": "check_can_attack", "to": "get_phase", "from_pin": "true", "to_pin": "execute"},
-    {"from": "get_phase", "to": "check_phase2", "from_pin": "value", "to_pin": "value"},
-    {"from": "check_can_attack", "to": "get_attack_count", "from_pin": "true", "to_pin": "execute"},
-    {"from": "get_attack_count", "to": "check_heavy", "from_pin": "value", "to_pin": "value"},
-    {"from": "check_heavy", "to": "set_heavy_attack", "from_pin": "true", "to_pin": "execute"},
-    {"from": "set_heavy_attack", "to": "reset_count", "from_pin": "done", "to_pin": "execute"},
-    {"from": "check_heavy", "to": "set_normal_attack", "from_pin": "false", "to_pin": "execute"},
-    {"from": "set_normal_attack", "to": "increment_count", "from_pin": "done", "to_pin": "execute"},
-    {"from": "check_can_attack", "to": "decrease_timer", "from_pin": "false", "to_pin": "execute"},
-    {"from": "reset_count", "to": "reset_timer", "from_pin": "success", "to_pin": "execute"},
-    {"from": "increment_count", "to": "reset_timer", "from_pin": "done", "to_pin": "execute"}
+    {
+      "from": "frame_loop",
+      "to": "get_cooldown_timer",
+      "from_pin": "frame",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_cooldown_timer",
+      "to": "get_cooldown",
+      "from_pin": "value",
+      "to_pin": "execute"
+    },
+    {
+      "from": "check_can_attack",
+      "to": "get_phase",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_phase",
+      "to": "check_phase2",
+      "from_pin": "value",
+      "to_pin": "value"
+    },
+    {
+      "from": "check_can_attack",
+      "to": "get_attack_count",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_attack_count",
+      "to": "check_heavy",
+      "from_pin": "value",
+      "to_pin": "value"
+    },
+    {
+      "from": "check_heavy",
+      "to": "set_heavy_attack",
+      "from_pin": "true",
+      "to_pin": "execute"
+    },
+    {
+      "from": "set_heavy_attack",
+      "to": "reset_count",
+      "from_pin": "done",
+      "to_pin": "execute"
+    },
+    {
+      "from": "check_heavy",
+      "to": "set_normal_attack",
+      "from_pin": "false",
+      "to_pin": "execute"
+    },
+    {
+      "from": "set_normal_attack",
+      "to": "increment_count",
+      "from_pin": "done",
+      "to_pin": "execute"
+    },
+    {
+      "from": "check_can_attack",
+      "to": "decrease_timer",
+      "from_pin": "false",
+      "to_pin": "execute"
+    },
+    {
+      "from": "reset_count",
+      "to": "reset_timer",
+      "from_pin": "success",
+      "to_pin": "execute"
+    },
+    {
+      "from": "increment_count",
+      "to": "reset_timer",
+      "from_pin": "done",
+      "to_pin": "execute"
+    },
+    {
+      "from": "get_cooldown_timer",
+      "from_pin": "value",
+      "to": "margin_cooldown",
+      "to_pin": "a"
+    },
+    {
+      "from": "get_cooldown",
+      "from_pin": "value",
+      "to": "margin_cooldown",
+      "to_pin": "b"
+    },
+    {
+      "from": "margin_cooldown",
+      "from_pin": "value",
+      "to": "check_can_attack",
+      "to_pin": "value"
+    }
   ]
 }

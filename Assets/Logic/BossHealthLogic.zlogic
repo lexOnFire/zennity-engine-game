@@ -56,14 +56,14 @@
     },
     {
       "id": "check_dead",
-      "type": "logic.branch",
+      "type": "compare_number",
       "position": [
         350,
         180
       ],
       "config": {
-        "condition": "less_equal",
-        "compare_value": 0
+        "operator": "<=",
+        "value": 0
       }
     },
     {
