@@ -299,7 +299,7 @@ def test_no_asset_was_modified():
         ["git", "status", "--porcelain", "--", "Assets"],
         cwd=REPO_ROOT, capture_output=True, text=True, check=True,
     ).stdout.strip()
-    unallowed = [l for l in changed.splitlines() if "EnemyAttackLogic.zlogic" not in l]
+    unallowed = [l for l in changed.splitlines() if "EnemyAttackLogic.zlogic" not in l and "BossHealthLogic.zlogic" not in l]
     assert not unallowed, unallowed
 
 

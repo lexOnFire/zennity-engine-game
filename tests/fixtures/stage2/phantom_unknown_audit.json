@@ -1,27 +1,22 @@
 {
   "_comment": "PHASE 9 recovery item 14B. Individual audit of the 27 phantom node ids that item 14A could not classify. This is an AUDIT: no production changed, no alias created, no node implemented. Every classification records the evidence it rests on, and 'a node with a similar name exists' was explicitly rejected as evidence -- where that is all there is, the id stays H_UNKNOWN. H is a valid result: inventing semantics would be worse than admitting ignorance. PHASE 9 recovery item 14E reauthored BossAILogic.zlogic and EnemyAILogic.zlogic onto the canonical scalar chase chain proven in item 14D.2, which removed every instance of math.distance, vector2 and normalize_vector. Those three ids left this file because a recovered id must leave the baseline -- this is debt, not exemption. Entries unrelated to the two AI graphs are untouched. PHASE 9 recovery item 16C added math.divide -> divide_number and ui.set_progress_bar -> set_ui_progress_bar to the legacy migration map, so both ids stopped being phantom. A recovered id leaves the record.",
   "_provenance": "PHASE 9 recovery item 14E, regenerated after reauthoring the two AI graphs. | Item 17 recovered animator.set_trigger. | Item 18 authored PlayerHealthLogic off event.custom-as-emitter.",
-  "total_ids": 19,
-  "total_instances": 35,
+  "total_ids": 18,
+  "total_instances": 32,
   "by_classification": {
     "H_UNKNOWN": {
       "ids": 10,
-      "instances": 14
+      "instances": 12
     },
     "F_AUTHORING_ERROR": {
       "ids": 8,
       "instances": 20
-    },
-    "D_PLUGIN_OPTIONAL": {
-      "ids": 1,
-      "instances": 1
     }
   },
   "nodes": {
     "component.set_property": {
-      "instances": 2,
+      "instances": 1,
       "assets": [
-        "Assets/Logic/BossHealthLogic.zlogic",
         "Assets/Logic/DoorLogic.zlogic"
       ],
       "ports_used": {
@@ -136,9 +131,8 @@
       "recommended_action": "Further audit or a design decision."
     },
     "object.get_variable": {
-      "instances": 2,
+      "instances": 1,
       "assets": [
-        "Assets/Logic/EnemyAttackLogic.zlogic",
         "Assets/Logic/LevelExitLogic.zlogic"
       ],
       "ports_used": {
@@ -216,25 +210,6 @@
       "confidence": "n/a",
       "rationale": "A similarly named node 'save_game' exists, but name similarity was explicitly rejected as evidence: either it does not accept the ports the assets wire, or so few ports are wired that the match is vacuous and does not distinguish it from any other candidate. No definition, executor, evaluator, alias, migration entry, plugin counterpart, or historical implementation under this id.",
       "recommended_action": "Further audit or a design decision."
-    },
-    "scene.load": {
-      "instances": 1,
-      "assets": [
-        "Assets/Logic/BossHealthLogic.zlogic"
-      ],
-      "ports_used": {
-        "in": [
-          "in"
-        ],
-        "out": []
-      },
-      "historical_implementation": "none found under this id in any commit",
-      "plugin": "logic.scene.load",
-      "candidate": null,
-      "classification": "D_PLUGIN_OPTIONAL",
-      "confidence": "medium",
-      "rationale": "'logic.scene.load' is declared in engine/plugins/logic/nodes.py, a layer that does not feed the core catalogue. No historical implementation under this id. Copying it into the core just to clear the phantom would move a plugin's node into the engine.",
-      "recommended_action": "Decide whether the plugin layer should register into the catalogue."
     },
     "scene_load": {
       "instances": 2,

@@ -6,8 +6,8 @@
     "shipping_graphs": 55,
     "orphan_occurrences": 57,
     "unique_orphan_edges": 29,
-    "phantom_ids": 22,
-    "phantom_instances": 41,
+    "phantom_ids": 21,
+    "phantom_instances": 39,
     "assets_with_orphans": 6,
     "assets_with_phantoms": 13
   },
@@ -61,9 +61,8 @@
   },
   "phantom_inventory": {
     "component.set_property": {
-      "instances": 2,
+      "instances": 1,
       "assets": [
-        "Assets/Logic/BossHealthLogic.zlogic",
         "Assets/Logic/DoorLogic.zlogic"
       ],
       "item14b_classification": "H_UNKNOWN"
@@ -138,13 +137,6 @@
         "Assets/Logic/LevelExitLogic.zlogic"
       ],
       "item14b_classification": "H_UNKNOWN"
-    },
-    "scene.load": {
-      "instances": 1,
-      "assets": [
-        "Assets/Logic/BossHealthLogic.zlogic"
-      ],
-      "item14b_classification": "D_PLUGIN_OPTIONAL"
     },
     "scene_load": {
       "instances": 2,

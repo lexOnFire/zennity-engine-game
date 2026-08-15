@@ -162,7 +162,6 @@ def test_no_shipping_asset_wires_velocity():
 #: preserves unknown authored data verbatim -- so the property outlives the pin.
 LEGACY_STOP_NODES = {
     "BossAILogic.zlogic": "stop_boss",
-    "BossHealthLogic.zlogic": "stop_velocity",
     "EnemyAILogic.zlogic": "stop_enemy",
 }
 

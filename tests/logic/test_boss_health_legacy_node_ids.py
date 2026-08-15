@@ -209,13 +209,12 @@ def test_boss_health_has_no_orphan_edge_left():
     assert _orphans(graph("BossHealthLogic")) == []
 
 
-def test_boss_health_still_carries_its_unrelated_phantom_debt():
-    """Phantom nodes whose edges resolve: out of scope, and still recorded."""
+def test_boss_health_has_no_phantom_node_left():
+    """Item 20 recovered component.set_property onto modify_collider and scene.load onto scene.load_scene."""
     g = graph("BossHealthLogic")
     phantom = {str(n["type"]) for n in g["nodes"] if resolve_node_id(str(n["type"])) not in NODE_DEFINITIONS}
-    # Item 17 recovered animator.set_trigger, so it left this set. The other
-    # two stay: neither has a definition anywhere in history.
-    assert phantom == {"component.set_property", "scene.load"}
+    assert phantom == set()
+
 
 
 @pytest.mark.parametrize("name", USERS)
