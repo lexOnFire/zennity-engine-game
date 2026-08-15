@@ -23,6 +23,16 @@
       "scope": "object",
       "default": 80.0
     },
+    "attack_cooldown": {
+      "type": "number",
+      "scope": "object",
+      "default": 0.4
+    },
+    "cooldown_timer": {
+      "type": "number",
+      "scope": "object",
+      "default": 0.4
+    },
     "facing_x": {
       "type": "number",
       "scope": "object",
@@ -35,491 +45,828 @@
   },
   "nodes": [
     {
-      "id": "space_key_down",
-      "type": "key_pressed",
-      "title": "Key Pressed Now?",
-      "category": "Condition",
+      "id": "update_event",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
       "position": [
         50.0,
         50.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "get_timer",
+      "type": "get_variable",
+      "title": "Get Cooldown Timer",
+      "category": "Variables",
+      "position": [
+        50.0,
+        180.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "name": "cooldown_timer"
+      }
+    },
+    {
+      "id": "dt_node",
+      "type": "delta_time",
+      "title": "Delta Time",
+      "category": "Time",
+      "position": [
+        50.0,
+        310.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 100.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "add_dt",
+      "type": "add_number",
+      "title": "Increment Timer",
+      "category": "Math",
+      "position": [
+        280.0,
+        180.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "clamp_timer",
+      "type": "clamp_number",
+      "title": "Clamp Cooldown Timer",
+      "category": "Math",
+      "position": [
+        500.0,
+        180.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "minimum": 0.0,
+        "maximum": 0.4
+      }
+    },
+    {
+      "id": "set_timer_update",
+      "type": "set_variable",
+      "title": "Update Cooldown Timer",
+      "category": "Variables",
+      "position": [
+        720.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "name": "cooldown_timer"
+      }
+    },
+    {
+      "id": "space_down",
+      "type": "key_pressed",
+      "title": "Space Key Pressed",
+      "category": "Input",
+      "position": [
+        50.0,
+        450.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
       },
       "properties": {
         "key": "SPACE"
       }
     },
     {
-      "id": "get_attack_in_progress",
+      "id": "get_timer_check",
       "type": "get_variable",
-      "title": "Get Attack State",
+      "title": "Get Cooldown For Check",
       "category": "Variables",
       "position": [
         50.0,
-        150.0
+        580.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 200.0,
+        "height": 120.0
       },
       "properties": {
-        "name": "is_attacking"
+        "name": "cooldown_timer"
       }
     },
     {
-      "id": "check_not_attacking",
-      "type": "if_else",
-      "title": "Check Not Attacking",
-      "category": "Flow",
+      "id": "check_cooldown",
+      "type": "compare_number",
+      "title": "Check Cooldown Ready",
+      "category": "Logic",
       "position": [
-        200.0,
-        150.0
+        280.0,
+        450.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
+        "width": 200.0,
+        "height": 140.0
       },
       "properties": {
-        "condition": "is_attacking == false"
+        "operator": ">=",
+        "value": 0.4
       }
     },
     {
-      "id": "set_attack_trigger",
+      "id": "reset_cooldown",
+      "type": "set_variable",
+      "title": "Reset Cooldown Timer",
+      "category": "Variables",
+      "position": [
+        500.0,
+        450.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "name": "cooldown_timer",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "play_anim",
       "type": "play_animation",
       "title": "Play Attack Animation",
       "category": "Animation",
       "position": [
-        350.0,
-        150.0
+        720.0,
+        450.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
+        "width": 200.0,
+        "height": 120.0
       },
       "properties": {
-        "state": "PlayerAttack"
+        "state": "PlayerAttack",
+        "target": "Player"
       }
     },
     {
-      "id": "animation_hit_event",
-      "type": "event_update",
-      "title": "On Update Hit Check",
-      "category": "Events",
+      "id": "find_enemy",
+      "type": "find_nearest_object",
+      "title": "Find Nearest Enemy",
+      "category": "Objects",
       "position": [
-        50.0,
-        300.0
+        940.0,
+        450.0
       ],
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 150.0
+        "height": 140.0
+      },
+      "properties": {
+        "tag": "Enemy",
+        "max_distance": 80.0
+      }
+    },
+    {
+      "id": "get_enemy_pos",
+      "type": "get_position",
+      "title": "Get Enemy Position",
+      "category": "Objects",
+      "position": [
+        1180.0,
+        450.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
       },
       "properties": {}
     },
     {
-      "id": "get_attack_damage",
-      "type": "get_variable",
-      "title": "Get Attack Damage",
-      "category": "Variables",
+      "id": "get_player_pos_e",
+      "type": "get_position",
+      "title": "Get Player Position",
+      "category": "Objects",
       "position": [
-        200.0,
-        300.0
+        1180.0,
+        580.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
+        "width": 200.0,
+        "height": 120.0
       },
-      "properties": {
-        "name": "attack_damage"
-      }
+      "properties": {}
     },
     {
-      "id": "get_attack_range",
-      "type": "get_variable",
-      "title": "Get Attack Range",
-      "category": "Variables",
+      "id": "sub_dx_e",
+      "type": "subtract_number",
+      "title": "Calculate Delta X",
+      "category": "Math",
       "position": [
-        200.0,
-        350.0
+        1400.0,
+        450.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
+        "width": 200.0,
+        "height": 120.0
       },
-      "properties": {
-        "name": "attack_range"
-      }
+      "properties": {}
     },
     {
-      "id": "get_facing_direction",
+      "id": "get_facing_e",
       "type": "get_variable",
       "title": "Get Facing Direction",
       "category": "Variables",
       "position": [
-        200.0,
-        400.0
+        1400.0,
+        580.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
+        "width": 200.0,
+        "height": 120.0
       },
       "properties": {
         "name": "facing_x"
       }
     },
     {
-      "id": "raycast_for_enemy",
-      "type": "key_pressed",
-      "title": "Raycast Enemy Check",
-      "category": "Physics",
-      "position": [
-        350.0,
-        350.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {
-        "key": "SPACE"
-      }
-    },
-    {
-      "id": "check_hit",
-      "type": "if_else",
-      "title": "Check Hit Object",
-      "category": "Flow",
-      "position": [
-        500.0,
-        350.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "condition": "hit != null"
-      }
-    },
-    {
-      "id": "get_hit_object",
-      "type": "get_variable",
-      "title": "Get Hit Object",
-      "category": "Variables",
-      "position": [
-        500.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {
-        "name": "hit_target"
-      }
-    },
-    {
-      "id": "get_enemy_health",
-      "type": "get_variable",
-      "title": "Get Enemy Health",
-      "category": "Variables",
-      "position": [
-        650.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {
-        "name": "health"
-      }
-    },
-    {
-      "id": "subtract_damage",
-      "type": "subtract_number",
-      "title": "Subtract Damage",
+      "id": "mult_aligned_e",
+      "type": "multiply_number",
+      "title": "Check Direction Alignment",
       "category": "Math",
       "position": [
-        800.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "a": 60.0,
-        "b": 25.0
-      }
-    },
-    {
-      "id": "clamp_health",
-      "type": "clamp_number",
-      "title": "Clamp Health",
-      "category": "Math",
-      "position": [
-        800.0,
-        350.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
-      },
-      "properties": {
-        "minimum": 0.0,
-        "maximum": 999.0
-      }
-    },
-    {
-      "id": "set_enemy_health",
-      "type": "set_variable",
-      "title": "Set Enemy Health",
-      "category": "Variables",
-      "position": [
-        950.0,
-        300.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 150.0
-      },
-      "properties": {
-        "name": "health",
-        "value": 0.0
-      }
-    },
-    {
-      "id": "check_dead",
-      "type": "if_else",
-      "title": "Check Enemy Dead",
-      "category": "Flow",
-      "position": [
-        950.0,
-        380.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "condition": "health <= 0"
-      }
-    },
-    {
-      "id": "destroy_enemy",
-      "type": "destroy_object",
-      "title": "Destroy Enemy",
-      "category": "Action",
-      "position": [
-        1100.0,
-        380.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 220.0,
-        "height": 156.0
-      },
-      "properties": {
-        "target": "Enemy"
-      }
-    },
-    {
-      "id": "no_hit_exec",
-      "type": "sequence",
-      "title": "No Hit Sequence",
-      "category": "Flow",
-      "position": [
-        650.0,
+        1620.0,
         450.0
       ],
       "editor": {
         "collapsed": false,
-        "width": 220.0,
-        "height": 184.0
+        "width": 200.0,
+        "height": 120.0
       },
       "properties": {}
+    },
+    {
+      "id": "check_facing_e",
+      "type": "compare_number",
+      "title": "Is Target In Front",
+      "category": "Logic",
+      "position": [
+        1840.0,
+        450.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 140.0
+      },
+      "properties": {
+        "operator": ">",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "emit_enemy_hit",
+      "type": "emit_event",
+      "title": "Emit Enemy Damage",
+      "category": "Events",
+      "position": [
+        2060.0,
+        450.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "name": "enemy_damage"
+      }
+    },
+    {
+      "id": "find_boss",
+      "type": "find_nearest_object",
+      "title": "Find Nearest Boss",
+      "category": "Objects",
+      "position": [
+        940.0,
+        750.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 140.0
+      },
+      "properties": {
+        "tag": "Boss",
+        "max_distance": 80.0
+      }
+    },
+    {
+      "id": "get_boss_pos",
+      "type": "get_position",
+      "title": "Get Boss Position",
+      "category": "Objects",
+      "position": [
+        1180.0,
+        750.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "get_player_pos_b",
+      "type": "get_position",
+      "title": "Get Player Position",
+      "category": "Objects",
+      "position": [
+        1180.0,
+        880.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "sub_dx_b",
+      "type": "subtract_number",
+      "title": "Calculate Delta X (Boss)",
+      "category": "Math",
+      "position": [
+        1400.0,
+        750.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "get_facing_b",
+      "type": "get_variable",
+      "title": "Get Facing Direction (Boss)",
+      "category": "Variables",
+      "position": [
+        1400.0,
+        880.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "name": "facing_x"
+      }
+    },
+    {
+      "id": "mult_aligned_b",
+      "type": "multiply_number",
+      "title": "Check Direction Alignment (Boss)",
+      "category": "Math",
+      "position": [
+        1620.0,
+        750.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "check_facing_b",
+      "type": "compare_number",
+      "title": "Is Boss In Front",
+      "category": "Logic",
+      "position": [
+        1840.0,
+        750.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 140.0
+      },
+      "properties": {
+        "operator": ">",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "emit_boss_hit",
+      "type": "emit_event",
+      "title": "Emit Boss Damage",
+      "category": "Events",
+      "position": [
+        2060.0,
+        750.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 120.0
+      },
+      "properties": {
+        "name": "boss_damage"
+      }
+    }
+    ,
+    {
+      "id": "self_player",
+      "type": "self_object",
+      "title": "Self (Player)",
+      "category": "Objects",
+      "position": [
+        950.0,
+        580.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 200.0,
+        "height": 80.0
+      },
+      "properties": {}
+    },
+    {
+      "id": "get_attack_damage_e",
+      "type": "get_variable",
+      "title": "Get Attack Damage (Enemy)",
+      "category": "Variables",
+      "position": [
+        1840.0,
+        580.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 120.0
+      },
+      "properties": {
+        "name": "attack_damage"
+      }
+    },
+    {
+      "id": "get_attack_damage_b",
+      "type": "get_variable",
+      "title": "Get Attack Damage (Boss)",
+      "category": "Variables",
+      "position": [
+        1840.0,
+        880.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 120.0
+      },
+      "properties": {
+        "name": "attack_damage"
+      }
     }
   ],
   "edges": [
     {
-      "id": "e_space_to_state",
-      "from_node": "space_key_down",
-      "from_port": "true",
-      "to_node": "get_attack_in_progress",
+      "id": "e_update_set_timer",
+      "from_node": "update_event",
+      "from_port": "next",
+      "to_node": "set_timer_update",
       "to_port": "in",
       "kind": "flow",
       "order": 0
     },
     {
-      "id": "e_state_to_check",
-      "from_node": "get_attack_in_progress",
-      "from_port": "next",
-      "to_node": "check_not_attacking",
-      "to_port": "in",
-      "kind": "flow",
+      "id": "e_get_timer_add",
+      "from_node": "get_timer",
+      "from_port": "value",
+      "to_node": "add_dt",
+      "to_port": "a",
+      "kind": "data",
       "order": 1
     },
     {
-      "id": "e_check_to_anim",
-      "from_node": "check_not_attacking",
-      "from_port": "true",
-      "to_node": "set_attack_trigger",
-      "to_port": "in",
-      "kind": "flow",
+      "id": "e_dt_add",
+      "from_node": "dt_node",
+      "from_port": "value",
+      "to_node": "add_dt",
+      "to_port": "b",
+      "kind": "data",
       "order": 2
     },
     {
-      "id": "e_hit_to_damage",
-      "from_node": "animation_hit_event",
-      "from_port": "next",
-      "to_node": "get_attack_damage",
-      "to_port": "in",
-      "kind": "flow",
+      "id": "e_add_clamp",
+      "from_node": "add_dt",
+      "from_port": "value",
+      "to_node": "clamp_timer",
+      "to_port": "value",
+      "kind": "data",
       "order": 3
     },
     {
-      "id": "e_damage_to_range",
-      "from_node": "get_attack_damage",
-      "from_port": "next",
-      "to_node": "get_attack_range",
-      "to_port": "in",
-      "kind": "flow",
+      "id": "e_clamp_set_timer",
+      "from_node": "clamp_timer",
+      "from_port": "value",
+      "to_node": "set_timer_update",
+      "to_port": "value",
+      "kind": "data",
       "order": 4
     },
     {
-      "id": "e_range_to_facing",
-      "from_node": "get_attack_range",
+      "id": "e_set_timer_space",
+      "from_node": "set_timer_update",
       "from_port": "next",
-      "to_node": "get_facing_direction",
+      "to_node": "space_down",
       "to_port": "in",
       "kind": "flow",
       "order": 5
     },
     {
-      "id": "e_facing_to_raycast",
-      "from_node": "get_facing_direction",
-      "from_port": "next",
-      "to_node": "raycast_for_enemy",
+      "id": "e_space_check_cooldown",
+      "from_node": "space_down",
+      "from_port": "true",
+      "to_node": "check_cooldown",
       "to_port": "in",
       "kind": "flow",
       "order": 6
     },
     {
-      "id": "e_raycast_to_checkhit",
-      "from_node": "raycast_for_enemy",
+      "id": "e_get_timer_check_compare",
+      "from_node": "get_timer_check",
+      "from_port": "value",
+      "to_node": "check_cooldown",
+      "to_port": "value",
+      "kind": "data",
+      "order": 6
+    },
+    {
+      "id": "e_check_cooldown_reset",
+      "from_node": "check_cooldown",
       "from_port": "true",
-      "to_node": "check_hit",
+      "to_node": "reset_cooldown",
       "to_port": "in",
       "kind": "flow",
       "order": 7
     },
     {
-      "id": "e_checkhit_true_getobj",
-      "from_node": "check_hit",
-      "from_port": "true",
-      "to_node": "get_hit_object",
+      "id": "e_reset_anim",
+      "from_node": "reset_cooldown",
+      "from_port": "next",
+      "to_node": "play_anim",
       "to_port": "in",
       "kind": "flow",
       "order": 8
     },
     {
-      "id": "e_checkhit_false_nohit",
-      "from_node": "check_hit",
-      "from_port": "false",
-      "to_node": "no_hit_exec",
-      "to_port": "in",
+      "id": "e_anim_find_enemy",
+      "from_node": "play_anim",
+      "from_port": "next",
+      "to_node": "find_enemy",
+      "to_port": "exec",
       "kind": "flow",
       "order": 9
     },
     {
-      "id": "e_getobj_to_hp",
-      "from_node": "get_hit_object",
-      "from_port": "next",
-      "to_node": "get_enemy_health",
+      "id": "e_enemy_found_check_facing",
+      "from_node": "find_enemy",
+      "from_port": "exec_found",
+      "to_node": "check_facing_e",
       "to_port": "in",
       "kind": "flow",
       "order": 10
     },
     {
-      "id": "e_hp_to_sub",
-      "from_node": "get_enemy_health",
-      "from_port": "next",
-      "to_node": "subtract_damage",
-      "to_port": "in",
-      "kind": "flow",
+      "id": "e_enemy_obj_pos",
+      "from_node": "find_enemy",
+      "from_port": "object",
+      "to_node": "get_enemy_pos",
+      "to_port": "target",
+      "kind": "data",
       "order": 11
     },
     {
-      "id": "e_sub_to_clamp",
-      "from_node": "subtract_damage",
-      "from_port": "value",
-      "to_node": "clamp_health",
-      "to_port": "value",
-      "kind": "any",
+      "id": "e_self_player_pos_e",
+      "from_node": "self_player",
+      "from_port": "object",
+      "to_node": "get_player_pos_e",
+      "to_port": "target",
+      "kind": "data",
       "order": 12
     },
     {
-      "id": "e_clamp_to_sethp",
-      "from_node": "clamp_health",
-      "from_port": "value",
-      "to_node": "set_enemy_health",
-      "to_port": "in",
-      "kind": "flow",
+      "id": "e_enemy_pos_sub",
+      "from_node": "get_enemy_pos",
+      "from_port": "x",
+      "to_node": "sub_dx_e",
+      "to_port": "a",
+      "kind": "data",
       "order": 13
     },
     {
-      "id": "e_sethp_to_checkdead",
-      "from_node": "set_enemy_health",
-      "from_port": "next",
-      "to_node": "check_dead",
-      "to_port": "in",
-      "kind": "flow",
+      "id": "e_player_pos_sub_e",
+      "from_node": "get_player_pos_e",
+      "from_port": "x",
+      "to_node": "sub_dx_e",
+      "to_port": "b",
+      "kind": "data",
       "order": 14
     },
     {
-      "id": "e_checkdead_true_destroy",
-      "from_node": "check_dead",
-      "from_port": "true",
-      "to_node": "destroy_enemy",
-      "to_port": "in",
-      "kind": "flow",
+      "id": "e_sub_mult_e",
+      "from_node": "sub_dx_e",
+      "from_port": "value",
+      "to_node": "mult_aligned_e",
+      "to_port": "a",
+      "kind": "data",
+      "order": 14
+    },
+    {
+      "id": "e_facing_mult_e",
+      "from_node": "get_facing_e",
+      "from_port": "value",
+      "to_node": "mult_aligned_e",
+      "to_port": "b",
+      "kind": "data",
       "order": 15
     },
     {
-      "id": "e_checkdead_false_nohit",
-      "from_node": "check_dead",
-      "from_port": "false",
-      "to_node": "no_hit_exec",
-      "to_port": "then_0",
-      "kind": "flow",
+      "id": "e_mult_compare_e",
+      "from_node": "mult_aligned_e",
+      "from_port": "value",
+      "to_node": "check_facing_e",
+      "to_port": "value",
+      "kind": "data",
       "order": 16
     },
     {
-      "id": "e_destroy_next_nohit",
-      "from_node": "destroy_enemy",
-      "from_port": "next",
-      "to_node": "no_hit_exec",
-      "to_port": "then_1",
+      "id": "e_facing_true_emit_e",
+      "from_node": "check_facing_e",
+      "from_port": "true",
+      "to_node": "emit_enemy_hit",
+      "to_port": "in",
       "kind": "flow",
       "order": 17
+    },
+    {
+      "id": "e_attack_damage_emit_e",
+      "from_node": "get_attack_damage_e",
+      "from_port": "value",
+      "to_node": "emit_enemy_hit",
+      "to_port": "payload",
+      "kind": "data",
+      "order": 18
+    },
+    {
+      "id": "e_enemy_none_find_boss",
+      "from_node": "find_enemy",
+      "from_port": "exec_none",
+      "to_node": "find_boss",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 18
+    },
+    {
+      "id": "e_enemy_facing_false_find_boss",
+      "from_node": "check_facing_e",
+      "from_port": "false",
+      "to_node": "find_boss",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 19
+    },
+    {
+      "id": "e_boss_found_check_facing",
+      "from_node": "find_boss",
+      "from_port": "exec_found",
+      "to_node": "check_facing_b",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 20
+    },
+    {
+      "id": "e_boss_obj_pos",
+      "from_node": "find_boss",
+      "from_port": "object",
+      "to_node": "get_boss_pos",
+      "to_port": "target",
+      "kind": "data",
+      "order": 21
+    },
+    {
+      "id": "e_self_player_pos_b",
+      "from_node": "self_player",
+      "from_port": "object",
+      "to_node": "get_player_pos_b",
+      "to_port": "target",
+      "kind": "data",
+      "order": 22
+    },
+    {
+      "id": "e_boss_pos_sub",
+      "from_node": "get_boss_pos",
+      "from_port": "x",
+      "to_node": "sub_dx_b",
+      "to_port": "a",
+      "kind": "data",
+      "order": 23
+    },
+    {
+      "id": "e_player_pos_sub_b",
+      "from_node": "get_player_pos_b",
+      "from_port": "x",
+      "to_node": "sub_dx_b",
+      "to_port": "b",
+      "kind": "data",
+      "order": 24
+    },
+    {
+      "id": "e_sub_mult_b",
+      "from_node": "sub_dx_b",
+      "from_port": "value",
+      "to_node": "mult_aligned_b",
+      "to_port": "a",
+      "kind": "data",
+      "order": 24
+    },
+    {
+      "id": "e_facing_mult_b",
+      "from_node": "get_facing_b",
+      "from_port": "value",
+      "to_node": "mult_aligned_b",
+      "to_port": "b",
+      "kind": "data",
+      "order": 25
+    },
+    {
+      "id": "e_mult_compare_b",
+      "from_node": "mult_aligned_b",
+      "from_port": "value",
+      "to_node": "check_facing_b",
+      "to_port": "value",
+      "kind": "data",
+      "order": 26
+    },
+    {
+      "id": "e_facing_true_emit_b",
+      "from_node": "check_facing_b",
+      "from_port": "true",
+      "to_node": "emit_boss_hit",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 27
+    },
+    {
+      "id": "e_attack_damage_emit_b",
+      "from_node": "get_attack_damage_b",
+      "from_port": "value",
+      "to_node": "emit_boss_hit",
+      "to_port": "payload",
+      "kind": "data",
+      "order": 28
     }
   ]
 }

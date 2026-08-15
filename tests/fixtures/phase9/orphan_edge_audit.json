@@ -1489,5 +1489,6 @@
   },
   "_item18": {
     "event.custom": "PlayerHealthLogic used it as an emitter; item 18 authored the graph onto emit_event"
-  }
+  },
+  "orphans": []
 }

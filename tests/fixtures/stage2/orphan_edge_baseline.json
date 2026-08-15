@@ -11,16 +11,10 @@
     ],
     "Assets/Logic/KeyCollectionLogic.zlogic": [
       "if_else.value>in"
-    ],
-    "Assets/Logic/PlayerCombatLogic.zlogic": [
-      "destroy_object.next>out",
-      "sequence.then_0>in",
-      "sequence.then_1>in",
-      "subtract_number.in>in"
     ]
   },
-  "total_assets_with_orphans": 4,
-  "total_orphan_edges": 9,
+  "total_assets_with_orphans": 3,
+  "total_orphan_edges": 5,
   "_before_item14E": {
     "total_orphan_edges": 68,
     "BossAILogic": [

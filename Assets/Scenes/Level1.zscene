@@ -82,11 +82,20 @@
             "properties": {
               "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
-        "Assets/Logic/PlayerMovementLogic.zlogic"
+        "Assets/Logic/PlayerMovementLogic.zlogic",
+        "Assets/Logic/PlayerCombatLogic.zlogic"
       ],
       "layer": "Default",
       "variables": {
@@ -103,11 +112,25 @@
           {
             "path": "Assets/Logic/PlayerMovementLogic.zlogic",
             "name": "PlayerMovementLogic"
+          },
+          {
+            "path": "Assets/Logic/PlayerCombatLogic.zlogic",
+            "name": "PlayerCombatLogic"
           }
         ],
         "parent": null,
         "children": []
-      }
+      },
+      "logic_graphs": [
+        {
+          "path": "Assets/Logic/PlayerMovementLogic.zlogic",
+          "name": "PlayerMovementLogic"
+        },
+        {
+          "path": "Assets/Logic/PlayerCombatLogic.zlogic",
+          "name": "PlayerCombatLogic"
+        }
+      ]
     },
     {
       "id": "guard",
@@ -1226,11 +1249,12 @@
             "sort_order": 8,
             "active": true,
             "static": false,
-            "tag": "",
+            "tag": "Enemy",
             "layer": "Default",
             "logic_assets": [
               "Assets/Logic/EnemyAILogic.zlogic",
-              "Assets/Logic/EnemyAttackLogic.zlogic"
+              "Assets/Logic/EnemyAttackLogic.zlogic",
+              "Assets/Logic/EnemyHealth.zlogic"
             ],
             "components": {
               "items": [
@@ -1275,6 +1299,14 @@
                   "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic",
                   "properties": {
                     "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
+                  }
+                },
+                {
+                  "type": "LogicGraph",
+                  "enabled": true,
+                  "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+                  "properties": {
+                    "graph_path": "Assets/Logic/EnemyHealth.zlogic"
                   }
                 }
               ]
@@ -1311,11 +1343,12 @@
             "sort_order": 8,
             "active": true,
             "static": false,
-            "tag": "",
+            "tag": "Enemy",
             "layer": "Default",
             "logic_assets": [
               "Assets/Logic/EnemyAILogic.zlogic",
-              "Assets/Logic/EnemyAttackLogic.zlogic"
+              "Assets/Logic/EnemyAttackLogic.zlogic",
+              "Assets/Logic/EnemyHealth.zlogic"
             ],
             "components": {
               "items": [
@@ -1360,6 +1393,14 @@
                   "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic",
                   "properties": {
                     "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
+                  }
+                },
+                {
+                  "type": "LogicGraph",
+                  "enabled": true,
+                  "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+                  "properties": {
+                    "graph_path": "Assets/Logic/EnemyHealth.zlogic"
                   }
                 }
               ]
@@ -1396,11 +1437,12 @@
             "sort_order": 8,
             "active": true,
             "static": false,
-            "tag": "",
+            "tag": "Enemy",
             "layer": "Default",
             "logic_assets": [
               "Assets/Logic/EnemyAILogic.zlogic",
-              "Assets/Logic/EnemyAttackLogic.zlogic"
+              "Assets/Logic/EnemyAttackLogic.zlogic",
+              "Assets/Logic/EnemyHealth.zlogic"
             ],
             "components": {
               "items": [
@@ -1446,6 +1488,14 @@
                   "properties": {
                     "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
                   }
+                },
+                {
+                  "type": "LogicGraph",
+                  "enabled": true,
+                  "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+                  "properties": {
+                    "graph_path": "Assets/Logic/EnemyHealth.zlogic"
+                  }
                 }
               ]
             },
@@ -1466,7 +1516,7 @@
       "id": "enemy_3",
       "name": "Enemy 3",
       "active": true,
-      "tag": "",
+      "tag": "Enemy",
       "transform": {
         "position": [
           400.0,
@@ -1547,12 +1597,21 @@
             "properties": {
               "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyHealth.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",
-        "Assets/Logic/EnemyAttackLogic.zlogic"
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/EnemyHealth.zlogic"
       ],
       "variables": {
         "health": 100,
@@ -1587,7 +1646,7 @@
       "id": "enemy_2",
       "name": "Enemy 2",
       "active": true,
-      "tag": "",
+      "tag": "Enemy",
       "transform": {
         "position": [
           200.0,
@@ -1668,12 +1727,21 @@
             "properties": {
               "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyHealth.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",
-        "Assets/Logic/EnemyAttackLogic.zlogic"
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/EnemyHealth.zlogic"
       ],
       "variables": {
         "health": 100,
@@ -1708,7 +1776,7 @@
       "id": "enemy_1",
       "name": "Enemy 1",
       "active": true,
-      "tag": "",
+      "tag": "Enemy",
       "transform": {
         "position": [
           300.0,
@@ -1789,12 +1857,21 @@
             "properties": {
               "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyHealth.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyHealth.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/EnemyAILogic.zlogic",
-        "Assets/Logic/EnemyAttackLogic.zlogic"
+        "Assets/Logic/EnemyAttackLogic.zlogic",
+        "Assets/Logic/EnemyHealth.zlogic"
       ],
       "variables": {
         "health": 100,
