@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": false,
+  "enabled": true,
   "name": "LevelExitLogic",
   "target": {
     "type": "name",
@@ -36,13 +36,13 @@
       "properties": {}
     },
     {
-      "id": "check_player",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
+      "id": "get_collider_name",
+      "type": "get_object_name",
+      "title": "get_object_name",
+      "category": "Objects",
       "position": [
         200.0,
-        50.0
+        150.0
       ],
       "editor": {
         "collapsed": false,
@@ -52,10 +52,10 @@
       "properties": {}
     },
     {
-      "id": "check_door_unlocked",
-      "type": "object.find_by_name",
-      "title": "object.find_by_name",
-      "category": "Custom",
+      "id": "check_player",
+      "type": "compare_text",
+      "title": "compare_text",
+      "category": "Logic",
       "position": [
         350.0,
         50.0
@@ -65,47 +65,37 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "operator": "==",
+        "value": "Player"
+      }
     },
     {
-      "id": "get_door_locked_state",
-      "type": "object.get_variable",
-      "title": "object.get_variable",
-      "category": "Custom",
+      "id": "get_has_key",
+      "type": "get_variable",
+      "title": "get_variable",
+      "category": "Variables",
       "position": [
         500.0,
-        50.0
+        150.0
       ],
       "editor": {
         "collapsed": false,
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "name": "has_key",
+        "scope": "project"
+      }
     },
     {
-      "id": "if_door_unlocked",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
+      "id": "if_has_key",
+      "type": "if_else",
+      "title": "if_else",
+      "category": "Flow",
       "position": [
         650.0,
-        50.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "autosave_game",
-      "type": "save.save_game",
-      "title": "save.save_game",
-      "category": "Custom",
-      "position": [
-        800.0,
         50.0
       ],
       "editor": {
@@ -119,9 +109,9 @@
       "id": "load_level2",
       "type": "scene.load_scene",
       "title": "scene.load_scene",
-      "category": "Custom",
+      "category": "Scene",
       "position": [
-        950.0,
+        800.0,
         50.0
       ],
       "editor": {
@@ -132,23 +122,44 @@
       "properties": {
         "scene_path": "Assets/Scenes/Level2.zscene"
       }
-    },
-    {
-      "id": "blocked_noop",
-      "type": "logic.noop",
-      "title": "logic.noop",
-      "category": "Custom",
-      "position": [
-        650.0,
-        150.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "from_node": "on_trigger_enter",
+      "from_port": "other",
+      "to_node": "get_collider_name",
+      "to_port": "target"
+    },
+    {
+      "from_node": "get_collider_name",
+      "from_port": "value",
+      "to_node": "check_player",
+      "to_port": "value"
+    },
+    {
+      "from_node": "on_trigger_enter",
+      "from_port": "next",
+      "to_node": "check_player",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "check_player",
+      "from_port": "true",
+      "to_node": "if_has_key",
+      "to_port": "exec"
+    },
+    {
+      "from_node": "get_has_key",
+      "from_port": "value",
+      "to_node": "if_has_key",
+      "to_port": "condition"
+    },
+    {
+      "from_node": "if_has_key",
+      "from_port": "true",
+      "to_node": "load_level2",
+      "to_port": "exec"
+    }
+  ]
 }

@@ -88,11 +88,14 @@ def _loaded():
 #: 26 after item 14E; item 16C recovered math.divide and ui.set_progress_bar.
 #: 23 after item 17; item 19 reauthored EnemyAttackLogic removing 4 phantom types.
 #: 18 after item 20; Item 20 recovered scene.load and component.set_property in BossHealthLogic.
-EXPECTED_UNKNOWN_IDS = 18
+#: 16 after item 21; Item 21 recovered object.get_variable and save.save_game in LevelExitLogic.
+EXPECTED_UNKNOWN_IDS = 16
 
 #: 39 after item 18; item 19 reauthored EnemyAttackLogic removing 4 phantom instances from EnemyAttackLogic.
 #: 32 after item 20; Item 20 recovered scene.load and component.set_property from BossHealthLogic.
-EXPECTED_UNKNOWN_INSTANCES = 32
+#: 30 after item 21; Item 21 recovered object.get_variable and save.save_game from LevelExitLogic.
+EXPECTED_UNKNOWN_INSTANCES = 30
+
 
 
 def test_the_audit_covers_exactly_the_unknown_set():
@@ -347,5 +350,5 @@ def test_no_asset_was_modified():
         ["git", "status", "--porcelain", "--", "Assets"],
         cwd=REPO_ROOT, capture_output=True, text=True, check=True,
     ).stdout.strip()
-    unallowed = [l for l in changed.splitlines() if "EnemyAttackLogic.zlogic" not in l and "BossHealthLogic.zlogic" not in l]
+    unallowed = [l for l in changed.splitlines() if "EnemyAttackLogic.zlogic" not in l and "BossHealthLogic.zlogic" not in l and "LevelExitLogic.zlogic" not in l]
     assert not unallowed, unallowed

@@ -288,13 +288,15 @@ class TestLevelExitLogic:
         node_ids = [n.get("id") for n in data.get("nodes", [])]
         assert "on_trigger_enter" in node_ids
 
-    def test_logic_autosaves(self):
-        """Verify logic saves game."""
+    def test_logic_checks_has_key(self):
+        """Verify logic checks has_key variable."""
         logic_path = project_root / "Assets" / "Logic" / "LevelExitLogic.zlogic"
         data = json.loads(logic_path.read_text(encoding="utf-8"))
 
         node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "autosave_game" in node_ids
+        assert "get_has_key" in node_ids
+        assert "if_has_key" in node_ids
+
 
     def test_logic_loads_level2(self):
         """Verify logic loads Level2 scene."""
