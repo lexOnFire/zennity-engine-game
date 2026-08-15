@@ -316,6 +316,12 @@ class ViewportRuntimeInitializer:
             api.dialogue.start()
 
     def _initialize_logic(self, name: str, obj: dict[str, Any]) -> None:
+        raw_variables = obj.get("variables")
+        if isinstance(raw_variables, dict):
+            for var_name, var_val in raw_variables.items():
+                if var_name not in self.logic_blackboard.object_values.get(str(name), {}):
+                    self.logic_blackboard.set("object", str(var_name), var_val, str(name))
+
         entries = obj.get("logic_graphs", [])
         if not isinstance(entries, list):
             return
