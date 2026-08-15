@@ -89,12 +89,15 @@ def _loaded():
 #: 23 after item 17; item 19 reauthored EnemyAttackLogic removing 4 phantom types.
 #: 18 after item 20; Item 20 recovered scene.load and component.set_property in BossHealthLogic.
 #: 16 after item 21; Item 21 recovered object.get_variable and save.save_game in LevelExitLogic.
-EXPECTED_UNKNOWN_IDS = 16
+#: 8 after item 22; Item 22 recovered 8 phantom types in VictoryLogic.
+EXPECTED_UNKNOWN_IDS = 8
 
 #: 39 after item 18; item 19 reauthored EnemyAttackLogic removing 4 phantom instances from EnemyAttackLogic.
 #: 32 after item 20; Item 20 recovered scene.load and component.set_property from BossHealthLogic.
 #: 30 after item 21; Item 21 recovered object.get_variable and save.save_game from LevelExitLogic.
-EXPECTED_UNKNOWN_INSTANCES = 30
+#: 10 after item 22; Item 22 recovered 20 phantom instances from VictoryLogic.
+EXPECTED_UNKNOWN_INSTANCES = 10
+
 
 
 
@@ -209,32 +212,24 @@ def test_nothing_was_implemented_or_aliased_by_this_item(node_id: str):
 # The three findings, each re-derived rather than trusted
 # ---------------------------------------------------------------------------
 
-def test_victory_logic_is_entirely_phantom():
-    """The finding that classified eight ids at once."""
+def test_victory_logic_is_recovered_and_has_zero_phantoms():
+    """Inverted by item 22: VictoryLogic was completely reauthored onto canonical nodes."""
     graph = normalize_logic_graph(
         load_logic_graph(REPO_ROOT / "Assets" / "Logic" / "VictoryLogic.zlogic")
     )
     phantom = [n for n in graph["nodes"] if str(n["type"]) not in NODE_DEFINITIONS]
-    assert len(phantom) == len(graph["nodes"]) == 20
+    assert len(phantom) == 0
+    assert len(graph["nodes"]) == 18
 
 
 def test_the_victory_cluster_uses_a_foreign_port_vocabulary():
-    """``exec`` as both input and output -- this engine uses ``in``/``next``."""
+    """Inverted by item 22: the 8 authoring error nodes from VictoryLogic left the audit."""
     cluster = [
         node_id for node_id, record in AUDIT["nodes"].items()
         if record["classification"] == "F_AUTHORING_ERROR"
     ]
-    assert len(cluster) == 8
-    for node_id in cluster:
-        assert AUDIT["nodes"][node_id]["assets"] == ["Assets/Logic/VictoryLogic.zlogic"]
-    wired = {
-        port
-        for node_id in cluster
-        for side in ("in", "out")
-        for port in AUDIT["nodes"][node_id]["ports_used"][side]
-    }
-    assert "exec" in wired
-    assert "next" not in wired
+    assert len(cluster) == 0
+
 
 
 def test_math_divide_is_no_longer_missing_from_the_migration_map():
@@ -350,5 +345,5 @@ def test_no_asset_was_modified():
         ["git", "status", "--porcelain", "--", "Assets"],
         cwd=REPO_ROOT, capture_output=True, text=True, check=True,
     ).stdout.strip()
-    unallowed = [l for l in changed.splitlines() if "EnemyAttackLogic.zlogic" not in l and "BossHealthLogic.zlogic" not in l and "LevelExitLogic.zlogic" not in l]
+    unallowed = [l for l in changed.splitlines() if "EnemyAttackLogic.zlogic" not in l and "BossHealthLogic.zlogic" not in l and "LevelExitLogic.zlogic" not in l and "VictoryLogic.zlogic" not in l]
     assert not unallowed, unallowed

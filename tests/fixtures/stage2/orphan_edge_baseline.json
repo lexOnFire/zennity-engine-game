@@ -17,32 +17,10 @@
       "sequence.then_0>in",
       "sequence.then_1>in",
       "subtract_number.in>in"
-    ],
-    "Assets/Logic/VictoryLogic.zlogic": [
-      "every_frame.exec>out",
-      "project_get.exec>in",
-      "project_get.exec>out",
-      "project_get.value>out",
-      "project_set.exec>in",
-      "project_set.exec>out",
-      "scene_load.exec>in",
-      "string_format.args>in",
-      "string_format.exec>in",
-      "string_format.exec>out",
-      "string_format.result>out",
-      "ui_get_widget.exec>in",
-      "ui_get_widget.exec>out",
-      "ui_get_widget.value>out",
-      "ui_on_click.exec>in",
-      "ui_on_click.exec>out",
-      "ui_set_text.exec>in",
-      "ui_set_text.exec>out",
-      "ui_set_text.target>in",
-      "ui_set_text.text>in"
     ]
   },
-  "total_assets_with_orphans": 6,
-  "total_orphan_edges": 29,
+  "total_assets_with_orphans": 4,
+  "total_orphan_edges": 9,
   "_before_item14E": {
     "total_orphan_edges": 68,
     "BossAILogic": [

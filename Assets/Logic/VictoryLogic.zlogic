@@ -1,7 +1,7 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": false,
+  "enabled": true,
   "name": "VictoryLogic",
   "target": {
     "type": "name",
@@ -20,13 +20,13 @@
   },
   "nodes": [
     {
-      "id": "frame_loop",
-      "type": "every_frame",
-      "title": "every_frame",
-      "category": "Custom",
+      "id": "start",
+      "type": "event_start",
+      "title": "event_start",
+      "category": "Events",
       "position": [
-        80.0,
-        100.0
+        50.0,
+        50.0
       ],
       "editor": {
         "collapsed": false,
@@ -37,28 +37,31 @@
     },
     {
       "id": "get_score",
-      "type": "project_get",
-      "title": "project_get",
-      "category": "Custom",
+      "type": "get_variable",
+      "title": "get_variable",
+      "category": "Variables",
       "position": [
-        320.0,
-        100.0
+        200.0,
+        150.0
       ],
       "editor": {
         "collapsed": false,
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "name": "score",
+        "scope": "project"
+      }
     },
     {
-      "id": "get_coins",
-      "type": "project_get",
-      "title": "project_get",
-      "category": "Custom",
+      "id": "score_to_text",
+      "type": "to_text",
+      "title": "to_text",
+      "category": "String",
       "position": [
-        560.0,
-        100.0
+        350.0,
+        150.0
       ],
       "editor": {
         "collapsed": false,
@@ -69,12 +72,67 @@
     },
     {
       "id": "format_score",
-      "type": "string_format",
-      "title": "string_format",
-      "category": "Custom",
+      "type": "join_text",
+      "title": "join_text",
+      "category": "String",
       "position": [
-        800.0,
-        100.0
+        500.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": "Score: "
+      }
+    },
+    {
+      "id": "set_score_ui",
+      "type": "set_ui_text",
+      "title": "set_ui_text",
+      "category": "UI",
+      "position": [
+        650.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "object": "ScoreLabel"
+      }
+    },
+    {
+      "id": "get_coins",
+      "type": "get_variable",
+      "title": "get_variable",
+      "category": "Variables",
+      "position": [
+        200.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "coins",
+        "scope": "project"
+      }
+    },
+    {
+      "id": "coins_to_text",
+      "type": "to_text",
+      "title": "to_text",
+      "category": "String",
+      "position": [
+        350.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
@@ -85,477 +143,303 @@
     },
     {
       "id": "format_coins",
-      "type": "string_format",
-      "title": "string_format",
-      "category": "Custom",
+      "type": "join_text",
+      "title": "join_text",
+      "category": "String",
       "position": [
-        1040.0,
-        100.0
+        500.0,
+        300.0
       ],
       "editor": {
         "collapsed": false,
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "a": "Coins: "
+      }
     },
     {
-      "id": "get_score_label",
-      "type": "ui_get_widget",
-      "title": "ui_get_widget",
-      "category": "Custom",
+      "id": "set_coins_ui",
+      "type": "set_ui_text",
+      "title": "set_ui_text",
+      "category": "UI",
       "position": [
-        1280.0,
-        100.0
+        800.0,
+        50.0
       ],
       "editor": {
         "collapsed": false,
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "object": "CoinsLabel"
+      }
     },
     {
-      "id": "get_coins_label",
-      "type": "ui_get_widget",
-      "title": "ui_get_widget",
-      "category": "Custom",
+      "id": "on_main_menu",
+      "type": "ui.button_clicked",
+      "title": "ui.button_clicked",
+      "category": "UI",
       "position": [
-        1520.0,
-        100.0
+        50.0,
+        450.0
       ],
       "editor": {
         "collapsed": false,
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
-    },
-    {
-      "id": "set_score_text",
-      "type": "ui_set_text",
-      "title": "ui_set_text",
-      "category": "Custom",
-      "position": [
-        1760.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "set_coins_text",
-      "type": "ui_set_text",
-      "title": "ui_set_text",
-      "category": "Custom",
-      "position": [
-        2000.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "main_menu_btn",
-      "type": "ui_get_widget",
-      "title": "ui_get_widget",
-      "category": "Custom",
-      "position": [
-        2240.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "new_game_btn",
-      "type": "ui_get_widget",
-      "title": "ui_get_widget",
-      "category": "Custom",
-      "position": [
-        2480.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "main_menu_listener",
-      "type": "ui_on_click",
-      "title": "ui_on_click",
-      "category": "Custom",
-      "position": [
-        2720.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "new_game_listener",
-      "type": "ui_on_click",
-      "title": "ui_on_click",
-      "category": "Custom",
-      "position": [
-        2960.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "reset_coins",
-      "type": "project_set",
-      "title": "project_set",
-      "category": "Custom",
-      "position": [
-        3200.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "reset_score",
-      "type": "project_set",
-      "title": "project_set",
-      "category": "Custom",
-      "position": [
-        3440.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "reset_key",
-      "type": "project_set",
-      "title": "project_set",
-      "category": "Custom",
-      "position": [
-        3680.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "reset_boss_defeated",
-      "type": "project_set",
-      "title": "project_set",
-      "category": "Custom",
-      "position": [
-        3920.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "reset_health",
-      "type": "project_set",
-      "title": "project_set",
-      "category": "Custom",
-      "position": [
-        4160.0,
-        100.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
+      "properties": {
+        "widget_name": "MainMenuButton"
+      }
     },
     {
       "id": "load_main_menu",
-      "type": "scene_load",
-      "title": "scene_load",
-      "category": "Custom",
+      "type": "scene.load_scene",
+      "title": "scene.load_scene",
+      "category": "Scene",
       "position": [
-        4400.0,
-        100.0
+        250.0,
+        450.0
       ],
       "editor": {
         "collapsed": false,
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "scene_path": "Assets/Scenes/MainMenu.zscene"
+      }
+    },
+    {
+      "id": "on_new_game",
+      "type": "ui.button_clicked",
+      "title": "ui.button_clicked",
+      "category": "UI",
+      "position": [
+        50.0,
+        600.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "widget_name": "NewGameButton"
+      }
+    },
+    {
+      "id": "reset_coins",
+      "type": "set_variable",
+      "title": "set_variable",
+      "category": "Variables",
+      "position": [
+        250.0,
+        600.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "coins",
+        "value": 0,
+        "scope": "project"
+      }
+    },
+    {
+      "id": "reset_score",
+      "type": "set_variable",
+      "title": "set_variable",
+      "category": "Variables",
+      "position": [
+        450.0,
+        600.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "score",
+        "value": 0,
+        "scope": "project"
+      }
+    },
+    {
+      "id": "reset_key",
+      "type": "set_variable",
+      "title": "set_variable",
+      "category": "Variables",
+      "position": [
+        650.0,
+        600.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "has_key",
+        "value": false,
+        "scope": "project"
+      }
+    },
+    {
+      "id": "reset_boss_defeated",
+      "type": "set_variable",
+      "title": "set_variable",
+      "category": "Variables",
+      "position": [
+        850.0,
+        600.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "boss_defeated",
+        "value": false,
+        "scope": "project"
+      }
+    },
+    {
+      "id": "reset_health",
+      "type": "set_variable",
+      "title": "set_variable",
+      "category": "Variables",
+      "position": [
+        1050.0,
+        600.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "health",
+        "value": 100,
+        "scope": "project"
+      }
     },
     {
       "id": "load_level1",
-      "type": "scene_load",
-      "title": "scene_load",
-      "category": "Custom",
+      "type": "scene.load_scene",
+      "title": "scene.load_scene",
+      "category": "Scene",
       "position": [
-        4640.0,
-        100.0
+        1250.0,
+        600.0
       ],
       "editor": {
         "collapsed": false,
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
+      "properties": {
+        "scene_path": "Assets/Scenes/Level1.zscene"
+      }
     }
   ],
   "edges": [
     {
-      "id": "9ca2e9c51e92426dac912bf7148a5df9",
-      "from_node": "frame_loop",
-      "from_port": "exec",
-      "to_node": "get_score",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 0
+      "from_node": "start",
+      "from_port": "next",
+      "to_node": "set_score_ui",
+      "to_port": "exec"
     },
     {
-      "id": "9a6802f0c04448689fdb70f23ba99fa1",
-      "from_node": "get_score",
-      "from_port": "exec",
-      "to_node": "get_coins",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 1
-    },
-    {
-      "id": "fb79e1f52c0249b7a8453cdd59d9dbda",
-      "from_node": "get_coins",
-      "from_port": "exec",
-      "to_node": "format_score",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 2
-    },
-    {
-      "id": "addfaea18ffc41c0830c980dc0ebae30",
       "from_node": "get_score",
       "from_port": "value",
-      "to_node": "format_score",
-      "to_port": "args",
-      "kind": "any",
-      "order": 3
+      "to_node": "score_to_text",
+      "to_port": "value"
     },
     {
-      "id": "04c81e742efb4b9d97cf0904e4e2e1a4",
+      "from_node": "score_to_text",
+      "from_port": "value",
+      "to_node": "format_score",
+      "to_port": "b"
+    },
+    {
+      "from_node": "format_score",
+      "from_port": "value",
+      "to_node": "set_score_ui",
+      "to_port": "text"
+    },
+    {
+      "from_node": "set_score_ui",
+      "from_port": "next",
+      "to_node": "set_coins_ui",
+      "to_port": "exec"
+    },
+    {
       "from_node": "get_coins",
+      "from_port": "value",
+      "to_node": "coins_to_text",
+      "to_port": "value"
+    },
+    {
+      "from_node": "coins_to_text",
       "from_port": "value",
       "to_node": "format_coins",
-      "to_port": "args",
-      "kind": "any",
-      "order": 4
+      "to_port": "b"
     },
     {
-      "id": "591c8764d4044c7cbe827493d3dc1be8",
-      "from_node": "format_score",
-      "from_port": "exec",
-      "to_node": "get_score_label",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 5
-    },
-    {
-      "id": "e0afa66ad38f4dc7afe4bf497f5acd78",
       "from_node": "format_coins",
-      "from_port": "exec",
-      "to_node": "get_coins_label",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 6
-    },
-    {
-      "id": "c8d604cfccbd47ffb67161018159dd43",
-      "from_node": "get_score_label",
-      "from_port": "exec",
-      "to_node": "set_score_text",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 7
-    },
-    {
-      "id": "2a2a7e65d4cf431693b935b954adf879",
-      "from_node": "get_coins_label",
-      "from_port": "exec",
-      "to_node": "set_coins_text",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 8
-    },
-    {
-      "id": "efed7934e4154137bb99baea7c3aa3fd",
-      "from_node": "format_score",
-      "from_port": "result",
-      "to_node": "set_score_text",
-      "to_port": "text",
-      "kind": "any",
-      "order": 9
-    },
-    {
-      "id": "5a90a16d9fa14645834407b09d27fc24",
-      "from_node": "format_coins",
-      "from_port": "result",
-      "to_node": "set_coins_text",
-      "to_port": "text",
-      "kind": "any",
-      "order": 10
-    },
-    {
-      "id": "97bed84f72944812b095752ebc7cfa32",
-      "from_node": "get_score_label",
       "from_port": "value",
-      "to_node": "set_score_text",
-      "to_port": "target",
-      "kind": "any",
-      "order": 11
+      "to_node": "set_coins_ui",
+      "to_port": "text"
     },
     {
-      "id": "927ac46b8ce74353b5f557e5ba5f1f47",
-      "from_node": "get_coins_label",
-      "from_port": "value",
-      "to_node": "set_coins_text",
-      "to_port": "target",
-      "kind": "any",
-      "order": 12
-    },
-    {
-      "id": "a18b3923f4604bfd9315ee0998f89ac0",
-      "from_node": "set_score_text",
-      "from_port": "exec",
-      "to_node": "main_menu_btn",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 13
-    },
-    {
-      "id": "c8341ac7f26541a7acc48e51e29988f1",
-      "from_node": "main_menu_btn",
-      "from_port": "exec",
-      "to_node": "main_menu_listener",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 14
-    },
-    {
-      "id": "bab63941b0884cd2b2c9fee75cef9d07",
-      "from_node": "main_menu_btn",
-      "from_port": "exec",
-      "to_node": "new_game_btn",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 15
-    },
-    {
-      "id": "9b7e8c1f532b4d80b15d83a0dda3ff41",
-      "from_node": "new_game_btn",
-      "from_port": "exec",
-      "to_node": "new_game_listener",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 16
-    },
-    {
-      "id": "7483dbf79a274711b3b58f25c14c3a61",
-      "from_node": "main_menu_listener",
-      "from_port": "exec",
+      "from_node": "on_main_menu",
+      "from_port": "clicked",
       "to_node": "load_main_menu",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 17
+      "to_port": "exec"
     },
     {
-      "id": "cb4e9ef5213c4cfabcc32ca4312b003c",
-      "from_node": "new_game_listener",
-      "from_port": "exec",
+      "from_node": "on_new_game",
+      "from_port": "clicked",
       "to_node": "reset_coins",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 18
+      "to_port": "exec"
     },
     {
-      "id": "d5b4496f776f420e8151482cee67be8a",
       "from_node": "reset_coins",
-      "from_port": "exec",
+      "from_port": "next",
       "to_node": "reset_score",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 19
+      "to_port": "exec"
     },
     {
-      "id": "666af807e5544d19ac20aff77e75b1d1",
       "from_node": "reset_score",
-      "from_port": "exec",
+      "from_port": "next",
       "to_node": "reset_key",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 20
+      "to_port": "exec"
     },
     {
-      "id": "00cbe85fb5a6414fb26b64c24cf4e727",
       "from_node": "reset_key",
-      "from_port": "exec",
+      "from_port": "next",
       "to_node": "reset_boss_defeated",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 21
+      "to_port": "exec"
     },
     {
-      "id": "7e6243d2178141ee8e0e3a649b96cf24",
       "from_node": "reset_boss_defeated",
-      "from_port": "exec",
+      "from_port": "next",
       "to_node": "reset_health",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 22
+      "to_port": "exec"
     },
     {
-      "id": "fc58a2bcd408427099c6249dc1c8153d",
       "from_node": "reset_health",
-      "from_port": "exec",
+      "from_port": "next",
       "to_node": "load_level1",
-      "to_port": "exec",
-      "kind": "any",
-      "order": 23
+      "to_port": "exec"
     }
   ]
 }
