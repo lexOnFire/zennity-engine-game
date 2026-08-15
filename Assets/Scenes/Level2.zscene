@@ -106,7 +106,9 @@
             "name": "PlayerHealthLogic"
           }
         ]
-      }
+      },
+      "static": false,
+      "layer": "Default"
     },
     {
       "id": "level2_camera",
@@ -178,7 +180,9 @@
             24
           ]
         }
-      }
+      },
+      "static": false,
+      "layer": "Default"
     },
     {
       "id": "level2_hud",
@@ -224,10 +228,49 @@
             "enabled": true,
             "properties": {
               "visible": true,
+              "x": 16.0,
+              "y": 16.0,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 0,
+              "text": "",
+              "font_size": 24,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
               "layout_path": "Assets/UI/HUD_Boss.zui",
               "ui_asset": "Assets/UI/HUD_Boss.zui",
               "render_mode": "Screen Space",
-              "z_order": 0
+              "sprite_path": ""
+            }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/HUDLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/HUDLogic.zlogic"
             }
           }
         ]
@@ -239,7 +282,12 @@
             "name": "HUDLogic"
           }
         ]
-      }
+      },
+      "static": false,
+      "layer": "Default",
+      "logic_assets": [
+        "Assets/Logic/HUDLogic.zlogic"
+      ]
     },
     {
       "id": "level2_boss",
@@ -314,6 +362,22 @@
             "properties": {
               "graph_path": "Assets/Logic/BossAILogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/BossCombatLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/BossCombatLogic.zlogic"
+            }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/BossHealthLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/BossHealthLogic.zlogic"
+            }
           }
         ]
       },
@@ -337,6 +401,24 @@
         "cooldown_timer": 1.5,
         "attack_count": 0,
         "heavy_attack_interval": 3
+      },
+      "static": false,
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/BossAILogic.zlogic",
+            "name": "BossAILogic"
+          },
+          {
+            "path": "Assets/Logic/BossCombatLogic.zlogic",
+            "name": "BossCombatLogic"
+          },
+          {
+            "path": "Assets/Logic/BossHealthLogic.zlogic",
+            "name": "BossHealthLogic"
+          }
+        ]
       }
     },
     {
@@ -398,6 +480,22 @@
               "use_gravity": false,
               "is_kinematic": false
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyAILogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyAILogic.zlogic"
+            }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
+            }
           }
         ]
       },
@@ -412,6 +510,20 @@
         "attack_damage": 10,
         "attack_range": 40,
         "detection_range": 400
+      },
+      "static": false,
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/EnemyAILogic.zlogic",
+            "name": "EnemyAILogic"
+          },
+          {
+            "path": "Assets/Logic/EnemyAttackLogic.zlogic",
+            "name": "EnemyAttackLogic"
+          }
+        ]
       }
     },
     {
@@ -473,6 +585,22 @@
               "use_gravity": false,
               "is_kinematic": false
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyAILogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyAILogic.zlogic"
+            }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/EnemyAttackLogic.zlogic"
+            }
           }
         ]
       },
@@ -487,6 +615,20 @@
         "attack_damage": 10,
         "attack_range": 40,
         "detection_range": 400
+      },
+      "static": false,
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/EnemyAILogic.zlogic",
+            "name": "EnemyAILogic"
+          },
+          {
+            "path": "Assets/Logic/EnemyAttackLogic.zlogic",
+            "name": "EnemyAttackLogic"
+          }
+        ]
       }
     },
     {
@@ -539,12 +681,30 @@
               ],
               "is_trigger": true
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/CoinCollectionLogic.zlogic"
-      ]
+      ],
+      "static": false,
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "name": "CoinCollectionLogic"
+          }
+        ]
+      }
     },
     {
       "id": "coin_2",
@@ -596,12 +756,30 @@
               ],
               "is_trigger": true
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/CoinCollectionLogic.zlogic"
-      ]
+      ],
+      "static": false,
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "name": "CoinCollectionLogic"
+          }
+        ]
+      }
     },
     {
       "id": "coin_3",
@@ -653,12 +831,30 @@
               ],
               "is_trigger": true
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/CoinCollectionLogic.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/CoinCollectionLogic.zlogic"
-      ]
+      ],
+      "static": false,
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/CoinCollectionLogic.zlogic",
+            "name": "CoinCollectionLogic"
+          }
+        ]
+      }
     },
     {
       "id": "level_exit",
@@ -710,6 +906,14 @@
               ],
               "is_trigger": true
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/LevelExitLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/LevelExitLogic.zlogic"
+            }
           }
         ]
       },
@@ -718,6 +922,16 @@
       ],
       "variables": {
         "unlock_condition": "boss_defeated_or_victory"
+      },
+      "static": false,
+      "layer": "Default",
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/LevelExitLogic.zlogic",
+            "name": "LevelExitLogic"
+          }
+        ]
       }
     },
     {
@@ -772,7 +986,9 @@
             }
           }
         ]
-      }
+      },
+      "static": false,
+      "layer": "Default"
     },
     {
       "id": "wall_right",
@@ -826,7 +1042,9 @@
             }
           }
         ]
-      }
+      },
+      "static": false,
+      "layer": "Default"
     },
     {
       "id": "wall_top",
@@ -880,7 +1098,9 @@
             }
           }
         ]
-      }
+      },
+      "static": false,
+      "layer": "Default"
     },
     {
       "id": "wall_bottom",
@@ -934,7 +1154,9 @@
             }
           }
         ]
-      }
+      },
+      "static": false,
+      "layer": "Default"
     }
   ]
 }
