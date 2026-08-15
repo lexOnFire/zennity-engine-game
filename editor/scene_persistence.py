@@ -179,12 +179,15 @@ class EditorScenePersistence:
             non_logic_items = [i for i in comp_items if isinstance(i, dict) and i.get("type") != "LogicGraph"]
             source["components"]["items"] = non_logic_items + lg_items
 
+        if isinstance(snapshot.get("variables"), dict):
+            source["variables"] = deepcopy(snapshot["variables"])
+
         known = {
             "id", "name", "x", "y", "w", "h", "rotation", "color", "mesh_type",
             "renderer_enabled", "material", "texture", "render_layer", "sort_order",
             "active", "static", "tag", "layer", "rigidbody", "collider", "camera",
             "audio", "scripts", "component_names", "ui", "logic_assets", "components",
-            "editor_data",
+            "editor_data", "variables",
         }
         editor_data = {
             key: deepcopy(value) for key, value in snapshot.items()
@@ -227,6 +230,8 @@ class EditorScenePersistence:
             "tag": str(item.get("tag", "Untagged")),
             "layer": str(item.get("layer", "Default")),
         }
+        if isinstance(item.get("variables"), dict):
+            snapshot["variables"] = deepcopy(item["variables"])
         if isinstance(item.get("editor_data"), dict):
             snapshot["editor_data"] = deepcopy(item["editor_data"])
             snapshot.update(deepcopy(item["editor_data"]))

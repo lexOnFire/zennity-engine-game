@@ -284,3 +284,30 @@ def test_stop_play_does_not_leak_previous_object_values():
 
     # Must reset to 100.0
     assert init.logic_blackboard.get("object", "health", "Enemy 1") == 100.0
+
+
+def test_real_level1_scene_persistence_and_viewport_execution():
+    """Real integrated test: Level1.zscene -> EditorScenePersistence.load -> hydrate -> ViewportRuntimeInitializer."""
+    from editor.scene_persistence import EditorScenePersistence
+    from editor.runtime.viewport_asset_hydration import hydrate_logic_graphs
+
+    persistence = EditorScenePersistence(REPO_ROOT)
+    payload, snapshots, typed = persistence.load(REPO_ROOT / "Assets" / "Scenes" / "Level1.zscene")
+    objects = {s["name"]: s for s in snapshots}
+    hydrate_logic_graphs(objects, REPO_ROOT)
+
+    init, logs = _make_initializer(objects)
+    init.start()
+
+    for name in ("Enemy 1", "Enemy 2", "Enemy 3"):
+        det = init.logic_blackboard.get("object", "detection_range", name)
+        atk = init.logic_blackboard.get("object", "attack_range", name)
+        assert det == 300.0
+        assert atk == 48.0
+
+        api = init.logic_apis[name]
+        for path, rt in init.logic_runtimes[name]:
+            rt.update(api, 0.016)
+
+    error_logs = [l for l in logs if l.get("level") == "ERROR"]
+    assert error_logs == []
