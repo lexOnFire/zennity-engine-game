@@ -9,22 +9,6 @@
       "event.listen.event_received>out",
       "object.get_component.component>out"
     ],
-    "Assets/Logic/EnemyAttackLogic.zlogic": [
-      "animation.on_event.event>out",
-      "get_position.in>in",
-      "get_position.object>in",
-      "get_position.position>out",
-      "if_else.value>in",
-      "object.get_variable.object>in",
-      "object.get_variable.value>out",
-      "object.set_variable.value>in",
-      "physics.get_raycast_hit.other>out",
-      "physics.get_raycast_hit.raycast>in",
-      "physics.raycast_2d.direction>in",
-      "physics.raycast_2d.hit>out",
-      "physics.raycast_2d.max_distance>in",
-      "physics.raycast_2d.origin>in"
-    ],
     "Assets/Logic/KeyCollectionLogic.zlogic": [
       "if_else.value>in"
     ],
@@ -58,7 +42,7 @@
     ]
   },
   "total_assets_with_orphans": 6,
-  "total_orphan_edges": 43,
+  "total_orphan_edges": 29,
   "_before_item14E": {
     "total_orphan_edges": 68,
     "BossAILogic": [

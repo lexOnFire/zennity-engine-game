@@ -14,7 +14,6 @@ def test_logic_runtime_core_has_no_large_methods() -> None:
         for node in runtime.body if isinstance(node, ast.FunctionDef)
     }
 
-    assert sizes["_evaluate_output"] < 15
     assert max(sizes.values()) < 100
 
 

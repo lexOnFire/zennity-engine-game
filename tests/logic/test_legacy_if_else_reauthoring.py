@@ -42,7 +42,6 @@ REAUTHORED = ("BossCombatLogic", "BossHealthLogic")
 HELD_BACK = {
     "CoinCollectionLogic": "check_player",
     "KeyCollectionLogic": "check_player",
-    "EnemyAttackLogic": "check_hit_player",
 }
 
 
@@ -294,26 +293,19 @@ def test_the_tag_comparisons_are_not_numeric():
 
 
 def test_the_enemy_attack_comparison_is_blocked_by_a_phantom_source():
-    """Why EnemyAttack was not transformed: the source node does not exist.
+    """Updated by item 19: EnemyAttackLogic was reauthored onto compare_number.
 
-    Fixing the branch would leave the edge orphaned on its *source* side, so the
-    orphan count would not move. It belongs to item 16A's RC-03.
+    It now uses canonical compare_number and distance_to_point.
     """
-    from engine.logic.graph_asset import NODE_DEFINITIONS
-
     g = graph("EnemyAttackLogic")
-    types = {str(n["id"]): str(n["type"]) for n in g["nodes"]}
-    source = next(
-        str(e["from_node"]) for e in g["edges"]
-        if str(e["to_node"]) == "check_hit_player" and str(e["to_port"]) == "value"
-    )
-    assert types[source] == "physics.raycast_2d"
-    assert "physics.raycast_2d" not in NODE_DEFINITIONS
+    types = {str(n["type"]) for n in g["nodes"]}
+    assert "compare_number" in types
+    assert "if_else" not in types
 
 
 def test_exactly_three_legacy_comparisons_remain_repository_wide():
-    """8 at item 16A, minus the 5 numeric ones resolved here."""
+    """8 at item 16A, minus 5 at item 16B, minus 1 at item 19."""
     total = 0
     for path in sorted((REPO_ROOT / "Assets").rglob("*.zlogic")):
         total += len(_legacy_if_else_edges(normalize_logic_graph(load_logic_graph(path))))
-    assert total == 3
+    assert total == 2

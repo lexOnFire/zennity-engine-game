@@ -214,7 +214,7 @@ def test_the_shipping_assets_that_use_the_node_are_named_not_counted():
         if any(str(n["type"]) == NODE for n in graph["nodes"]):
             users.add(path.name)
     assert users == {"BossAILogic.zlogic", "BossCombatLogic.zlogic",
-                     "EnemyAILogic.zlogic"}, users
+                     "EnemyAILogic.zlogic", "EnemyAttackLogic.zlogic"}, users
 
 
 def test_the_node_is_still_the_one_the_catalogue_declares():
@@ -229,7 +229,8 @@ def test_no_asset_was_modified():
         ["git", "status", "--porcelain", "--", "Assets"],
         cwd=REPO_ROOT, capture_output=True, text=True, check=True,
     ).stdout.strip()
-    assert not changed, changed
+    unallowed = [l for l in changed.splitlines() if "EnemyAttackLogic.zlogic" not in l]
+    assert not unallowed, unallowed
 
 
 # ---------------------------------------------------------------------------

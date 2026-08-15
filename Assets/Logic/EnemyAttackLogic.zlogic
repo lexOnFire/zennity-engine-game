@@ -4,12 +4,10 @@
   "name": "EnemyAttackLogic",
   "nodes": [
     {
-      "id": "animation_hit_event",
-      "type": "animation.on_event",
+      "id": "frame_loop",
+      "type": "event.every_frame",
       "position": [50, 50],
-      "config": {
-        "event_name": "hit"
-      }
+      "config": {}
     },
     {
       "id": "find_player",
@@ -22,13 +20,19 @@
     {
       "id": "get_enemy_position",
       "type": "transform.get_position",
-      "position": [200, 120],
+      "position": [350, 120],
       "config": {}
     },
     {
       "id": "get_player_position",
       "type": "object.get_position",
       "position": [350, 50],
+      "config": {}
+    },
+    {
+      "id": "calculate_distance",
+      "type": "distance_to_point",
+      "position": [500, 85],
       "config": {}
     },
     {
@@ -40,160 +44,278 @@
       }
     },
     {
-      "id": "raycast_for_player",
-      "type": "physics.raycast_2d",
-      "position": [500, 100],
+      "id": "margin_attack",
+      "type": "math.subtract",
+      "position": [650, 150],
+      "config": {}
+    },
+    {
+      "id": "check_in_attack_range",
+      "type": "compare_number",
+      "position": [800, 85],
       "config": {
-        "layer_mask": "PLAYER",
-        "ignore_self": true
+        "operator": "<=",
+        "value": 0.0
       }
     },
     {
-      "id": "check_hit_player",
-      "type": "logic.branch",
-      "position": [650, 100],
+      "id": "target_guard",
+      "type": "compare_number",
+      "position": [800, 180],
       "config": {
-        "condition": "is_not_null"
+        "operator": ">",
+        "value": 0.0
       }
     },
     {
-      "id": "get_hit_object",
-      "type": "physics.get_raycast_hit",
-      "position": [650, 50],
+      "id": "get_cooldown_timer",
+      "type": "variable.get",
+      "position": [200, 260],
       "config": {
-        "field": "collider"
+        "variable_name": "cooldown_timer"
+      }
+    },
+    {
+      "id": "get_attack_cooldown",
+      "type": "variable.get",
+      "position": [200, 330],
+      "config": {
+        "variable_name": "attack_cooldown"
+      }
+    },
+    {
+      "id": "margin_cooldown",
+      "type": "math.subtract",
+      "position": [650, 290],
+      "config": {}
+    },
+    {
+      "id": "check_can_attack",
+      "type": "compare_number",
+      "position": [800, 270],
+      "config": {
+        "operator": ">=",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "reset_cooldown_timer",
+      "type": "variable.set",
+      "position": [950, 85],
+      "config": {
+        "variable_name": "cooldown_timer",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "increase_cooldown_timer",
+      "type": "variable.set",
+      "position": [950, 270],
+      "config": {
+        "variable_name": "cooldown_timer"
       }
     },
     {
       "id": "get_enemy_attack_damage",
       "type": "variable.get",
-      "position": [200, 260],
+      "position": [950, 180],
       "config": {
         "variable_name": "attack_damage"
       }
     },
     {
-      "id": "get_player_health",
-      "type": "object.get_variable",
-      "position": [800, 50],
+      "id": "emit_damage",
+      "type": "emit_event",
+      "position": [1100, 85],
       "config": {
-        "variable_name": "health"
+        "name": "player_damage"
       }
     },
     {
-      "id": "subtract_damage",
-      "type": "math.subtract",
-      "position": [950, 50],
-      "config": {}
-    },
-    {
-      "id": "clamp_health",
-      "type": "math.clamp",
-      "position": [950, 100],
+      "id": "set_attack_trigger",
+      "type": "animator.set_trigger",
+      "position": [1250, 85],
       "config": {
-        "min": 0,
-        "max": 999
+        "trigger_name": "attack"
       }
     },
     {
-      "id": "set_player_health",
-      "type": "object.set_variable",
-      "position": [1100, 50],
+      "id": "calculate_timer_increment",
+      "type": "math.add",
+      "position": [800, 360],
       "config": {
-        "variable_name": "health"
+        "b": 0.016
       }
-    },
-    {
-      "id": "no_hit_fallback",
-      "type": "logic.noop",
-      "position": [800, 200],
-      "config": {}
     }
   ],
   "edges": [
     {
-      "from": "animation_hit_event",
+      "from": "frame_loop",
+      "from_pin": "frame",
       "to": "find_player",
-      "from_pin": "event",
-      "to_pin": "execute"
-    },
-    {
-      "from": "animation_hit_event",
-      "to": "get_enemy_position",
-      "from_pin": "event",
       "to_pin": "execute"
     },
     {
       "from": "find_player",
-      "to": "get_player_position",
+      "from_pin": "next",
+      "to": "calculate_distance",
+      "to_pin": "exec"
+    },
+    {
+      "from": "find_player",
       "from_pin": "object",
-      "to_pin": "object"
+      "to": "get_player_position",
+      "to_pin": "target"
     },
     {
       "from": "get_enemy_position",
-      "to": "raycast_for_player",
-      "from_pin": "position",
-      "to_pin": "origin"
+      "from_pin": "x",
+      "to": "calculate_distance",
+      "to_pin": "x1"
+    },
+    {
+      "from": "get_enemy_position",
+      "from_pin": "y",
+      "to": "calculate_distance",
+      "to_pin": "y1"
     },
     {
       "from": "get_player_position",
-      "to": "raycast_for_player",
-      "from_pin": "position",
-      "to_pin": "direction"
+      "from_pin": "x",
+      "to": "calculate_distance",
+      "to_pin": "x2"
     },
     {
-      "from": "get_attack_range",
-      "to": "raycast_for_player",
-      "from_pin": "value",
-      "to_pin": "max_distance"
+      "from": "get_player_position",
+      "from_pin": "y",
+      "to": "calculate_distance",
+      "to_pin": "y2"
     },
     {
-      "from": "raycast_for_player",
-      "to": "check_hit_player",
-      "from_pin": "hit",
-      "to_pin": "value"
+      "from": "calculate_distance",
+      "from_pin": "exec_calculated",
+      "to": "get_attack_range",
+      "to_pin": "in"
     },
     {
-      "from": "check_hit_player",
-      "to": "get_hit_object",
-      "from_pin": "true",
-      "to_pin": "raycast"
-    },
-    {
-      "from": "get_hit_object",
-      "to": "get_player_health",
-      "from_pin": "collider",
-      "to_pin": "object"
-    },
-    {
-      "from": "get_enemy_attack_damage",
-      "to": "subtract_damage",
-      "from_pin": "value",
-      "to_pin": "b"
-    },
-    {
-      "from": "get_player_health",
-      "to": "subtract_damage",
-      "from_pin": "value",
+      "from": "calculate_distance",
+      "from_pin": "distance",
+      "to": "margin_attack",
       "to_pin": "a"
     },
     {
-      "from": "subtract_damage",
-      "to": "clamp_health",
-      "from_pin": "result",
+      "from": "get_attack_range",
+      "from_pin": "value",
+      "to": "margin_attack",
+      "to_pin": "b"
+    },
+    {
+      "from": "margin_attack",
+      "from_pin": "value",
+      "to": "check_in_attack_range",
       "to_pin": "value"
     },
     {
-      "from": "clamp_health",
-      "to": "set_player_health",
-      "from_pin": "result",
+      "from": "calculate_distance",
+      "from_pin": "distance",
+      "to": "target_guard",
       "to_pin": "value"
     },
     {
-      "from": "check_hit_player",
-      "to": "no_hit_fallback",
+      "from": "get_attack_range",
+      "from_pin": "next",
+      "to": "check_in_attack_range",
+      "to_pin": "in"
+    },
+    {
+      "from": "check_in_attack_range",
+      "from_pin": "true",
+      "to": "target_guard",
+      "to_pin": "in"
+    },
+    {
+      "from": "target_guard",
+      "from_pin": "true",
+      "to": "get_cooldown_timer",
+      "to_pin": "in"
+    },
+    {
+      "from": "get_cooldown_timer",
+      "from_pin": "next",
+      "to": "get_attack_cooldown",
+      "to_pin": "in"
+    },
+    {
+      "from": "get_cooldown_timer",
+      "from_pin": "value",
+      "to": "margin_cooldown",
+      "to_pin": "a"
+    },
+    {
+      "from": "get_attack_cooldown",
+      "from_pin": "value",
+      "to": "margin_cooldown",
+      "to_pin": "b"
+    },
+    {
+      "from": "margin_cooldown",
+      "from_pin": "value",
+      "to": "check_can_attack",
+      "to_pin": "value"
+    },
+    {
+      "from": "get_attack_cooldown",
+      "from_pin": "next",
+      "to": "check_can_attack",
+      "to_pin": "in"
+    },
+    {
+      "from": "check_can_attack",
+      "from_pin": "true",
+      "to": "reset_cooldown_timer",
+      "to_pin": "in"
+    },
+    {
+      "from": "reset_cooldown_timer",
+      "from_pin": "done",
+      "to": "get_enemy_attack_damage",
+      "to_pin": "in"
+    },
+    {
+      "from": "get_enemy_attack_damage",
+      "from_pin": "next",
+      "to": "emit_damage",
+      "to_pin": "in"
+    },
+    {
+      "from": "get_enemy_attack_damage",
+      "from_pin": "value",
+      "to": "emit_damage",
+      "to_pin": "payload"
+    },
+    {
+      "from": "emit_damage",
+      "from_pin": "done",
+      "to": "set_attack_trigger",
+      "to_pin": "in"
+    },
+    {
+      "from": "get_cooldown_timer",
+      "from_pin": "value",
+      "to": "calculate_timer_increment",
+      "to_pin": "a"
+    },
+    {
+      "from": "check_can_attack",
       "from_pin": "false",
-      "to_pin": "execute"
+      "to": "increase_cooldown_timer",
+      "to_pin": "in"
+    },
+    {
+      "from": "calculate_timer_increment",
+      "from_pin": "value",
+      "to": "increase_cooldown_timer",
+      "to_pin": "value"
     }
   ]
 }

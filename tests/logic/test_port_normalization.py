@@ -236,7 +236,7 @@ def test_the_legacy_edges_for_this_node_are_all_resolved(node_id: str):
     legacy, canonical, expected_count = RESOLVED_EDGES[node_id]
     seen = 0
     for path in sorted(REPO_ROOT.rglob("*.zlogic")):
-        if ".git" in path.parts:
+        if ".git" in path.parts or ".pytest_tmp" in path.parts:
             continue
         raw = json.loads(path.read_text(encoding="utf-8"))
         types = {str(n["id"]): str(n.get("type", "")) for n in raw.get("nodes", [])}
