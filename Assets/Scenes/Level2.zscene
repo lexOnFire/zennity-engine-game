@@ -509,7 +509,9 @@
         "move_speed": 70,
         "attack_damage": 10,
         "attack_range": 40,
-        "detection_range": 400
+        "detection_range": 400,
+        "attack_cooldown": 1.0,
+        "cooldown_timer": 1.0
       },
       "static": false,
       "layer": "Default",
@@ -614,7 +616,9 @@
         "move_speed": 70,
         "attack_damage": 10,
         "attack_range": 40,
-        "detection_range": 400
+        "detection_range": 400,
+        "attack_cooldown": 1.0,
+        "cooldown_timer": 1.0
       },
       "static": false,
       "layer": "Default",

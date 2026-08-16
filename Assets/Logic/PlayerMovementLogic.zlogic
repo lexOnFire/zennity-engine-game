@@ -41,8 +41,8 @@
       "title": "Read Input Axis",
       "category": "Movement",
       "position": [
-        440.0,
-        100.0
+        429.01,
+        139.06
       ],
       "editor": {
         "collapsed": false,
@@ -61,8 +61,8 @@
       "title": "If / Else",
       "category": "Logic",
       "position": [
-        760.0,
-        100.0
+        770.99,
+        78.03
       ],
       "editor": {
         "collapsed": false,
@@ -88,9 +88,67 @@
         "height": 156.0
       },
       "properties": {
+        "speed": 220.0,
+        "value": 0.0,
         "direction_x": 1.0,
-        "direction_y": 0.0,
-        "speed": 220.0
+        "direction_y": 0.0
+      }
+    },
+    {
+      "id": "014870958b9a45b3abdb75799bf0f684",
+      "type": "input_axis",
+      "title": "Read Input Axis",
+      "category": "Movement",
+      "position": [
+        385.1,
+        339.79
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "axis": "horizontal",
+        "negative": "W",
+        "positive": "S"
+      }
+    },
+    {
+      "id": "f1980060c6c242f0bfc081c42cd8d236",
+      "type": "if_else",
+      "title": "If / Else",
+      "category": "Logic",
+      "position": [
+        757.58,
+        347.11
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "condition": "axis != 0"
+      }
+    },
+    {
+      "id": "e0e70d39ebd54e18add11764089392ac",
+      "type": "move_y",
+      "title": "Mover Y",
+      "category": "Movement",
+      "position": [
+        1054.88,
+        339.61
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "speed": 220.0,
+        "value": 0.0
       }
     }
   ],
@@ -121,6 +179,33 @@
       "to_port": "in",
       "kind": "flow",
       "order": 2
+    },
+    {
+      "id": "84c30490e0834bc182a9ed516bd9e800",
+      "from_node": "014870958b9a45b3abdb75799bf0f684",
+      "from_port": "value",
+      "to_node": "f1980060c6c242f0bfc081c42cd8d236",
+      "to_port": "condition",
+      "kind": "any",
+      "order": 1
+    },
+    {
+      "id": "a091c627b9bd4a6384dc9f695c6f680f",
+      "from_node": "update",
+      "from_port": "next",
+      "to_node": "f1980060c6c242f0bfc081c42cd8d236",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "7060f6e3bdf34403a036d184f583359a",
+      "from_node": "f1980060c6c242f0bfc081c42cd8d236",
+      "from_port": "true",
+      "to_node": "e0e70d39ebd54e18add11764089392ac",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
     }
   ]
 }
