@@ -232,3 +232,15 @@ class SystemRegistry:
     def __repr__(self) -> str:
         names = ", ".join(s.name for s in self._systems)
         return f"<SystemRegistry [{names}]>"
+
+
+# Reexporta componentes de simulação para facilidade de acesso canônico
+from engine.simulation.system_scheduler import SystemScheduler, TickPolicy
+
+__all__ = [
+    "System",
+    "SystemPriority",
+    "SystemRegistry",
+    "SystemScheduler",
+    "TickPolicy",
+]
