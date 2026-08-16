@@ -136,14 +136,8 @@ class CustomScriptEditorDialog(QDialog):
         script_label.setStyleSheet("font-weight: bold; color: #f8fafc;")
         right_layout.addWidget(script_label)
 
-        self.script_edit = QPlainTextEdit()
-        self.script_edit.setStyleSheet(
-            "QPlainTextEdit { background-color: #0b0d14; color: #38bdf8; font-family: Consolas, 'Courier New', monospace; "
-            "font-size: 13px; line-height: 1.4; border: 1px solid #1e2430; border-radius: 4px; padding: 10px; selection-background-color: #1e3a8a; }"
-        )
-        font = QFont("Consolas", 10)
-        font.setStyleHint(QFont.Monospace)
-        self.script_edit.setFont(font)
+        from editor.widgets.logic_graph.code_editor import CodeEditorWidget
+        self.script_edit = CodeEditorWidget()
         right_layout.addWidget(self.script_edit, 1)
 
         # Status / Erro de Validação
@@ -315,12 +309,24 @@ class CustomScriptEditorDialog(QDialog):
 
         valid, err = validate_custom_script(source, declared_in, declared_out, execution_model=model)
         if not valid:
-            self.status_label.setText(f"Erro: {err.splitlines()[0]}")
+            self.status_label.setText(f"✕ {err.splitlines()[0]}")
             self.status_label.setStyleSheet("font-size: 11px; color: #ef4444; font-family: Consolas, monospace;")
+
+            # Tenta extrair o número da linha
+            import re
+            m = re.search(r"linha (\d+)", err)
+            if m:
+                line_no = int(m.group(1))
+                cursor = self.script_edit.textCursor()
+                from PySide6.QtGui import QTextCursor
+                cursor.movePosition(QTextCursor.MoveOperation.Start)
+                cursor.movePosition(QTextCursor.MoveOperation.Down, QTextCursor.MoveMode.MoveAnchor, line_no - 1)
+                self.script_edit.setTextCursor(cursor)
+
             QMessageBox.warning(self, "Erro de Validação", err)
             return False
 
-        self.status_label.setText("✓ Validação de sintaxe e portas concluída com sucesso.")
+        self.status_label.setText("✓ Script válido: sintaxe, segurança e portas verificadas.")
         self.status_label.setStyleSheet("font-size: 11px; color: #10b981; font-family: Consolas, monospace;")
         return True
 
