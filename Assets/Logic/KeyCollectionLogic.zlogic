@@ -1,98 +1,212 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
   "name": "KeyCollectionLogic",
+  "target": {
+    "type": "name",
+    "value": "Key"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "on_trigger_enter",
-      "type": "physics.on_trigger_enter",
-      "position": [50, 50],
-      "config": {}
+      "type": "event_trigger_enter",
+      "title": "On Trigger Enter",
+      "category": "Events",
+      "position": [
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_player",
-      "type": "logic.branch",
-      "position": [200, 50],
-      "config": {
+      "type": "if_else",
+      "title": "Se/Senão",
+      "category": "Flow",
+      "position": [
+        200.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "condition": "contains",
         "compare_value": "Player"
       }
     },
     {
       "id": "set_has_key",
-      "type": "variable.set",
-      "position": [350, 50],
-      "config": {
-        "variable_name": "has_key",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
+      "position": [
+        350.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "value": true,
-        "scope": "project"
+        "name": "has_key",
+        "scope": "project",
+        "variable_name": "has_key"
       }
     },
     {
       "id": "update_key_label",
-      "type": "ui.update_label",
-      "position": [500, 50],
-      "config": {
+      "type": "set_ui_text",
+      "title": "Definir Texto UI",
+      "category": "UI",
+      "position": [
+        500.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "widget_id": "",
+        "text": "",
+        "object_name": "KeyLabel",
+        "widget_name": "",
         "element_name": "KeyLabel"
       }
     },
     {
       "id": "play_key_sound",
-      "type": "audio.play_sound",
-      "position": [650, 50],
-      "config": {
+      "type": "play_sound",
+      "title": "Tocar Som",
+      "category": "Action",
+      "position": [
+        650.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "pickup_key",
         "sound_name": "pickup_key"
       }
     },
     {
       "id": "destroy_key",
-      "type": "object.destroy",
-      "position": [800, 50],
-      "config": {}
+      "type": "destroy_object",
+      "title": "Destruir Objeto",
+      "category": "Action",
+      "position": [
+        800.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "no_player_noop",
-      "type": "logic.noop",
-      "position": [350, 150],
-      "config": {}
+      "type": "sequence",
+      "title": "Sequência",
+      "category": "Flow",
+      "position": [
+        350.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "outputs": 2
+      }
     }
   ],
   "edges": [
     {
-      "from": "on_trigger_enter",
-      "to": "check_player",
-      "from_pin": "collider",
-      "to_pin": "value"
+      "id": "be7c5edd189142b9a81342f7cb26ee53",
+      "from_node": "on_trigger_enter",
+      "from_port": "other",
+      "to_node": "check_player",
+      "to_port": "value",
+      "kind": "any",
+      "order": 0
     },
     {
-      "from": "check_player",
-      "to": "set_has_key",
-      "from_pin": "true",
-      "to_pin": "execute"
+      "id": "b643e0a9e5b0443fbf6dda36ecea3045",
+      "from_node": "check_player",
+      "from_port": "true",
+      "to_node": "set_has_key",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 1
     },
     {
-      "from": "set_has_key",
-      "to": "update_key_label",
-      "from_pin": "success",
-      "to_pin": "execute"
+      "id": "83e6e67faf1344f4bf560edae5a43200",
+      "from_node": "set_has_key",
+      "from_port": "next",
+      "to_node": "update_key_label",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
     },
     {
-      "from": "update_key_label",
-      "to": "play_key_sound",
-      "from_pin": "done",
-      "to_pin": "execute"
+      "id": "c57b88c87b9a4a9aae4eb4da075ec6f6",
+      "from_node": "update_key_label",
+      "from_port": "next",
+      "to_node": "play_key_sound",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
     },
     {
-      "from": "play_key_sound",
-      "to": "destroy_key",
-      "from_pin": "played",
-      "to_pin": "execute"
+      "id": "311605edf1f54b098c68fbdc5df19bfc",
+      "from_node": "play_key_sound",
+      "from_port": "next",
+      "to_node": "destroy_key",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
     },
     {
-      "from": "check_player",
-      "to": "no_player_noop",
-      "from_pin": "false",
-      "to_pin": "execute"
+      "id": "0ac563015c33484392e5c77236be5466",
+      "from_node": "check_player",
+      "from_port": "false",
+      "to_node": "no_player_noop",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
     }
   ]
 }

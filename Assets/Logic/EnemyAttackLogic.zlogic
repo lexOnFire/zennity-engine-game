@@ -1,59 +1,170 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
   "name": "EnemyAttackLogic",
+  "target": {
+    "type": "name",
+    "value": "Enemy"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "frame_loop",
-      "type": "event.every_frame",
-      "position": [50, 50],
-      "config": {}
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
+      "position": [
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "find_player",
-      "type": "object.find_by_name",
-      "position": [200, 50],
-      "config": {
+      "type": "find_tag",
+      "title": "object.find_by_name",
+      "category": "Custom",
+      "position": [
+        200.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "tag": "Player",
         "object_name": "Player"
       }
     },
     {
       "id": "get_enemy_position",
-      "type": "transform.get_position",
-      "position": [350, 120],
-      "config": {}
+      "type": "get_position",
+      "title": "Obter Posição",
+      "category": "Objects",
+      "position": [
+        350.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "get_player_position",
-      "type": "object.get_position",
-      "position": [350, 50],
-      "config": {}
+      "type": "get_position",
+      "title": "Obter Posição",
+      "category": "Objects",
+      "position": [
+        350.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "calculate_distance",
       "type": "distance_to_point",
-      "position": [500, 85],
-      "config": {}
+      "title": "Distância para Ponto",
+      "category": "Navigation",
+      "position": [
+        500.0,
+        85.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x1": 0.0,
+        "y1": 0.0,
+        "x2": 100.0,
+        "y2": 100.0
+      }
     },
     {
       "id": "get_attack_range",
-      "type": "variable.get",
-      "position": [200, 190],
-      "config": {
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
+      "position": [
+        200.0,
+        190.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_range",
+        "scope": "object",
         "variable_name": "attack_range"
       }
     },
     {
       "id": "margin_attack",
-      "type": "math.subtract",
-      "position": [650, 150],
-      "config": {}
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
+      "position": [
+        650.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "check_in_attack_range",
       "type": "compare_number",
-      "position": [800, 85],
-      "config": {
+      "title": "Comparar Número",
+      "category": "Logic",
+      "position": [
+        800.0,
+        85.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "<=",
         "value": 0.0
       }
@@ -61,261 +172,472 @@
     {
       "id": "target_guard",
       "type": "compare_number",
-      "position": [800, 180],
-      "config": {
+      "title": "Comparar Número",
+      "category": "Logic",
+      "position": [
+        800.0,
+        180.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": ">",
         "value": 0.0
       }
     },
     {
       "id": "get_cooldown_timer",
-      "type": "variable.get",
-      "position": [200, 260],
-      "config": {
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
+      "position": [
+        200.0,
+        260.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "cooldown_timer",
+        "scope": "object",
         "variable_name": "cooldown_timer"
       }
     },
     {
       "id": "get_attack_cooldown",
-      "type": "variable.get",
-      "position": [200, 330],
-      "config": {
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
+      "position": [
+        200.0,
+        330.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_cooldown",
+        "scope": "object",
         "variable_name": "attack_cooldown"
       }
     },
     {
       "id": "margin_cooldown",
-      "type": "math.subtract",
-      "position": [650, 290],
-      "config": {}
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
+      "position": [
+        650.0,
+        290.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "check_can_attack",
       "type": "compare_number",
-      "position": [800, 270],
-      "config": {
+      "title": "Comparar Número",
+      "category": "Logic",
+      "position": [
+        800.0,
+        270.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": ">=",
         "value": 0.0
       }
     },
     {
       "id": "reset_cooldown_timer",
-      "type": "variable.set",
-      "position": [950, 85],
-      "config": {
-        "variable_name": "cooldown_timer",
-        "value": 0.0
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
+      "position": [
+        950.0,
+        85.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": 0.0,
+        "name": "cooldown_timer",
+        "scope": "object",
+        "variable_name": "cooldown_timer"
       }
     },
     {
       "id": "increase_cooldown_timer",
-      "type": "variable.set",
-      "position": [950, 270],
-      "config": {
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
+      "position": [
+        950.0,
+        270.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": "",
+        "name": "cooldown_timer",
+        "scope": "object",
         "variable_name": "cooldown_timer"
       }
     },
     {
       "id": "get_enemy_attack_damage",
-      "type": "variable.get",
-      "position": [950, 180],
-      "config": {
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
+      "position": [
+        950.0,
+        180.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_damage",
+        "scope": "object",
         "variable_name": "attack_damage"
       }
     },
     {
       "id": "emit_damage",
       "type": "emit_event",
-      "position": [1100, 85],
-      "config": {
+      "title": "Emitir Evento",
+      "category": "Events",
+      "position": [
+        1100.0,
+        85.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "payload": "",
         "name": "player_damage"
       }
     },
     {
       "id": "set_attack_trigger",
-      "type": "animator.set_trigger",
-      "position": [1250, 85],
-      "config": {
+      "type": "animator_set_trigger",
+      "title": "Set Animator Trigger",
+      "category": "Animation",
+      "position": [
+        1250.0,
+        85.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": "player",
         "trigger_name": "attack"
       }
     },
     {
       "id": "calculate_timer_increment",
-      "type": "math.add",
-      "position": [800, 360],
-      "config": {
+      "type": "add_number",
+      "title": "Somar",
+      "category": "Math",
+      "position": [
+        800.0,
+        360.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
         "b": 0.016
       }
     }
   ],
   "edges": [
     {
-      "from": "frame_loop",
-      "from_pin": "frame",
-      "to": "find_player",
-      "to_pin": "execute"
+      "id": "dbd61e7282aa4db59dfe543352f527ad",
+      "from_node": "frame_loop",
+      "from_port": "next",
+      "to_node": "find_player",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
     },
     {
-      "from": "find_player",
-      "from_pin": "next",
-      "to": "calculate_distance",
-      "to_pin": "exec"
+      "id": "27644c3226c040489b134140e648b087",
+      "from_node": "find_player",
+      "from_port": "next",
+      "to_node": "calculate_distance",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 1
     },
     {
-      "from": "find_player",
-      "from_pin": "object",
-      "to": "get_player_position",
-      "to_pin": "target"
+      "id": "70da26818214443b8ca44d7bbef3a60e",
+      "from_node": "find_player",
+      "from_port": "object",
+      "to_node": "get_player_position",
+      "to_port": "target",
+      "kind": "any",
+      "order": 2
     },
     {
-      "from": "get_enemy_position",
-      "from_pin": "x",
-      "to": "calculate_distance",
-      "to_pin": "x1"
+      "id": "737246c5ba0946579facf21bb8a52e35",
+      "from_node": "get_enemy_position",
+      "from_port": "x",
+      "to_node": "calculate_distance",
+      "to_port": "x1",
+      "kind": "any",
+      "order": 3
     },
     {
-      "from": "get_enemy_position",
-      "from_pin": "y",
-      "to": "calculate_distance",
-      "to_pin": "y1"
+      "id": "9fcd93c3352e4191a55b9cf04dcf1426",
+      "from_node": "get_enemy_position",
+      "from_port": "y",
+      "to_node": "calculate_distance",
+      "to_port": "y1",
+      "kind": "any",
+      "order": 4
     },
     {
-      "from": "get_player_position",
-      "from_pin": "x",
-      "to": "calculate_distance",
-      "to_pin": "x2"
+      "id": "1f6f0006f3874b74b37b89a9a21c3651",
+      "from_node": "get_player_position",
+      "from_port": "x",
+      "to_node": "calculate_distance",
+      "to_port": "x2",
+      "kind": "any",
+      "order": 5
     },
     {
-      "from": "get_player_position",
-      "from_pin": "y",
-      "to": "calculate_distance",
-      "to_pin": "y2"
+      "id": "be3e62b097594742a8292ac70ffa0757",
+      "from_node": "get_player_position",
+      "from_port": "y",
+      "to_node": "calculate_distance",
+      "to_port": "y2",
+      "kind": "any",
+      "order": 6
     },
     {
-      "from": "calculate_distance",
-      "from_pin": "exec_calculated",
-      "to": "get_attack_range",
-      "to_pin": "in"
+      "id": "8f7f3031a5f646e993a1159596f4a7bc",
+      "from_node": "calculate_distance",
+      "from_port": "exec_calculated",
+      "to_node": "get_attack_range",
+      "to_port": "in",
+      "kind": "any",
+      "order": 7
     },
     {
-      "from": "calculate_distance",
-      "from_pin": "distance",
-      "to": "margin_attack",
-      "to_pin": "a"
+      "id": "d70341c972e54852899b762a36458b19",
+      "from_node": "calculate_distance",
+      "from_port": "distance",
+      "to_node": "margin_attack",
+      "to_port": "a",
+      "kind": "any",
+      "order": 8
     },
     {
-      "from": "get_attack_range",
-      "from_pin": "value",
-      "to": "margin_attack",
-      "to_pin": "b"
+      "id": "ea15593a2d434b64811c1f03fdd809fe",
+      "from_node": "get_attack_range",
+      "from_port": "value",
+      "to_node": "margin_attack",
+      "to_port": "b",
+      "kind": "any",
+      "order": 9
     },
     {
-      "from": "margin_attack",
-      "from_pin": "value",
-      "to": "check_in_attack_range",
-      "to_pin": "value"
+      "id": "d1194ec4dd5e4b73aab8d648b99c63b0",
+      "from_node": "margin_attack",
+      "from_port": "value",
+      "to_node": "check_in_attack_range",
+      "to_port": "value",
+      "kind": "any",
+      "order": 10
     },
     {
-      "from": "calculate_distance",
-      "from_pin": "distance",
-      "to": "target_guard",
-      "to_pin": "value"
+      "id": "d0c0364024ac423b89a2f8f99e63f97e",
+      "from_node": "calculate_distance",
+      "from_port": "distance",
+      "to_node": "target_guard",
+      "to_port": "value",
+      "kind": "any",
+      "order": 11
     },
     {
-      "from": "get_attack_range",
-      "from_pin": "next",
-      "to": "check_in_attack_range",
-      "to_pin": "in"
+      "id": "3241761fb23c4ebfb0bfd167d5a97aba",
+      "from_node": "get_attack_range",
+      "from_port": "next",
+      "to_node": "check_in_attack_range",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 12
     },
     {
-      "from": "check_in_attack_range",
-      "from_pin": "true",
-      "to": "target_guard",
-      "to_pin": "in"
+      "id": "d66e51d2283943d491cedbfaea663ad4",
+      "from_node": "check_in_attack_range",
+      "from_port": "true",
+      "to_node": "target_guard",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 13
     },
     {
-      "from": "target_guard",
-      "from_pin": "true",
-      "to": "get_cooldown_timer",
-      "to_pin": "in"
+      "id": "c1c154c4baf841a49504d65cd841ed39",
+      "from_node": "target_guard",
+      "from_port": "true",
+      "to_node": "get_cooldown_timer",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 14
     },
     {
-      "from": "get_cooldown_timer",
-      "from_pin": "next",
-      "to": "get_attack_cooldown",
-      "to_pin": "in"
+      "id": "b513c464b09c42e39aad255cb06bd0dc",
+      "from_node": "get_cooldown_timer",
+      "from_port": "next",
+      "to_node": "get_attack_cooldown",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 15
     },
     {
-      "from": "get_cooldown_timer",
-      "from_pin": "value",
-      "to": "margin_cooldown",
-      "to_pin": "a"
+      "id": "fa8bb69173e2419bb03396b1f4ba320f",
+      "from_node": "get_cooldown_timer",
+      "from_port": "value",
+      "to_node": "margin_cooldown",
+      "to_port": "a",
+      "kind": "any",
+      "order": 16
     },
     {
-      "from": "get_attack_cooldown",
-      "from_pin": "value",
-      "to": "margin_cooldown",
-      "to_pin": "b"
+      "id": "92256caf7e2741b0966b5cfadb6f49ec",
+      "from_node": "get_attack_cooldown",
+      "from_port": "value",
+      "to_node": "margin_cooldown",
+      "to_port": "b",
+      "kind": "any",
+      "order": 17
     },
     {
-      "from": "margin_cooldown",
-      "from_pin": "value",
-      "to": "check_can_attack",
-      "to_pin": "value"
+      "id": "a14e54cdf0a24137881ba920bc3b9f99",
+      "from_node": "margin_cooldown",
+      "from_port": "value",
+      "to_node": "check_can_attack",
+      "to_port": "value",
+      "kind": "any",
+      "order": 18
     },
     {
-      "from": "get_attack_cooldown",
-      "from_pin": "next",
-      "to": "check_can_attack",
-      "to_pin": "in"
+      "id": "bdd2234da7be41f89e9e00dd4bbcc831",
+      "from_node": "get_attack_cooldown",
+      "from_port": "next",
+      "to_node": "check_can_attack",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 19
     },
     {
-      "from": "check_can_attack",
-      "from_pin": "true",
-      "to": "reset_cooldown_timer",
-      "to_pin": "in"
+      "id": "2137147600264c0883cd4519cd2bb458",
+      "from_node": "check_can_attack",
+      "from_port": "true",
+      "to_node": "reset_cooldown_timer",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 20
     },
     {
-      "from": "reset_cooldown_timer",
-      "from_pin": "done",
-      "to": "get_enemy_attack_damage",
-      "to_pin": "in"
+      "id": "da36b8fc0a4d41969f71613794b9373c",
+      "from_node": "reset_cooldown_timer",
+      "from_port": "next",
+      "to_node": "get_enemy_attack_damage",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 21
     },
     {
-      "from": "get_enemy_attack_damage",
-      "from_pin": "next",
-      "to": "emit_damage",
-      "to_pin": "in"
+      "id": "97fd953765a44898b865ef218bfc49cf",
+      "from_node": "get_enemy_attack_damage",
+      "from_port": "next",
+      "to_node": "emit_damage",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 22
     },
     {
-      "from": "get_enemy_attack_damage",
-      "from_pin": "value",
-      "to": "emit_damage",
-      "to_pin": "payload"
+      "id": "b89634267e5949d4916d6f39bb19d80c",
+      "from_node": "get_enemy_attack_damage",
+      "from_port": "value",
+      "to_node": "emit_damage",
+      "to_port": "payload",
+      "kind": "any",
+      "order": 23
     },
     {
-      "from": "emit_damage",
-      "from_pin": "done",
-      "to": "set_attack_trigger",
-      "to_pin": "in"
+      "id": "f43f470538ff4b6097410faea317f6f2",
+      "from_node": "emit_damage",
+      "from_port": "next",
+      "to_node": "set_attack_trigger",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 24
     },
     {
-      "from": "get_cooldown_timer",
-      "from_pin": "value",
-      "to": "calculate_timer_increment",
-      "to_pin": "a"
+      "id": "29e997b6f4e64fed8f9ec637c5b2f9ae",
+      "from_node": "get_cooldown_timer",
+      "from_port": "value",
+      "to_node": "calculate_timer_increment",
+      "to_port": "a",
+      "kind": "any",
+      "order": 25
     },
     {
-      "from": "check_can_attack",
-      "from_pin": "false",
-      "to": "increase_cooldown_timer",
-      "to_pin": "in"
+      "id": "35b3fa3d809047209a57c9311592a3a5",
+      "from_node": "check_can_attack",
+      "from_port": "false",
+      "to_node": "increase_cooldown_timer",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 26
     },
     {
-      "from": "calculate_timer_increment",
-      "from_pin": "value",
-      "to": "increase_cooldown_timer",
-      "to_pin": "value"
+      "id": "d828fed56f9b47b9a9b7c6882504292a",
+      "from_node": "calculate_timer_increment",
+      "from_port": "value",
+      "to_node": "increase_cooldown_timer",
+      "to_port": "value",
+      "kind": "any",
+      "order": 27
     }
   ]
 }

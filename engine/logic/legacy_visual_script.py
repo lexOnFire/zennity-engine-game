@@ -66,7 +66,8 @@ LEGACY_PORTS = {
     "frame": "next",
     "done": "next",
     "played": "next",
-    "success": "next",
+    "success": "exec_success",
+    "failure": "exec_failure",
     "execute": "in",
     "true": "true",
     "false": "false",
@@ -183,13 +184,42 @@ def migrate_visual_script_graph(data: Mapping[str, Any]) -> dict[str, Any]:
             continue
         from_port = str(source.get("from_port", source.get("source_port", source.get("from_pin", "out"))))
         to_port = str(source.get("to_port", source.get("target_port", source.get("to_pin", "in"))))
+
+        # Mapeamento com fallback inteligente baseado nos nós
+        resolved_from_port = LEGACY_PORTS.get(from_port, from_port)
+        resolved_to_port = LEGACY_PORTS.get(to_port, to_port)
+
+        # Se o nó de destino tem portas de entrada definidas
+        to_node_type = next((n["type"] for n in migrated_nodes if n["id"] == to_node), "")
+        from_node_type = next((n["type"] for n in migrated_nodes if n["id"] == from_node), "")
+
+        from_def = NODE_DEFINITIONS.get(from_node_type, {})
+        to_def = NODE_DEFINITIONS.get(to_node_type, {})
+
+        to_in_names = {(p[0] if isinstance(p, (tuple, list)) else p.get("name")) for p in to_def.get("inputs", [])}
+        from_out_names = {(p[0] if isinstance(p, (tuple, list)) else p.get("name")) for p in from_def.get("outputs", [])}
+
+        # Ajuste de porta de fluxo de entrada: se 'in' não existe mas 'exec' existe, usa 'exec'
+        if resolved_to_port == "in" and "in" not in to_in_names and "exec" in to_in_names:
+            resolved_to_port = "exec"
+        elif resolved_to_port == "exec" and "exec" not in to_in_names and "in" in to_in_names:
+            resolved_to_port = "in"
+
+        # Ajuste de porta de fluxo de saída: se 'next' não existe mas 'exec_success' existe
+        if resolved_from_port == "next" and "next" not in from_out_names and "exec_success" in from_out_names:
+            resolved_from_port = "exec_success"
+
+        # Ajuste de saída de find_by_name para get_position
+        if from_node_type == "get_position" and resolved_from_port == "next" and "value" in from_out_names:
+            pass
+
         edges.append({
             "id": str(source.get("id") or uuid.uuid4().hex),
             "from_node": from_node,
-            "from_port": LEGACY_PORTS.get(from_port, from_port),
+            "from_port": resolved_from_port,
             "to_node": to_node,
-            "to_port": LEGACY_PORTS.get(to_port, to_port),
-            "kind": "flow" if from_port in {"out", "next", "true", "false"} else str(source.get("kind", "any")),
+            "to_port": resolved_to_port,
+            "kind": "flow" if resolved_from_port in {"out", "next", "true", "false", "exec_success", "exec_failure"} else str(source.get("kind", "any")),
         })
     graph["edges"] = edges
     return graph

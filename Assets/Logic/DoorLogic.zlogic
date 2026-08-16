@@ -1,89 +1,183 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
   "name": "DoorLogic",
+  "target": {
+    "type": "name",
+    "value": "Door"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "listen_gate_opened",
       "type": "event.listen",
-      "position": [50, 50],
-      "config": {
+      "title": "event.listen",
+      "category": "Custom",
+      "position": [
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "event_name": "gate_opened"
       }
     },
     {
       "id": "set_unlocked",
-      "type": "variable.set",
-      "position": [200, 50],
-      "config": {
-        "variable_name": "locked",
-        "value": false
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
+      "position": [
+        200.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": false,
+        "name": "locked",
+        "scope": "object",
+        "variable_name": "locked"
       }
     },
     {
       "id": "get_collider",
       "type": "object.get_component",
-      "position": [350, 50],
-      "config": {
+      "title": "object.get_component",
+      "category": "Custom",
+      "position": [
+        350.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "component_type": "BoxCollider2D"
       }
     },
     {
       "id": "disable_collider",
       "type": "component.set_property",
-      "position": [500, 50],
-      "config": {
+      "title": "component.set_property",
+      "category": "Custom",
+      "position": [
+        500.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "property": "enabled",
         "value": false
       }
     },
     {
       "id": "play_door_sound",
-      "type": "audio.play_sound",
-      "position": [650, 50],
-      "config": {
+      "type": "play_sound",
+      "title": "Tocar Som",
+      "category": "Action",
+      "position": [
+        650.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "door_open",
         "sound_name": "door_open"
       }
     },
     {
       "id": "change_door_sprite",
       "type": "sprite.change_sprite",
-      "position": [800, 50],
-      "config": {
+      "title": "sprite.change_sprite",
+      "category": "Custom",
+      "position": [
+        800.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "sprite_path": "Assets/Sprites/MyPlatformer/tile_platform.png"
       }
     }
   ],
   "edges": [
     {
-      "from": "listen_gate_opened",
-      "to": "set_unlocked",
-      "from_pin": "event_received",
-      "to_pin": "execute"
+      "id": "9f73f9965cbd4d99af057249f78567cb",
+      "from_node": "listen_gate_opened",
+      "from_port": "event_received",
+      "to_node": "set_unlocked",
+      "to_port": "exec",
+      "kind": "any",
+      "order": 0
     },
     {
-      "from": "set_unlocked",
-      "to": "get_collider",
-      "from_pin": "success",
-      "to_pin": "execute"
+      "id": "0035a24947a94242a7e0b100d8656f54",
+      "from_node": "set_unlocked",
+      "from_port": "next",
+      "to_node": "get_collider",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 1
     },
     {
-      "from": "get_collider",
-      "to": "disable_collider",
-      "from_pin": "component",
-      "to_pin": "component"
+      "id": "e0826d1e01604164977bec7b1822db07",
+      "from_node": "get_collider",
+      "from_port": "component",
+      "to_node": "disable_collider",
+      "to_port": "component",
+      "kind": "any",
+      "order": 2
     },
     {
-      "from": "disable_collider",
-      "to": "play_door_sound",
-      "from_pin": "done",
-      "to_pin": "execute"
+      "id": "c056feb5c53144f3ba6deaa186d7312b",
+      "from_node": "disable_collider",
+      "from_port": "next",
+      "to_node": "play_door_sound",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
     },
     {
-      "from": "play_door_sound",
-      "to": "change_door_sprite",
-      "from_pin": "played",
-      "to_pin": "execute"
+      "id": "7f38f4cf280e443da8aa3b6042f11c64",
+      "from_node": "play_door_sound",
+      "from_port": "next",
+      "to_node": "change_door_sprite",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 4
     }
   ]
 }

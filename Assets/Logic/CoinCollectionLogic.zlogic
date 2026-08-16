@@ -1,127 +1,269 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
   "name": "CoinCollectionLogic",
+  "target": {
+    "type": "name",
+    "value": "Coin"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "on_trigger_enter",
-      "type": "physics.on_trigger_enter",
-      "position": [50, 50],
-      "config": {}
+      "type": "event_trigger_enter",
+      "title": "On Trigger Enter",
+      "category": "Events",
+      "position": [
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "check_player",
-      "type": "logic.branch",
-      "position": [200, 50],
-      "config": {
+      "type": "if_else",
+      "title": "Se/Senão",
+      "category": "Flow",
+      "position": [
+        200.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "condition": "contains",
         "compare_value": "Player"
       }
     },
     {
       "id": "get_coins",
-      "type": "variable.get",
-      "position": [350, 50],
-      "config": {
-        "variable_name": "coins",
-        "scope": "project"
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
+      "position": [
+        350.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "coins",
+        "scope": "project",
+        "variable_name": "coins"
       }
     },
     {
       "id": "increment_coins",
-      "type": "math.add",
-      "position": [500, 50],
-      "config": {
+      "type": "add_number",
+      "title": "Somar",
+      "category": "Math",
+      "position": [
+        500.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "a": 0,
         "b": 1
       }
     },
     {
       "id": "set_coins",
-      "type": "variable.set",
-      "position": [650, 50],
-      "config": {
-        "variable_name": "coins",
-        "scope": "project"
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
+      "position": [
+        650.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": "",
+        "name": "coins",
+        "scope": "project",
+        "variable_name": "coins"
       }
     },
     {
       "id": "update_ui",
-      "type": "ui.update_label",
-      "position": [800, 50],
-      "config": {
+      "type": "set_ui_text",
+      "title": "Definir Texto UI",
+      "category": "UI",
+      "position": [
+        800.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "widget_id": "",
+        "text": "",
+        "object_name": "CoinsLabel",
+        "widget_name": "",
         "element_name": "CoinsLabel"
       }
     },
     {
       "id": "play_pickup_sound",
-      "type": "audio.play_sound",
-      "position": [950, 50],
-      "config": {
+      "type": "play_sound",
+      "title": "Tocar Som",
+      "category": "Action",
+      "position": [
+        950.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "path": "pickup_coin",
         "sound_name": "pickup_coin"
       }
     },
     {
       "id": "destroy_coin",
-      "type": "object.destroy",
-      "position": [1100, 50],
-      "config": {}
+      "type": "destroy_object",
+      "title": "Destruir Objeto",
+      "category": "Action",
+      "position": [
+        1100.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "no_player_noop",
-      "type": "logic.noop",
-      "position": [350, 150],
-      "config": {}
+      "type": "sequence",
+      "title": "Sequência",
+      "category": "Flow",
+      "position": [
+        350.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "outputs": 2
+      }
     }
   ],
   "edges": [
     {
-      "from": "on_trigger_enter",
-      "to": "check_player",
-      "from_pin": "collider",
-      "to_pin": "value"
+      "id": "5b532de2486f4a34a63c4bf11538b9c6",
+      "from_node": "on_trigger_enter",
+      "from_port": "other",
+      "to_node": "check_player",
+      "to_port": "value",
+      "kind": "any",
+      "order": 0
     },
     {
-      "from": "check_player",
-      "to": "get_coins",
-      "from_pin": "true",
-      "to_pin": "execute"
+      "id": "b797f1553c1240c6a416ab60dfa22e7e",
+      "from_node": "check_player",
+      "from_port": "true",
+      "to_node": "get_coins",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
     },
     {
-      "from": "get_coins",
-      "to": "increment_coins",
-      "from_pin": "value",
-      "to_pin": "a"
+      "id": "35c3fbb021054649b5518aa988a1a2d2",
+      "from_node": "get_coins",
+      "from_port": "value",
+      "to_node": "increment_coins",
+      "to_port": "a",
+      "kind": "any",
+      "order": 2
     },
     {
-      "from": "increment_coins",
-      "to": "set_coins",
-      "from_pin": "result",
-      "to_pin": "value"
+      "id": "8dc5b5af2aaf45ea8f4e46ce141b703b",
+      "from_node": "increment_coins",
+      "from_port": "value",
+      "to_node": "set_coins",
+      "to_port": "value",
+      "kind": "any",
+      "order": 3
     },
     {
-      "from": "set_coins",
-      "to": "update_ui",
-      "from_pin": "success",
-      "to_pin": "execute"
+      "id": "a2af86a422e34dcead067f4b0c8a195f",
+      "from_node": "set_coins",
+      "from_port": "next",
+      "to_node": "update_ui",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
     },
     {
-      "from": "update_ui",
-      "to": "play_pickup_sound",
-      "from_pin": "done",
-      "to_pin": "execute"
+      "id": "7008c97c1b3b417bb620316836b46cdc",
+      "from_node": "update_ui",
+      "from_port": "next",
+      "to_node": "play_pickup_sound",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
     },
     {
-      "from": "play_pickup_sound",
-      "to": "destroy_coin",
-      "from_pin": "played",
-      "to_pin": "execute"
+      "id": "f296a392175f4e028ce6365762cb1a60",
+      "from_node": "play_pickup_sound",
+      "from_port": "next",
+      "to_node": "destroy_coin",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
     },
     {
-      "from": "check_player",
-      "to": "no_player_noop",
-      "from_pin": "false",
-      "to_pin": "execute"
+      "id": "00f758f30ddf4a25a1b32c107e442315",
+      "from_node": "check_player",
+      "from_port": "false",
+      "to_node": "no_player_noop",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
     }
   ]
 }

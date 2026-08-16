@@ -1,162 +1,312 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
   "name": "BossAILogic",
+  "target": {
+    "type": "name",
+    "value": "Boss"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "frame_loop",
-      "type": "event.every_frame",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
       "position": [
-        50,
-        50
-      ]
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "find_player",
-      "type": "object.find_by_name",
+      "type": "find_tag",
+      "title": "object.find_by_name",
+      "category": "Custom",
       "position": [
-        200,
-        50
+        200.0,
+        50.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "tag": "Player",
         "object_name": "Player"
       }
     },
     {
       "id": "get_player_pos",
-      "type": "object.get_position",
+      "type": "get_position",
+      "title": "Obter Posição",
+      "category": "Objects",
       "position": [
-        350,
-        50
-      ]
+        350.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "get_boss_pos",
-      "type": "transform.get_position",
+      "type": "get_position",
+      "title": "Obter Posição",
+      "category": "Objects",
       "position": [
-        350,
-        120
-      ]
+        350.0,
+        120.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "calc_distance",
       "type": "distance_to_point",
+      "title": "Distância para Ponto",
+      "category": "Navigation",
       "position": [
-        500,
-        85
-      ]
+        500.0,
+        85.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x1": 0.0,
+        "y1": 0.0,
+        "x2": 100.0,
+        "y2": 100.0
+      }
     },
     {
       "id": "get_detection",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        200
+        200.0,
+        200.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "detection_range",
+        "scope": "object",
         "variable_name": "detection_range"
       }
     },
     {
       "id": "check_detected",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        650,
-        85
+        650.0,
+        85.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "<=",
         "value": 0.0
       }
     },
     {
       "id": "get_phase",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        270
+        200.0,
+        270.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "phase",
+        "scope": "object",
         "variable_name": "phase"
       }
     },
     {
       "id": "get_health",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        330
+        200.0,
+        330.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "health",
+        "scope": "object",
         "variable_name": "health"
       }
     },
     {
       "id": "get_max_health",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        390
+        200.0,
+        390.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "max_health",
+        "scope": "object",
         "variable_name": "max_health"
       }
     },
     {
       "id": "check_phase2",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        350,
-        350
+        350.0,
+        350.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "<=",
         "value": 0.0
       }
     },
     {
       "id": "set_phase2",
-      "type": "variable.set",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
-        500,
-        350
+        500.0,
+        350.0
       ],
-      "config": {
-        "variable_name": "phase",
-        "value": 2
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": 2,
+        "name": "phase",
+        "scope": "object",
+        "variable_name": "phase"
       }
     },
     {
       "id": "get_attack_range",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        450
+        200.0,
+        450.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_range",
+        "scope": "object",
         "variable_name": "attack_range"
       }
     },
     {
       "id": "check_attack_range",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        650,
-        280
+        650.0,
+        280.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "<=",
         "value": 0.0
       }
     },
     {
       "id": "stop_boss",
-      "type": "physics.set_velocity",
+      "type": "move_by",
+      "title": "Mover (Velocidade)",
+      "category": "Movement",
       "position": [
-        800,
-        280
+        800.0,
+        280.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": 0.0,
+        "y": 0.0,
+        "target": "",
         "velocity": [
           0,
           0
@@ -165,408 +315,697 @@
     },
     {
       "id": "get_move_speed",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        520
+        200.0,
+        520.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "move_speed",
+        "scope": "object",
         "variable_name": "move_speed"
       }
     },
     {
       "id": "apply_speed",
-      "type": "math.multiply",
+      "type": "multiply_number",
+      "title": "Multiplicar",
+      "category": "Math",
       "position": [
-        950,
-        140
-      ]
+        950.0,
+        140.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "set_velocity",
-      "type": "physics.set_velocity",
+      "type": "move_by",
+      "title": "Mover (Velocidade)",
+      "category": "Movement",
       "position": [
-        1100,
-        140
-      ]
+        1100.0,
+        140.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": 0.0,
+        "y": 0.0,
+        "target": ""
+      }
     },
     {
       "id": "set_speed_param",
-      "type": "animator.set_parameter",
+      "type": "set_animator_parameter",
+      "title": "set_animator_parameter",
+      "category": "Custom",
       "position": [
-        1100,
-        200
+        1100.0,
+        200.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "parameter": "speed"
       }
     },
     {
       "id": "margin_detection",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        650,
-        200
-      ]
+        650.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "margin_attack",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        650,
-        270
-      ]
+        650.0,
+        270.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "margin_phase",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        650,
-        340
-      ]
+        650.0,
+        340.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "chase_guard",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        800,
-        420
+        800.0,
+        420.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": ">",
         "value": 0.0
       }
     },
     {
       "id": "boss_dx",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        500,
-        480
-      ]
+        500.0,
+        480.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "boss_dy",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        500,
-        550
-      ]
+        500.0,
+        550.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "boss_nx",
       "type": "divide_number",
+      "title": "Dividir",
+      "category": "Math",
       "position": [
-        650,
-        480
-      ]
+        650.0,
+        480.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "boss_ny",
       "type": "divide_number",
+      "title": "Dividir",
+      "category": "Math",
       "position": [
-        650,
-        550
-      ]
+        650.0,
+        550.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "boss_vy",
-      "type": "math.multiply",
+      "type": "multiply_number",
+      "title": "Multiplicar",
+      "category": "Math",
       "position": [
-        950,
-        550
-      ]
+        950.0,
+        550.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "get_phase2_threshold",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        600
+        200.0,
+        600.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "phase2_threshold",
+        "scope": "object",
         "variable_name": "phase2_threshold"
       }
     },
     {
       "id": "phase_limit",
-      "type": "math.multiply",
+      "type": "multiply_number",
+      "title": "Multiplicar",
+      "category": "Math",
       "position": [
-        350,
-        600
-      ]
+        350.0,
+        600.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     }
   ],
   "edges": [
     {
-      "from": "frame_loop",
-      "from_pin": "frame",
-      "to": "find_player",
-      "to_pin": "execute"
+      "id": "0ad6def234474bae9fedfc645cd61534",
+      "from_node": "frame_loop",
+      "from_port": "next",
+      "to_node": "find_player",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
     },
     {
-      "from": "find_player",
-      "from_pin": "next",
-      "to": "calc_distance",
-      "to_pin": "exec"
+      "id": "31e5fccbdb5f4ded87bc5c2b413da88b",
+      "from_node": "find_player",
+      "from_port": "next",
+      "to_node": "calc_distance",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 1
     },
     {
-      "from": "calc_distance",
-      "from_pin": "exec_calculated",
-      "to": "check_detected",
-      "to_pin": "in"
+      "id": "2372da3c154d419eb75095e4f0c229f1",
+      "from_node": "calc_distance",
+      "from_port": "exec_calculated",
+      "to_node": "check_detected",
+      "to_port": "in",
+      "kind": "any",
+      "order": 2
     },
     {
-      "from": "check_detected",
-      "from_pin": "true",
-      "to": "get_health",
-      "to_pin": "execute"
+      "id": "084b48720eb64d6d986500f2c385d831",
+      "from_node": "check_detected",
+      "from_port": "true",
+      "to_node": "get_health",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
     },
     {
-      "from": "check_detected",
-      "from_pin": "true",
-      "to": "check_attack_range",
-      "to_pin": "in"
+      "id": "d8122f7b1a6c408a9d74afab3afa2139",
+      "from_node": "check_detected",
+      "from_port": "true",
+      "to_node": "check_attack_range",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
     },
     {
-      "from": "get_health",
-      "from_pin": "next",
-      "to": "get_max_health",
-      "to_pin": "execute"
+      "id": "a24e68aed3294ea3b76e55d8be4f38ea",
+      "from_node": "get_health",
+      "from_port": "next",
+      "to_node": "get_max_health",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
     },
     {
-      "from": "check_phase2",
-      "from_pin": "true",
-      "to": "set_phase2",
-      "to_pin": "execute"
+      "id": "61bf85ab47b84d09bbdd73dad518a4bc",
+      "from_node": "check_phase2",
+      "from_port": "true",
+      "to_node": "set_phase2",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 6
     },
     {
-      "from": "check_attack_range",
-      "from_pin": "true",
-      "to": "stop_boss",
-      "to_pin": "execute"
+      "id": "6cea0e39995f49ba8a005e72ec39d438",
+      "from_node": "check_attack_range",
+      "from_port": "true",
+      "to_node": "stop_boss",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
     },
     {
-      "from": "check_attack_range",
-      "from_pin": "false",
-      "to": "chase_guard",
-      "to_pin": "in"
+      "id": "635f66751cb74cb5af96f1e4122ddcd3",
+      "from_node": "check_attack_range",
+      "from_port": "false",
+      "to_node": "chase_guard",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
     },
     {
-      "from": "chase_guard",
-      "from_pin": "true",
-      "to": "get_move_speed",
-      "to_pin": "execute"
+      "id": "9c6b68a31b364996abd5230defdd60ec",
+      "from_node": "chase_guard",
+      "from_port": "true",
+      "to_node": "get_move_speed",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 9
     },
     {
-      "from": "get_move_speed",
-      "from_pin": "next",
-      "to": "set_velocity",
-      "to_pin": "in"
+      "id": "d61c2f29a0124689a3c4f998cc2d0d8a",
+      "from_node": "get_move_speed",
+      "from_port": "next",
+      "to_node": "set_velocity",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 10
     },
     {
-      "from": "set_velocity",
-      "from_pin": "done",
-      "to": "set_speed_param",
-      "to_pin": "execute"
+      "id": "3b6d59007b884300887116a93d44354c",
+      "from_node": "set_velocity",
+      "from_port": "next",
+      "to_node": "set_speed_param",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 11
     },
     {
-      "from": "find_player",
-      "from_pin": "object",
-      "to": "get_player_pos",
-      "to_pin": "target"
+      "id": "2cceece386bd4fecb2defc491ee36c36",
+      "from_node": "find_player",
+      "from_port": "object",
+      "to_node": "get_player_pos",
+      "to_port": "target",
+      "kind": "any",
+      "order": 12
     },
     {
-      "from": "get_boss_pos",
-      "from_pin": "x",
-      "to": "calc_distance",
-      "to_pin": "x1"
+      "id": "49777318adbe4f7aba3fc6538b63d0cf",
+      "from_node": "get_boss_pos",
+      "from_port": "x",
+      "to_node": "calc_distance",
+      "to_port": "x1",
+      "kind": "any",
+      "order": 13
     },
     {
-      "from": "get_boss_pos",
-      "from_pin": "y",
-      "to": "calc_distance",
-      "to_pin": "y1"
+      "id": "9dbad905bbfd41eab37ab26988f9de4b",
+      "from_node": "get_boss_pos",
+      "from_port": "y",
+      "to_node": "calc_distance",
+      "to_port": "y1",
+      "kind": "any",
+      "order": 14
     },
     {
-      "from": "get_player_pos",
-      "from_pin": "x",
-      "to": "calc_distance",
-      "to_pin": "x2"
+      "id": "c67aeddae01e4fae8176d4455d01ed8f",
+      "from_node": "get_player_pos",
+      "from_port": "x",
+      "to_node": "calc_distance",
+      "to_port": "x2",
+      "kind": "any",
+      "order": 15
     },
     {
-      "from": "get_player_pos",
-      "from_pin": "y",
-      "to": "calc_distance",
-      "to_pin": "y2"
+      "id": "c927d2f430ab419b87507c43b31ce632",
+      "from_node": "get_player_pos",
+      "from_port": "y",
+      "to_node": "calc_distance",
+      "to_port": "y2",
+      "kind": "any",
+      "order": 16
     },
     {
-      "from": "calc_distance",
-      "from_pin": "distance",
-      "to": "margin_detection",
-      "to_pin": "a"
+      "id": "eddbf875f1294a71b0e234a47439c6bf",
+      "from_node": "calc_distance",
+      "from_port": "distance",
+      "to_node": "margin_detection",
+      "to_port": "a",
+      "kind": "any",
+      "order": 17
     },
     {
-      "from": "get_detection",
-      "from_pin": "value",
-      "to": "margin_detection",
-      "to_pin": "b"
+      "id": "9209a75de677404a98c7862f6dc19032",
+      "from_node": "get_detection",
+      "from_port": "value",
+      "to_node": "margin_detection",
+      "to_port": "b",
+      "kind": "any",
+      "order": 18
     },
     {
-      "from": "margin_detection",
-      "from_pin": "value",
-      "to": "check_detected",
-      "to_pin": "value"
+      "id": "08779037e9de416aa530efa44ba7f6a6",
+      "from_node": "margin_detection",
+      "from_port": "value",
+      "to_node": "check_detected",
+      "to_port": "value",
+      "kind": "any",
+      "order": 19
     },
     {
-      "from": "calc_distance",
-      "from_pin": "distance",
-      "to": "margin_attack",
-      "to_pin": "a"
+      "id": "66023501453741788fb6b24e4c748b1b",
+      "from_node": "calc_distance",
+      "from_port": "distance",
+      "to_node": "margin_attack",
+      "to_port": "a",
+      "kind": "any",
+      "order": 20
     },
     {
-      "from": "get_attack_range",
-      "from_pin": "value",
-      "to": "margin_attack",
-      "to_pin": "b"
+      "id": "1baea6251068454b9fbbed9fafb01cdb",
+      "from_node": "get_attack_range",
+      "from_port": "value",
+      "to_node": "margin_attack",
+      "to_port": "b",
+      "kind": "any",
+      "order": 21
     },
     {
-      "from": "margin_attack",
-      "from_pin": "value",
-      "to": "check_attack_range",
-      "to_pin": "value"
+      "id": "3158fb3e7f014654a7c37f3a2607243b",
+      "from_node": "margin_attack",
+      "from_port": "value",
+      "to_node": "check_attack_range",
+      "to_port": "value",
+      "kind": "any",
+      "order": 22
     },
     {
-      "from": "get_health",
-      "from_pin": "value",
-      "to": "margin_phase",
-      "to_pin": "a"
+      "id": "246a4c6fc3764ab1b06f8aa64096748d",
+      "from_node": "get_health",
+      "from_port": "value",
+      "to_node": "margin_phase",
+      "to_port": "a",
+      "kind": "any",
+      "order": 23
     },
     {
-      "from": "margin_phase",
-      "from_pin": "value",
-      "to": "check_phase2",
-      "to_pin": "value"
+      "id": "bc79910096fd4071b41738628602ba35",
+      "from_node": "margin_phase",
+      "from_port": "value",
+      "to_node": "check_phase2",
+      "to_port": "value",
+      "kind": "any",
+      "order": 24
     },
     {
-      "from": "calc_distance",
-      "from_pin": "distance",
-      "to": "chase_guard",
-      "to_pin": "value"
+      "id": "1e47479c2e3049acbb7c9f821dbc3467",
+      "from_node": "calc_distance",
+      "from_port": "distance",
+      "to_node": "chase_guard",
+      "to_port": "value",
+      "kind": "any",
+      "order": 25
     },
     {
-      "from": "get_player_pos",
-      "from_pin": "x",
-      "to": "boss_dx",
-      "to_pin": "a"
+      "id": "1f78165a3a464d029019236fdcbce4b6",
+      "from_node": "get_player_pos",
+      "from_port": "x",
+      "to_node": "boss_dx",
+      "to_port": "a",
+      "kind": "any",
+      "order": 26
     },
     {
-      "from": "get_boss_pos",
-      "from_pin": "x",
-      "to": "boss_dx",
-      "to_pin": "b"
+      "id": "0254010a8be24c789c30749ca60094af",
+      "from_node": "get_boss_pos",
+      "from_port": "x",
+      "to_node": "boss_dx",
+      "to_port": "b",
+      "kind": "any",
+      "order": 27
     },
     {
-      "from": "get_player_pos",
-      "from_pin": "y",
-      "to": "boss_dy",
-      "to_pin": "a"
+      "id": "8cf666af46e04154b7368be25bedb688",
+      "from_node": "get_player_pos",
+      "from_port": "y",
+      "to_node": "boss_dy",
+      "to_port": "a",
+      "kind": "any",
+      "order": 28
     },
     {
-      "from": "get_boss_pos",
-      "from_pin": "y",
-      "to": "boss_dy",
-      "to_pin": "b"
+      "id": "01d0e86d56114e80a76603de5e587c9f",
+      "from_node": "get_boss_pos",
+      "from_port": "y",
+      "to_node": "boss_dy",
+      "to_port": "b",
+      "kind": "any",
+      "order": 29
     },
     {
-      "from": "boss_dx",
-      "from_pin": "value",
-      "to": "boss_nx",
-      "to_pin": "a"
+      "id": "6a270c2d60914ba89539f5c823ed611a",
+      "from_node": "boss_dx",
+      "from_port": "value",
+      "to_node": "boss_nx",
+      "to_port": "a",
+      "kind": "any",
+      "order": 30
     },
     {
-      "from": "calc_distance",
-      "from_pin": "distance",
-      "to": "boss_nx",
-      "to_pin": "b"
+      "id": "60a821042bdb4a7ab3590f51e795f1d0",
+      "from_node": "calc_distance",
+      "from_port": "distance",
+      "to_node": "boss_nx",
+      "to_port": "b",
+      "kind": "any",
+      "order": 31
     },
     {
-      "from": "boss_dy",
-      "from_pin": "value",
-      "to": "boss_ny",
-      "to_pin": "a"
+      "id": "496bf34ede974c7db94d3043120ed847",
+      "from_node": "boss_dy",
+      "from_port": "value",
+      "to_node": "boss_ny",
+      "to_port": "a",
+      "kind": "any",
+      "order": 32
     },
     {
-      "from": "calc_distance",
-      "from_pin": "distance",
-      "to": "boss_ny",
-      "to_pin": "b"
+      "id": "15e3a5adbbba4621ac8d827f99cdc569",
+      "from_node": "calc_distance",
+      "from_port": "distance",
+      "to_node": "boss_ny",
+      "to_port": "b",
+      "kind": "any",
+      "order": 33
     },
     {
-      "from": "boss_nx",
-      "from_pin": "value",
-      "to": "apply_speed",
-      "to_pin": "a"
+      "id": "bbb0f802149749cd97b1ae2e5b083f7c",
+      "from_node": "boss_nx",
+      "from_port": "value",
+      "to_node": "apply_speed",
+      "to_port": "a",
+      "kind": "any",
+      "order": 34
     },
     {
-      "from": "get_move_speed",
-      "from_pin": "value",
-      "to": "apply_speed",
-      "to_pin": "b"
+      "id": "a701f7560caa4c0c85f560e7863b7e16",
+      "from_node": "get_move_speed",
+      "from_port": "value",
+      "to_node": "apply_speed",
+      "to_port": "b",
+      "kind": "any",
+      "order": 35
     },
     {
-      "from": "boss_ny",
-      "from_pin": "value",
-      "to": "boss_vy",
-      "to_pin": "a"
+      "id": "b381a6e71c4347a0a448e6a0df0bf3d1",
+      "from_node": "boss_ny",
+      "from_port": "value",
+      "to_node": "boss_vy",
+      "to_port": "a",
+      "kind": "any",
+      "order": 36
     },
     {
-      "from": "get_move_speed",
-      "from_pin": "value",
-      "to": "boss_vy",
-      "to_pin": "b"
+      "id": "849ef660c5b84c799d4fef419902e0aa",
+      "from_node": "get_move_speed",
+      "from_port": "value",
+      "to_node": "boss_vy",
+      "to_port": "b",
+      "kind": "any",
+      "order": 37
     },
     {
-      "from": "apply_speed",
-      "from_pin": "value",
-      "to": "set_velocity",
-      "to_pin": "x"
+      "id": "62b73cf4aec74bfb8ed31c4a60c0123b",
+      "from_node": "apply_speed",
+      "from_port": "value",
+      "to_node": "set_velocity",
+      "to_port": "x",
+      "kind": "any",
+      "order": 38
     },
     {
-      "from": "boss_vy",
-      "from_pin": "value",
-      "to": "set_velocity",
-      "to_pin": "y"
+      "id": "465dfecb2f894ea287a45117792c939c",
+      "from_node": "boss_vy",
+      "from_port": "value",
+      "to_node": "set_velocity",
+      "to_port": "y",
+      "kind": "any",
+      "order": 39
     },
     {
-      "from": "get_max_health",
-      "from_pin": "out",
-      "to": "get_phase2_threshold",
-      "to_pin": "execute"
+      "id": "70275994b5cf4733b1ffd453ca3865e5",
+      "from_node": "get_max_health",
+      "from_port": "next",
+      "to_node": "get_phase2_threshold",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 40
     },
     {
-      "from": "get_phase2_threshold",
-      "from_pin": "out",
-      "to": "check_phase2",
-      "to_pin": "execute"
+      "id": "c0967059d4034b999d8b02aa118d05eb",
+      "from_node": "get_phase2_threshold",
+      "from_port": "next",
+      "to_node": "check_phase2",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 41
     },
     {
-      "from": "get_max_health",
-      "from_pin": "value",
-      "to": "phase_limit",
-      "to_pin": "a"
+      "id": "a0099a49c00d4168810d9f1436c11d83",
+      "from_node": "get_max_health",
+      "from_port": "value",
+      "to_node": "phase_limit",
+      "to_port": "a",
+      "kind": "any",
+      "order": 42
     },
     {
-      "from": "get_phase2_threshold",
-      "from_pin": "value",
-      "to": "phase_limit",
-      "to_pin": "b"
+      "id": "074712cd14b14a8b9e5535ad2085a838",
+      "from_node": "get_phase2_threshold",
+      "from_port": "value",
+      "to_node": "phase_limit",
+      "to_port": "b",
+      "kind": "any",
+      "order": 43
     },
     {
-      "from": "phase_limit",
-      "from_pin": "value",
-      "to": "margin_phase",
-      "to_pin": "b"
+      "id": "accf231b054049c1bee5799658d09a99",
+      "from_node": "phase_limit",
+      "from_port": "value",
+      "to_node": "margin_phase",
+      "to_port": "b",
+      "kind": "any",
+      "order": 44
     }
   ]
 }

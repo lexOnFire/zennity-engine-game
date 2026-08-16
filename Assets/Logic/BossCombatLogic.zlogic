@@ -1,358 +1,662 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
   "name": "BossCombatLogic",
+  "target": {
+    "type": "name",
+    "value": "Boss"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "frame_loop",
-      "type": "event.every_frame",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
       "position": [
-        50,
-        50
-      ]
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "get_cooldown_timer",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        50
+        200.0,
+        50.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "cooldown_timer",
+        "scope": "object",
         "variable_name": "cooldown_timer"
       }
     },
     {
       "id": "get_cooldown",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        120
+        200.0,
+        120.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_cooldown",
+        "scope": "object",
         "variable_name": "attack_cooldown"
       }
     },
     {
       "id": "check_can_attack",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        350,
-        85
+        350.0,
+        85.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "<=",
         "value": 0.0
       }
     },
     {
       "id": "find_player",
-      "type": "object.find_by_name",
+      "type": "find_tag",
+      "title": "object.find_by_name",
+      "category": "Custom",
       "position": [
-        500,
-        50
+        500.0,
+        50.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "tag": "Player",
         "object_name": "Player"
       }
     },
     {
       "id": "get_player_pos",
-      "type": "object.get_position",
+      "type": "get_position",
+      "title": "Obter Posição",
+      "category": "Objects",
       "position": [
-        650,
-        20
-      ]
+        650.0,
+        20.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "get_boss_pos",
-      "type": "transform.get_position",
+      "type": "get_position",
+      "title": "Obter Posição",
+      "category": "Objects",
       "position": [
-        650,
-        90
-      ]
+        650.0,
+        90.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "calc_distance",
       "type": "distance_to_point",
+      "title": "Distância para Ponto",
+      "category": "Navigation",
       "position": [
-        800,
-        55
-      ]
+        800.0,
+        55.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x1": 0.0,
+        "y1": 0.0,
+        "x2": 100.0,
+        "y2": 100.0
+      }
     },
     {
       "id": "get_attack_range",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        650,
-        160
+        650.0,
+        160.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_range",
+        "scope": "object",
         "variable_name": "attack_range"
       }
     },
     {
       "id": "margin_attack",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        950,
-        110
-      ]
+        950.0,
+        110.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "check_in_range",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        1100,
-        55
+        1100.0,
+        55.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "<=",
         "value": 0.0
       }
     },
     {
       "id": "get_phase",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        200
+        200.0,
+        200.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "phase",
+        "scope": "object",
         "variable_name": "phase"
       }
     },
     {
       "id": "check_phase2",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        350,
-        200
+        350.0,
+        200.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "==",
         "value": 2
       }
     },
     {
       "id": "get_attack_count",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        1250,
-        280
+        1250.0,
+        280.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_count",
+        "scope": "object",
         "variable_name": "attack_count"
       }
     },
     {
       "id": "get_heavy_interval",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        1250,
-        350
+        1250.0,
+        350.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "heavy_attack_interval",
+        "scope": "object",
         "variable_name": "heavy_attack_interval"
       }
     },
     {
       "id": "sum_count",
-      "type": "math.add",
+      "type": "add_number",
+      "title": "Somar",
+      "category": "Math",
       "position": [
-        1400,
-        280
+        1400.0,
+        280.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
         "b": 1
       }
     },
     {
       "id": "heavy_margin",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        1550,
-        315
-      ]
+        1550.0,
+        315.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "reset_timer",
-      "type": "variable.set",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
-        1400,
-        85
+        1400.0,
+        85.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": "",
+        "name": "cooldown_timer",
+        "scope": "object",
         "variable_name": "cooldown_timer"
       }
     },
     {
       "id": "check_heavy",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        1700,
-        280
+        1700.0,
+        280.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": ">=",
         "value": 0.0
       }
     },
     {
       "id": "reset_count",
-      "type": "variable.set",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
-        1850,
-        200
+        1850.0,
+        200.0
       ],
-      "config": {
-        "variable_name": "attack_count",
-        "value": 0
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": 0,
+        "name": "attack_count",
+        "scope": "object",
+        "variable_name": "attack_count"
       }
     },
     {
       "id": "increment_count",
-      "type": "variable.set",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
-        1850,
-        380
+        1850.0,
+        380.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": "",
+        "name": "attack_count",
+        "scope": "object",
         "variable_name": "attack_count"
       }
     },
     {
       "id": "get_heavy_damage",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        1850,
-        140
+        1850.0,
+        140.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "heavy_attack_damage",
+        "scope": "object",
         "variable_name": "heavy_attack_damage"
       }
     },
     {
       "id": "get_attack_damage",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        1850,
-        450
+        1850.0,
+        450.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_damage",
+        "scope": "object",
         "variable_name": "attack_damage"
       }
     },
     {
       "id": "emit_heavy_damage",
       "type": "emit_event",
+      "title": "Emitir Evento",
+      "category": "Events",
       "position": [
-        2000,
-        200
+        2000.0,
+        200.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "payload": "",
         "name": "player_damage"
       }
     },
     {
       "id": "emit_normal_damage",
       "type": "emit_event",
+      "title": "Emitir Evento",
+      "category": "Events",
       "position": [
-        2000,
-        380
+        2000.0,
+        380.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "payload": "",
         "name": "player_damage"
       }
     },
     {
       "id": "set_heavy_attack",
-      "type": "animator.set_trigger",
+      "type": "animator_set_trigger",
+      "title": "Set Animator Trigger",
+      "category": "Animation",
       "position": [
-        2150,
-        200
+        2150.0,
+        200.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "target": "Boss",
         "trigger_name": "heavy_attack"
       }
     },
     {
       "id": "set_normal_attack",
-      "type": "animator.set_trigger",
+      "type": "animator_set_trigger",
+      "title": "Set Animator Trigger",
+      "category": "Animation",
       "position": [
-        2150,
-        380
+        2150.0,
+        380.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "target": "Boss",
         "trigger_name": "attack"
       }
     },
     {
       "id": "sub_timer",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        350,
-        520
+        350.0,
+        520.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
         "b": 0.016
       }
     },
     {
       "id": "clamp_timer",
-      "type": "math.clamp",
+      "type": "clamp_number",
+      "title": "Limitar (Clamp)",
+      "category": "Math",
       "position": [
-        500,
-        520
+        500.0,
+        520.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": 0.0,
         "minimum": 0,
         "maximum": 999
       }
     },
     {
       "id": "decrease_timer",
-      "type": "variable.set",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
-        650,
-        520
+        650.0,
+        520.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": "",
+        "name": "cooldown_timer",
+        "scope": "object",
         "variable_name": "cooldown_timer"
       }
     },
     {
       "id": "get_phase2_cooldown",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        600
+        200.0,
+        600.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_cooldown",
+        "scope": "object",
         "variable_name": "attack_cooldown"
       }
     },
     {
       "id": "calc_phase2_cooldown",
-      "type": "math.multiply",
+      "type": "multiply_number",
+      "title": "Multiplicar",
+      "category": "Math",
       "position": [
-        350,
-        600
+        350.0,
+        600.0
       ],
-      "config": {
-        "a": 0.8
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.8,
+        "b": 0.0
       }
     },
     {
       "id": "target_guard",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        950,
-        20
+        950.0,
+        20.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": ">",
         "value": 0.0
       }
@@ -360,256 +664,382 @@
   ],
   "edges": [
     {
-      "from": "frame_loop",
-      "from_pin": "frame",
-      "to": "get_cooldown_timer",
-      "to_pin": "execute"
+      "id": "294379d2e1e14703ab5311a2ae38c01e",
+      "from_node": "frame_loop",
+      "from_port": "next",
+      "to_node": "get_cooldown_timer",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
     },
     {
-      "from": "get_cooldown_timer",
-      "from_pin": "done",
-      "to": "get_cooldown",
-      "to_pin": "execute"
+      "id": "3acde54d07f148519a44eff4bfe40b47",
+      "from_node": "get_cooldown_timer",
+      "from_port": "next",
+      "to_node": "get_cooldown",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
     },
     {
-      "from": "get_cooldown",
-      "from_pin": "done",
-      "to": "check_can_attack",
-      "to_pin": "execute"
+      "id": "862004d769e043fdbbeab47122633288",
+      "from_node": "get_cooldown",
+      "from_port": "next",
+      "to_node": "check_can_attack",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
     },
     {
-      "from": "get_cooldown_timer",
-      "from_pin": "value",
-      "to": "check_can_attack",
-      "to_pin": "value"
+      "id": "9be7f4606c4745aa842375a21b97c7c1",
+      "from_node": "get_cooldown_timer",
+      "from_port": "value",
+      "to_node": "check_can_attack",
+      "to_port": "value",
+      "kind": "any",
+      "order": 3
     },
     {
-      "from": "check_can_attack",
-      "from_pin": "true",
-      "to": "find_player",
-      "to_pin": "execute"
+      "id": "f25233d420354dbf8b3753f763853555",
+      "from_node": "check_can_attack",
+      "from_port": "true",
+      "to_node": "find_player",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
     },
     {
-      "from": "find_player",
-      "from_pin": "done",
-      "to": "calc_distance",
-      "to_pin": "exec"
+      "id": "f63ab4d28e96441b8e5fef527ae8acf2",
+      "from_node": "find_player",
+      "from_port": "next",
+      "to_node": "calc_distance",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 5
     },
     {
-      "from": "find_player",
-      "from_pin": "object",
-      "to": "get_player_pos",
-      "to_pin": "target"
+      "id": "2cce50a0898a4552bc8fd0c7809ff137",
+      "from_node": "find_player",
+      "from_port": "object",
+      "to_node": "get_player_pos",
+      "to_port": "target",
+      "kind": "any",
+      "order": 6
     },
     {
-      "from": "get_boss_pos",
-      "from_pin": "x",
-      "to": "calc_distance",
-      "to_pin": "x1"
+      "id": "c24aa204fa4a432c9929d912b755a7b6",
+      "from_node": "get_boss_pos",
+      "from_port": "x",
+      "to_node": "calc_distance",
+      "to_port": "x1",
+      "kind": "any",
+      "order": 7
     },
     {
-      "from": "get_boss_pos",
-      "from_pin": "y",
-      "to": "calc_distance",
-      "to_pin": "y1"
+      "id": "5d497912250a4c56b1ac0aa5654f58b4",
+      "from_node": "get_boss_pos",
+      "from_port": "y",
+      "to_node": "calc_distance",
+      "to_port": "y1",
+      "kind": "any",
+      "order": 8
     },
     {
-      "from": "get_player_pos",
-      "from_pin": "x",
-      "to": "calc_distance",
-      "to_pin": "x2"
+      "id": "aa0ae50960794a7a94b31d8b9ae7790e",
+      "from_node": "get_player_pos",
+      "from_port": "x",
+      "to_node": "calc_distance",
+      "to_port": "x2",
+      "kind": "any",
+      "order": 9
     },
     {
-      "from": "get_player_pos",
-      "from_pin": "y",
-      "to": "calc_distance",
-      "to_pin": "y2"
+      "id": "6ca52749d517485289a6b9eba78713fa",
+      "from_node": "get_player_pos",
+      "from_port": "y",
+      "to_node": "calc_distance",
+      "to_port": "y2",
+      "kind": "any",
+      "order": 10
     },
     {
-      "from": "calc_distance",
-      "from_pin": "distance",
-      "to": "margin_attack",
-      "to_pin": "a"
+      "id": "72c9dba0bd164c9295ca05ecdfa7210c",
+      "from_node": "calc_distance",
+      "from_port": "distance",
+      "to_node": "margin_attack",
+      "to_port": "a",
+      "kind": "any",
+      "order": 11
     },
     {
-      "from": "get_attack_range",
-      "from_pin": "value",
-      "to": "margin_attack",
-      "to_pin": "b"
+      "id": "7f37fae7bc014cfba35a48fad7b49e82",
+      "from_node": "get_attack_range",
+      "from_port": "value",
+      "to_node": "margin_attack",
+      "to_port": "b",
+      "kind": "any",
+      "order": 12
     },
     {
-      "from": "margin_attack",
-      "from_pin": "value",
-      "to": "check_in_range",
-      "to_pin": "value"
+      "id": "38c89cad08964b90bae38d0ec07d1d14",
+      "from_node": "margin_attack",
+      "from_port": "value",
+      "to_node": "check_in_range",
+      "to_port": "value",
+      "kind": "any",
+      "order": 13
     },
     {
-      "from": "check_in_range",
-      "from_pin": "true",
-      "to": "get_phase",
-      "to_pin": "execute"
+      "id": "0de101c3c38d48ff92dd4094c073b5da",
+      "from_node": "check_in_range",
+      "from_port": "true",
+      "to_node": "get_phase",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 14
     },
     {
-      "from": "get_phase",
-      "from_pin": "value",
-      "to": "check_phase2",
-      "to_pin": "value"
+      "id": "9ae0f0a4616e4afcb56ba8cf0c0441d5",
+      "from_node": "get_phase",
+      "from_port": "value",
+      "to_node": "check_phase2",
+      "to_port": "value",
+      "kind": "any",
+      "order": 15
     },
     {
-      "from": "get_phase",
-      "from_pin": "done",
-      "to": "check_phase2",
-      "to_pin": "execute"
+      "id": "c2984798fe0c4d3f8c6bf6e8d2a6b683",
+      "from_node": "get_phase",
+      "from_port": "next",
+      "to_node": "check_phase2",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 16
     },
     {
-      "from": "check_in_range",
-      "from_pin": "true",
-      "to": "get_attack_count",
-      "to_pin": "execute"
+      "id": "d2881669217a487aaa5a78f48958fdfb",
+      "from_node": "check_in_range",
+      "from_port": "true",
+      "to_node": "get_attack_count",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 17
     },
     {
-      "from": "get_attack_count",
-      "from_pin": "done",
-      "to": "get_heavy_interval",
-      "to_pin": "execute"
+      "id": "f67c79699f4b4637aa745553f0bcb947",
+      "from_node": "get_attack_count",
+      "from_port": "next",
+      "to_node": "get_heavy_interval",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 18
     },
     {
-      "from": "get_heavy_interval",
-      "from_pin": "done",
-      "to": "reset_timer",
-      "to_pin": "execute"
+      "id": "07fa6abe9dac4c3a8672f1b9b1340695",
+      "from_node": "get_heavy_interval",
+      "from_port": "next",
+      "to_node": "reset_timer",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 19
     },
     {
-      "from": "get_cooldown",
-      "from_pin": "value",
-      "to": "reset_timer",
-      "to_pin": "value"
+      "id": "27915e0cb03a4142a544c2e75a7fe613",
+      "from_node": "get_cooldown",
+      "from_port": "value",
+      "to_node": "reset_timer",
+      "to_port": "value",
+      "kind": "any",
+      "order": 20
     },
     {
-      "from": "reset_timer",
-      "from_pin": "done",
-      "to": "check_heavy",
-      "to_pin": "execute"
+      "id": "4ffe074b321e466cb173d37f5f865711",
+      "from_node": "reset_timer",
+      "from_port": "next",
+      "to_node": "check_heavy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 21
     },
     {
-      "from": "get_attack_count",
-      "from_pin": "value",
-      "to": "sum_count",
-      "to_pin": "a"
+      "id": "36c2df5190ce4b75ab2d7d1593e4c025",
+      "from_node": "get_attack_count",
+      "from_port": "value",
+      "to_node": "sum_count",
+      "to_port": "a",
+      "kind": "any",
+      "order": 22
     },
     {
-      "from": "sum_count",
-      "from_pin": "value",
-      "to": "heavy_margin",
-      "to_pin": "a"
+      "id": "df5b750725a349c18ca8aee75e5d275b",
+      "from_node": "sum_count",
+      "from_port": "value",
+      "to_node": "heavy_margin",
+      "to_port": "a",
+      "kind": "any",
+      "order": 23
     },
     {
-      "from": "get_heavy_interval",
-      "from_pin": "value",
-      "to": "heavy_margin",
-      "to_pin": "b"
+      "id": "20bf01f0f5e94cd4bd7d8314dee1aeff",
+      "from_node": "get_heavy_interval",
+      "from_port": "value",
+      "to_node": "heavy_margin",
+      "to_port": "b",
+      "kind": "any",
+      "order": 24
     },
     {
-      "from": "heavy_margin",
-      "from_pin": "value",
-      "to": "check_heavy",
-      "to_pin": "value"
+      "id": "a594aa314335428e852d65a50172331e",
+      "from_node": "heavy_margin",
+      "from_port": "value",
+      "to_node": "check_heavy",
+      "to_port": "value",
+      "kind": "any",
+      "order": 25
     },
     {
-      "from": "check_heavy",
-      "from_pin": "true",
-      "to": "reset_count",
-      "to_pin": "execute"
+      "id": "59537b54bb7d4285b3dfeef62f39d188",
+      "from_node": "check_heavy",
+      "from_port": "true",
+      "to_node": "reset_count",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 26
     },
     {
-      "from": "reset_count",
-      "from_pin": "done",
-      "to": "emit_heavy_damage",
-      "to_pin": "execute"
+      "id": "54d4edc079bd4a7bb2420bfe6ecc4755",
+      "from_node": "reset_count",
+      "from_port": "next",
+      "to_node": "emit_heavy_damage",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 27
     },
     {
-      "from": "get_heavy_damage",
-      "from_pin": "value",
-      "to": "emit_heavy_damage",
-      "to_pin": "payload"
+      "id": "cc8f57f494414a9b8f44d1527ddc45ef",
+      "from_node": "get_heavy_damage",
+      "from_port": "value",
+      "to_node": "emit_heavy_damage",
+      "to_port": "payload",
+      "kind": "any",
+      "order": 28
     },
     {
-      "from": "emit_heavy_damage",
-      "from_pin": "done",
-      "to": "set_heavy_attack",
-      "to_pin": "execute"
+      "id": "5b7562220bff46b5ad518e5b9839f062",
+      "from_node": "emit_heavy_damage",
+      "from_port": "next",
+      "to_node": "set_heavy_attack",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 29
     },
     {
-      "from": "check_heavy",
-      "from_pin": "false",
-      "to": "increment_count",
-      "to_pin": "execute"
+      "id": "f38a1f3c1b9d4d6da9daefa1d3d47221",
+      "from_node": "check_heavy",
+      "from_port": "false",
+      "to_node": "increment_count",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 30
     },
     {
-      "from": "sum_count",
-      "from_pin": "value",
-      "to": "increment_count",
-      "to_pin": "value"
+      "id": "9c35572c00e3462e92663659545ac6b5",
+      "from_node": "sum_count",
+      "from_port": "value",
+      "to_node": "increment_count",
+      "to_port": "value",
+      "kind": "any",
+      "order": 31
     },
     {
-      "from": "increment_count",
-      "from_pin": "done",
-      "to": "emit_normal_damage",
-      "to_pin": "execute"
+      "id": "fc39b56d9ca64a9fbfd5e4aea7507408",
+      "from_node": "increment_count",
+      "from_port": "next",
+      "to_node": "emit_normal_damage",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 32
     },
     {
-      "from": "get_attack_damage",
-      "from_pin": "value",
-      "to": "emit_normal_damage",
-      "to_pin": "payload"
+      "id": "e82785bb78484d5d8704b8f412622989",
+      "from_node": "get_attack_damage",
+      "from_port": "value",
+      "to_node": "emit_normal_damage",
+      "to_port": "payload",
+      "kind": "any",
+      "order": 33
     },
     {
-      "from": "emit_normal_damage",
-      "from_pin": "done",
-      "to": "set_normal_attack",
-      "to_pin": "execute"
+      "id": "41c595c5abd5465c9bcac47e95e5345a",
+      "from_node": "emit_normal_damage",
+      "from_port": "next",
+      "to_node": "set_normal_attack",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 34
     },
     {
-      "from": "check_can_attack",
-      "from_pin": "false",
-      "to": "decrease_timer",
-      "to_pin": "execute"
+      "id": "1781c9c1a8cc489c9e65ba90c02f5d2d",
+      "from_node": "check_can_attack",
+      "from_port": "false",
+      "to_node": "decrease_timer",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 35
     },
     {
-      "from": "get_cooldown_timer",
-      "from_pin": "value",
-      "to": "sub_timer",
-      "to_pin": "a"
+      "id": "fb722dd95e134d19b87391e5e36d9799",
+      "from_node": "get_cooldown_timer",
+      "from_port": "value",
+      "to_node": "sub_timer",
+      "to_port": "a",
+      "kind": "any",
+      "order": 36
     },
     {
-      "from": "sub_timer",
-      "from_pin": "value",
-      "to": "clamp_timer",
-      "to_pin": "value"
+      "id": "cfc714c133f54a48843178215692c868",
+      "from_node": "sub_timer",
+      "from_port": "value",
+      "to_node": "clamp_timer",
+      "to_port": "value",
+      "kind": "any",
+      "order": 37
     },
     {
-      "from": "clamp_timer",
-      "from_pin": "value",
-      "to": "decrease_timer",
-      "to_pin": "value"
+      "id": "cb64a0c7d2764d97900bf0316d694ec9",
+      "from_node": "clamp_timer",
+      "from_port": "value",
+      "to_node": "decrease_timer",
+      "to_port": "value",
+      "kind": "any",
+      "order": 38
     },
     {
-      "from": "calc_distance",
-      "from_pin": "exec_calculated",
-      "to": "target_guard",
-      "to_pin": "execute"
+      "id": "c21dc3a38d784ce1a2cf6e473a206978",
+      "from_node": "calc_distance",
+      "from_port": "exec_calculated",
+      "to_node": "target_guard",
+      "to_port": "in",
+      "kind": "any",
+      "order": 39
     },
     {
-      "from": "calc_distance",
-      "from_pin": "distance",
-      "to": "target_guard",
-      "to_pin": "value"
+      "id": "b194ae4080e64daca9d8828e41c66e51",
+      "from_node": "calc_distance",
+      "from_port": "distance",
+      "to_node": "target_guard",
+      "to_port": "value",
+      "kind": "any",
+      "order": 40
     },
     {
-      "from": "target_guard",
-      "from_pin": "true",
-      "to": "check_in_range",
-      "to_pin": "execute"
+      "id": "67f28c4f756942a587ff231983fde578",
+      "from_node": "target_guard",
+      "from_port": "true",
+      "to_node": "check_in_range",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 41
     }
   ]
 }

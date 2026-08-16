@@ -1,138 +1,271 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
   "name": "EnemyAILogic",
+  "target": {
+    "type": "name",
+    "value": "Enemy"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "frame_loop",
-      "type": "event.every_frame",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
       "position": [
-        50,
-        50
+        50.0,
+        50.0
       ],
-      "config": {}
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "find_player",
-      "type": "object.find_by_name",
+      "type": "find_tag",
+      "title": "object.find_by_name",
+      "category": "Custom",
       "position": [
-        200,
-        50
+        200.0,
+        50.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "tag": "Player",
         "object_name": "Player"
       }
     },
     {
       "id": "get_player_position",
-      "type": "object.get_position",
+      "type": "get_position",
+      "title": "Obter Posição",
+      "category": "Objects",
       "position": [
-        350,
-        50
+        350.0,
+        50.0
       ],
-      "config": {}
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "get_enemy_position",
-      "type": "transform.get_position",
+      "type": "get_position",
+      "title": "Obter Posição",
+      "category": "Objects",
       "position": [
-        350,
-        120
+        350.0,
+        120.0
       ],
-      "config": {}
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "calculate_distance",
       "type": "distance_to_point",
+      "title": "Distância para Ponto",
+      "category": "Navigation",
       "position": [
-        500,
-        85
+        500.0,
+        85.0
       ],
-      "config": {}
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x1": 0.0,
+        "y1": 0.0,
+        "x2": 100.0,
+        "y2": 100.0
+      }
     },
     {
       "id": "get_detection_range",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        200
+        200.0,
+        200.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "detection_range",
+        "scope": "object",
         "variable_name": "detection_range"
       }
     },
     {
       "id": "check_detected",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        650,
-        85
+        650.0,
+        85.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "<=",
         "value": 0.0
       }
     },
     {
       "id": "get_attack_range",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        280
+        200.0,
+        280.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_range",
+        "scope": "object",
         "variable_name": "attack_range"
       }
     },
     {
       "id": "check_in_attack_range",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        650,
-        280
+        650.0,
+        280.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "<=",
         "value": 0.0
       }
     },
     {
       "id": "get_move_speed",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        350
+        200.0,
+        350.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "move_speed",
+        "scope": "object",
         "variable_name": "move_speed"
       }
     },
     {
       "id": "apply_speed",
-      "type": "math.multiply",
+      "type": "multiply_number",
+      "title": "Multiplicar",
+      "category": "Math",
       "position": [
-        950,
-        140
+        950.0,
+        140.0
       ],
-      "config": {}
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "set_enemy_velocity",
-      "type": "physics.set_velocity",
+      "type": "move_by",
+      "title": "Mover (Velocidade)",
+      "category": "Movement",
       "position": [
-        1100,
-        140
+        1100.0,
+        140.0
       ],
-      "config": {}
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": 0.0,
+        "y": 0.0,
+        "target": ""
+      }
     },
     {
       "id": "stop_enemy",
-      "type": "physics.set_velocity",
+      "type": "move_by",
+      "title": "Mover (Velocidade)",
+      "category": "Movement",
       "position": [
-        1100,
-        280
+        1100.0,
+        280.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "x": 0.0,
+        "y": 0.0,
+        "target": "",
         "velocity": [
           0,
           0
@@ -141,456 +274,757 @@
     },
     {
       "id": "set_speed_parameter",
-      "type": "animator.set_parameter",
+      "type": "set_animator_parameter",
+      "title": "set_animator_parameter",
+      "category": "Custom",
       "position": [
-        1100,
-        200
+        1100.0,
+        200.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "parameter": "speed",
         "value": 0
       }
     },
     {
       "id": "get_attack_cooldown",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        430
+        200.0,
+        430.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "attack_cooldown",
+        "scope": "object",
         "variable_name": "attack_cooldown"
       }
     },
     {
       "id": "get_cooldown_timer",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        490
+        200.0,
+        490.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "cooldown_timer",
+        "scope": "object",
         "variable_name": "cooldown_timer"
       }
     },
     {
       "id": "check_can_attack",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        350,
-        460
+        350.0,
+        460.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": ">=",
         "value": 0.0
       }
     },
     {
       "id": "set_attack_trigger",
-      "type": "animator.set_trigger",
+      "type": "animator_set_trigger",
+      "title": "Set Animator Trigger",
+      "category": "Animation",
       "position": [
-        500,
-        460
+        500.0,
+        460.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": "player",
         "trigger_name": "attack"
       }
     },
     {
       "id": "reset_cooldown_timer",
-      "type": "variable.set",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
-        650,
-        460
+        650.0,
+        460.0
       ],
-      "config": {
-        "variable_name": "cooldown_timer",
-        "value": 0
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": 0,
+        "name": "cooldown_timer",
+        "scope": "object",
+        "variable_name": "cooldown_timer"
       }
     },
     {
       "id": "decrease_cooldown_timer",
       "type": "variable.increment",
+      "title": "variable.increment",
+      "category": "Custom",
       "position": [
-        650,
-        520
+        650.0,
+        520.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "variable_name": "cooldown_timer",
-        "increment": 0.016
+        "increment": 0.016,
+        "name": "cooldown_timer"
       }
     },
     {
       "id": "idle_state",
-      "type": "animator.set_parameter",
+      "type": "set_animator_parameter",
+      "title": "set_animator_parameter",
+      "category": "Custom",
       "position": [
-        800,
-        350
+        800.0,
+        350.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "parameter": "speed",
         "value": 0
       }
     },
     {
       "id": "run_state",
-      "type": "animator.set_parameter",
+      "type": "set_animator_parameter",
+      "title": "set_animator_parameter",
+      "category": "Custom",
       "position": [
-        1100,
-        100
+        1100.0,
+        100.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "parameter": "speed",
         "value": 1
       }
     },
     {
       "id": "margin_detection",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        650,
-        200
-      ]
+        650.0,
+        200.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "margin_attack",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        650,
-        270
-      ]
+        650.0,
+        270.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "margin_cooldown",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        650,
-        340
-      ]
+        650.0,
+        340.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "chase_guard",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        800,
-        420
+        800.0,
+        420.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": ">",
         "value": 0.0
       }
     },
     {
       "id": "enemy_dx",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        500,
-        480
-      ]
+        500.0,
+        480.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "enemy_dy",
-      "type": "math.subtract",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
       "position": [
-        500,
-        550
-      ]
+        500.0,
+        550.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "enemy_nx",
       "type": "divide_number",
+      "title": "Dividir",
+      "category": "Math",
       "position": [
-        650,
-        480
-      ]
+        650.0,
+        480.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "enemy_ny",
       "type": "divide_number",
+      "title": "Dividir",
+      "category": "Math",
       "position": [
-        650,
-        550
-      ]
+        650.0,
+        550.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "enemy_vy",
-      "type": "math.multiply",
+      "type": "multiply_number",
+      "title": "Multiplicar",
+      "category": "Math",
       "position": [
-        950,
-        550
-      ]
+        950.0,
+        550.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     }
   ],
   "edges": [
     {
-      "from": "frame_loop",
-      "from_pin": "frame",
-      "to": "find_player",
-      "to_pin": "execute"
+      "id": "93bee48e17e54347828fd1d52107f447",
+      "from_node": "frame_loop",
+      "from_port": "next",
+      "to_node": "find_player",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
     },
     {
-      "from": "find_player",
-      "from_pin": "next",
-      "to": "calculate_distance",
-      "to_pin": "exec"
+      "id": "e5d354faea4b407baf618eebd19b4af0",
+      "from_node": "find_player",
+      "from_port": "next",
+      "to_node": "calculate_distance",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 1
     },
     {
-      "from": "calculate_distance",
-      "from_pin": "exec_calculated",
-      "to": "check_detected",
-      "to_pin": "in"
+      "id": "b98592b686f44dc38f96799fef80615c",
+      "from_node": "calculate_distance",
+      "from_port": "exec_calculated",
+      "to_node": "check_detected",
+      "to_port": "in",
+      "kind": "any",
+      "order": 2
     },
     {
-      "from": "check_detected",
-      "from_pin": "true",
-      "to": "set_speed_parameter",
-      "to_pin": "execute"
+      "id": "a468f4de713943cb997da506db4c4c2e",
+      "from_node": "check_detected",
+      "from_port": "true",
+      "to_node": "set_speed_parameter",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
     },
     {
-      "from": "check_detected",
-      "from_pin": "false",
-      "to": "idle_state",
-      "to_pin": "execute"
+      "id": "7b5869de66d045b9bf964d5ace2cc1e1",
+      "from_node": "check_detected",
+      "from_port": "false",
+      "to_node": "idle_state",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
     },
     {
-      "from": "check_detected",
-      "from_pin": "true",
-      "to": "check_in_attack_range",
-      "to_pin": "in"
+      "id": "cd36088ff95348c485740cb3184abf67",
+      "from_node": "check_detected",
+      "from_port": "true",
+      "to_node": "check_in_attack_range",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 5
     },
     {
-      "from": "check_in_attack_range",
-      "from_pin": "true",
-      "to": "stop_enemy",
-      "to_pin": "execute"
+      "id": "7978f69f8e9643419e3408f5c406d826",
+      "from_node": "check_in_attack_range",
+      "from_port": "true",
+      "to_node": "stop_enemy",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
     },
     {
-      "from": "check_in_attack_range",
-      "from_pin": "true",
-      "to": "decrease_cooldown_timer",
-      "to_pin": "execute"
+      "id": "42e5cb9959f84bd4afa500d81b90fd6f",
+      "from_node": "check_in_attack_range",
+      "from_port": "true",
+      "to_node": "decrease_cooldown_timer",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 7
     },
     {
-      "from": "check_in_attack_range",
-      "from_pin": "true",
-      "to": "get_attack_cooldown",
-      "to_pin": "execute"
+      "id": "0eee47f07cfd42e3924b2d6559e7100f",
+      "from_node": "check_in_attack_range",
+      "from_port": "true",
+      "to_node": "get_attack_cooldown",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
     },
     {
-      "from": "get_attack_cooldown",
-      "from_pin": "next",
-      "to": "get_cooldown_timer",
-      "to_pin": "in"
+      "id": "316e174b62204c69b47a3094000d402b",
+      "from_node": "get_attack_cooldown",
+      "from_port": "next",
+      "to_node": "get_cooldown_timer",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 9
     },
     {
-      "from": "get_cooldown_timer",
-      "from_pin": "next",
-      "to": "check_can_attack",
-      "to_pin": "in"
+      "id": "3e46c349dfb1447b828ab670d6ef4b68",
+      "from_node": "get_cooldown_timer",
+      "from_port": "next",
+      "to_node": "check_can_attack",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 10
     },
     {
-      "from": "check_can_attack",
-      "from_pin": "true",
-      "to": "set_attack_trigger",
-      "to_pin": "execute"
+      "id": "43a127113ff6462b979de54dd9a8e39d",
+      "from_node": "check_can_attack",
+      "from_port": "true",
+      "to_node": "set_attack_trigger",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 11
     },
     {
-      "from": "set_attack_trigger",
-      "from_pin": "done",
-      "to": "reset_cooldown_timer",
-      "to_pin": "execute"
+      "id": "2afcdf504e7d4e49bee784f8c771cd3a",
+      "from_node": "set_attack_trigger",
+      "from_port": "exec_success",
+      "to_node": "reset_cooldown_timer",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 12
     },
     {
-      "from": "check_in_attack_range",
-      "from_pin": "false",
-      "to": "chase_guard",
-      "to_pin": "in"
+      "id": "d7f63fc618eb4452bb7de65d67a06049",
+      "from_node": "check_in_attack_range",
+      "from_port": "false",
+      "to_node": "chase_guard",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 13
     },
     {
-      "from": "chase_guard",
-      "from_pin": "true",
-      "to": "get_move_speed",
-      "to_pin": "execute"
+      "id": "e720458dc64b49e5830fb1fec90d7745",
+      "from_node": "chase_guard",
+      "from_port": "true",
+      "to_node": "get_move_speed",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 14
     },
     {
-      "from": "get_move_speed",
-      "from_pin": "next",
-      "to": "set_enemy_velocity",
-      "to_pin": "in"
+      "id": "d1e8ab009add4835bcdb08f306f1ff6a",
+      "from_node": "get_move_speed",
+      "from_port": "next",
+      "to_node": "set_enemy_velocity",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 15
     },
     {
-      "from": "find_player",
-      "from_pin": "object",
-      "to": "get_player_position",
-      "to_pin": "target"
+      "id": "c0c14ad9ee68474394a175b9749f00b8",
+      "from_node": "find_player",
+      "from_port": "object",
+      "to_node": "get_player_position",
+      "to_port": "target",
+      "kind": "any",
+      "order": 16
     },
     {
-      "from": "get_enemy_position",
-      "from_pin": "x",
-      "to": "calculate_distance",
-      "to_pin": "x1"
+      "id": "f012efc5233b48e7974180f74abafaa8",
+      "from_node": "get_enemy_position",
+      "from_port": "x",
+      "to_node": "calculate_distance",
+      "to_port": "x1",
+      "kind": "any",
+      "order": 17
     },
     {
-      "from": "get_enemy_position",
-      "from_pin": "y",
-      "to": "calculate_distance",
-      "to_pin": "y1"
+      "id": "c81d8b79ecf7460db638820ae064846a",
+      "from_node": "get_enemy_position",
+      "from_port": "y",
+      "to_node": "calculate_distance",
+      "to_port": "y1",
+      "kind": "any",
+      "order": 18
     },
     {
-      "from": "get_player_position",
-      "from_pin": "x",
-      "to": "calculate_distance",
-      "to_pin": "x2"
+      "id": "c192adac10db4b6aa3a4504dc64e0d4f",
+      "from_node": "get_player_position",
+      "from_port": "x",
+      "to_node": "calculate_distance",
+      "to_port": "x2",
+      "kind": "any",
+      "order": 19
     },
     {
-      "from": "get_player_position",
-      "from_pin": "y",
-      "to": "calculate_distance",
-      "to_pin": "y2"
+      "id": "c352be9ec0f2455cb6b38bbb732d415e",
+      "from_node": "get_player_position",
+      "from_port": "y",
+      "to_node": "calculate_distance",
+      "to_port": "y2",
+      "kind": "any",
+      "order": 20
     },
     {
-      "from": "calculate_distance",
-      "from_pin": "distance",
-      "to": "margin_detection",
-      "to_pin": "a"
+      "id": "a651a1ca36424165941b2edcb2fe6bbd",
+      "from_node": "calculate_distance",
+      "from_port": "distance",
+      "to_node": "margin_detection",
+      "to_port": "a",
+      "kind": "any",
+      "order": 21
     },
     {
-      "from": "get_detection_range",
-      "from_pin": "value",
-      "to": "margin_detection",
-      "to_pin": "b"
+      "id": "0eb76bad9b5d4cad82c29a2de658190d",
+      "from_node": "get_detection_range",
+      "from_port": "value",
+      "to_node": "margin_detection",
+      "to_port": "b",
+      "kind": "any",
+      "order": 22
     },
     {
-      "from": "margin_detection",
-      "from_pin": "value",
-      "to": "check_detected",
-      "to_pin": "value"
+      "id": "2a8aa72ac30746f8ab2d8553e8b48502",
+      "from_node": "margin_detection",
+      "from_port": "value",
+      "to_node": "check_detected",
+      "to_port": "value",
+      "kind": "any",
+      "order": 23
     },
     {
-      "from": "calculate_distance",
-      "from_pin": "distance",
-      "to": "margin_attack",
-      "to_pin": "a"
+      "id": "2a6f96271c034b64a3a7e168b6874684",
+      "from_node": "calculate_distance",
+      "from_port": "distance",
+      "to_node": "margin_attack",
+      "to_port": "a",
+      "kind": "any",
+      "order": 24
     },
     {
-      "from": "get_attack_range",
-      "from_pin": "value",
-      "to": "margin_attack",
-      "to_pin": "b"
+      "id": "e2cfc8cd950b4fda92463446840ab8f1",
+      "from_node": "get_attack_range",
+      "from_port": "value",
+      "to_node": "margin_attack",
+      "to_port": "b",
+      "kind": "any",
+      "order": 25
     },
     {
-      "from": "margin_attack",
-      "from_pin": "value",
-      "to": "check_in_attack_range",
-      "to_pin": "value"
+      "id": "50e0cc2a9a6347a48cd5f1f3f52873c8",
+      "from_node": "margin_attack",
+      "from_port": "value",
+      "to_node": "check_in_attack_range",
+      "to_port": "value",
+      "kind": "any",
+      "order": 26
     },
     {
-      "from": "get_cooldown_timer",
-      "from_pin": "value",
-      "to": "margin_cooldown",
-      "to_pin": "a"
+      "id": "c7ea75b0f7a147caba9f29d35cd4860d",
+      "from_node": "get_cooldown_timer",
+      "from_port": "value",
+      "to_node": "margin_cooldown",
+      "to_port": "a",
+      "kind": "any",
+      "order": 27
     },
     {
-      "from": "get_attack_cooldown",
-      "from_pin": "value",
-      "to": "margin_cooldown",
-      "to_pin": "b"
+      "id": "0b45243b66754c0f87725e2b25052855",
+      "from_node": "get_attack_cooldown",
+      "from_port": "value",
+      "to_node": "margin_cooldown",
+      "to_port": "b",
+      "kind": "any",
+      "order": 28
     },
     {
-      "from": "margin_cooldown",
-      "from_pin": "value",
-      "to": "check_can_attack",
-      "to_pin": "value"
+      "id": "9455a8657698478f8fe28735c6be57ce",
+      "from_node": "margin_cooldown",
+      "from_port": "value",
+      "to_node": "check_can_attack",
+      "to_port": "value",
+      "kind": "any",
+      "order": 29
     },
     {
-      "from": "calculate_distance",
-      "from_pin": "distance",
-      "to": "chase_guard",
-      "to_pin": "value"
+      "id": "5e11565123a64fc9a1cfbdd28c359fcc",
+      "from_node": "calculate_distance",
+      "from_port": "distance",
+      "to_node": "chase_guard",
+      "to_port": "value",
+      "kind": "any",
+      "order": 30
     },
     {
-      "from": "get_player_position",
-      "from_pin": "x",
-      "to": "enemy_dx",
-      "to_pin": "a"
+      "id": "6c1dd7fa1cf44a20a55c421b86bfc30c",
+      "from_node": "get_player_position",
+      "from_port": "x",
+      "to_node": "enemy_dx",
+      "to_port": "a",
+      "kind": "any",
+      "order": 31
     },
     {
-      "from": "get_enemy_position",
-      "from_pin": "x",
-      "to": "enemy_dx",
-      "to_pin": "b"
+      "id": "5ca8429fcb974a608cf382401aa60a53",
+      "from_node": "get_enemy_position",
+      "from_port": "x",
+      "to_node": "enemy_dx",
+      "to_port": "b",
+      "kind": "any",
+      "order": 32
     },
     {
-      "from": "get_player_position",
-      "from_pin": "y",
-      "to": "enemy_dy",
-      "to_pin": "a"
+      "id": "f474ae3558c841e4b4a7546cb98fb9ef",
+      "from_node": "get_player_position",
+      "from_port": "y",
+      "to_node": "enemy_dy",
+      "to_port": "a",
+      "kind": "any",
+      "order": 33
     },
     {
-      "from": "get_enemy_position",
-      "from_pin": "y",
-      "to": "enemy_dy",
-      "to_pin": "b"
+      "id": "83b2e7f8d6bf4190a7c189c7234953a4",
+      "from_node": "get_enemy_position",
+      "from_port": "y",
+      "to_node": "enemy_dy",
+      "to_port": "b",
+      "kind": "any",
+      "order": 34
     },
     {
-      "from": "enemy_dx",
-      "from_pin": "value",
-      "to": "enemy_nx",
-      "to_pin": "a"
+      "id": "fa9ad932c66649118cd410fa07b72aa2",
+      "from_node": "enemy_dx",
+      "from_port": "value",
+      "to_node": "enemy_nx",
+      "to_port": "a",
+      "kind": "any",
+      "order": 35
     },
     {
-      "from": "calculate_distance",
-      "from_pin": "distance",
-      "to": "enemy_nx",
-      "to_pin": "b"
+      "id": "506692c0004f47fea6708ae9c13ded42",
+      "from_node": "calculate_distance",
+      "from_port": "distance",
+      "to_node": "enemy_nx",
+      "to_port": "b",
+      "kind": "any",
+      "order": 36
     },
     {
-      "from": "enemy_dy",
-      "from_pin": "value",
-      "to": "enemy_ny",
-      "to_pin": "a"
+      "id": "1d2dc99ae1864e56826ac7fad1e73531",
+      "from_node": "enemy_dy",
+      "from_port": "value",
+      "to_node": "enemy_ny",
+      "to_port": "a",
+      "kind": "any",
+      "order": 37
     },
     {
-      "from": "calculate_distance",
-      "from_pin": "distance",
-      "to": "enemy_ny",
-      "to_pin": "b"
+      "id": "13940860a3414d13844f5ad9724fdd1f",
+      "from_node": "calculate_distance",
+      "from_port": "distance",
+      "to_node": "enemy_ny",
+      "to_port": "b",
+      "kind": "any",
+      "order": 38
     },
     {
-      "from": "enemy_nx",
-      "from_pin": "value",
-      "to": "apply_speed",
-      "to_pin": "a"
+      "id": "3af61229fc994576aed5ad32ae0f0950",
+      "from_node": "enemy_nx",
+      "from_port": "value",
+      "to_node": "apply_speed",
+      "to_port": "a",
+      "kind": "any",
+      "order": 39
     },
     {
-      "from": "get_move_speed",
-      "from_pin": "value",
-      "to": "apply_speed",
-      "to_pin": "b"
+      "id": "b44a4a1e8c6c4210970e7ea0a0300726",
+      "from_node": "get_move_speed",
+      "from_port": "value",
+      "to_node": "apply_speed",
+      "to_port": "b",
+      "kind": "any",
+      "order": 40
     },
     {
-      "from": "enemy_ny",
-      "from_pin": "value",
-      "to": "enemy_vy",
-      "to_pin": "a"
+      "id": "e8309e1523b34251bb0d553933a48793",
+      "from_node": "enemy_ny",
+      "from_port": "value",
+      "to_node": "enemy_vy",
+      "to_port": "a",
+      "kind": "any",
+      "order": 41
     },
     {
-      "from": "get_move_speed",
-      "from_pin": "value",
-      "to": "enemy_vy",
-      "to_pin": "b"
+      "id": "5d12f164e34b45f8992f68f09d76b301",
+      "from_node": "get_move_speed",
+      "from_port": "value",
+      "to_node": "enemy_vy",
+      "to_port": "b",
+      "kind": "any",
+      "order": 42
     },
     {
-      "from": "apply_speed",
-      "from_pin": "value",
-      "to": "set_enemy_velocity",
-      "to_pin": "x"
+      "id": "575d9354d7c941cc8071f70a70192afb",
+      "from_node": "apply_speed",
+      "from_port": "value",
+      "to_node": "set_enemy_velocity",
+      "to_port": "x",
+      "kind": "any",
+      "order": 43
     },
     {
-      "from": "enemy_vy",
-      "from_pin": "value",
-      "to": "set_enemy_velocity",
-      "to_pin": "y"
+      "id": "d13d1e396fae4c37aa28fbdc1b4260cf",
+      "from_node": "enemy_vy",
+      "from_port": "value",
+      "to_node": "set_enemy_velocity",
+      "to_port": "y",
+      "kind": "any",
+      "order": 44
     }
   ]
 }

@@ -1,54 +1,119 @@
 {
-  "format": "zennity.generic_graph",
-  "category": "Logic",
+  "format": "zennity.logic_graph",
+  "version": 1,
+  "enabled": true,
   "name": "BossHealthLogic",
+  "target": {
+    "type": "name",
+    "value": "Boss"
+  },
+  "debug": {
+    "breakpoints": [],
+    "breakpoint_conditions": {},
+    "watches": []
+  },
+  "variables": {},
+  "editor": {
+    "groups": [],
+    "comments": [],
+    "migrated_from": "zennity.generic_graph"
+  },
   "nodes": [
     {
       "id": "frame_loop",
-      "type": "event.every_frame",
+      "type": "event_update",
+      "title": "On Update",
+      "category": "Events",
       "position": [
-        50,
-        50
-      ]
+        50.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     },
     {
       "id": "get_boss_health",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        50
+        200.0,
+        50.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "health",
+        "scope": "object",
         "variable_name": "health"
       }
     },
     {
       "id": "get_max_health",
-      "type": "variable.get",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
       "position": [
-        200,
-        120
+        200.0,
+        120.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "max_health",
+        "scope": "object",
         "variable_name": "max_health"
       }
     },
     {
       "id": "calc_health_percent",
-      "type": "math.divide",
+      "type": "divide_number",
+      "title": "Dividir",
+      "category": "Math",
       "position": [
-        350,
-        85
-      ]
+        350.0,
+        85.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "update_boss_hud",
-      "type": "ui.set_progress_bar",
+      "type": "set_ui_progress_bar",
+      "title": "Definir Barra de Progresso",
+      "category": "UI",
       "position": [
-        500,
-        85
+        500.0,
+        85.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "widget_id": "",
+        "value": 0.5,
+        "max_value": 100.0,
+        "object_name": "BossHealthBar",
+        "widget_name": "",
         "element_name": "BossHealthBar",
         "min": 0,
         "max": 100
@@ -57,51 +122,75 @@
     {
       "id": "check_dead",
       "type": "compare_number",
+      "title": "Comparar Número",
+      "category": "Logic",
       "position": [
-        350,
-        180
+        350.0,
+        180.0
       ],
-      "config": {
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "operator": "<=",
         "value": 0
       }
     },
     {
       "id": "set_dead_trigger",
-      "type": "animator.set_trigger",
+      "type": "animator_set_trigger",
+      "title": "Set Animator Trigger",
+      "category": "Animation",
       "position": [
-        500,
-        180
+        500.0,
+        180.0
       ],
-      "config": {
-        "trigger_name": "dead",
-        "target": "Boss"
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": "Boss",
+        "trigger_name": "dead"
       }
     },
     {
       "id": "set_boss_defeated",
-      "type": "variable.set",
+      "type": "set_variable",
+      "title": "Definir Variável",
+      "category": "Variables",
       "position": [
-        650,
-        180
+        650.0,
+        180.0
       ],
-      "config": {
-        "variable_name": "boss_defeated",
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
         "value": true,
-        "scope": "project"
+        "name": "boss_defeated",
+        "scope": "project",
+        "variable_name": "boss_defeated"
       }
     },
     {
       "id": "disable_collider",
       "type": "modify_collider",
+      "title": "Modificar Collider",
+      "category": "Physics",
       "position": [
-        800,
-        180
+        800.0,
+        180.0
       ],
-      "config": {
-        "target": "Boss",
-        "property": "enabled",
-        "value": false
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "target": "Boss",
@@ -112,12 +201,16 @@
     {
       "id": "load_victory",
       "type": "scene.load_scene",
+      "title": "Carregar Cena",
+      "category": "Scene",
       "position": [
-        950,
-        180
+        950.0,
+        180.0
       ],
-      "config": {
-        "scene_path": "Assets/Scenes/Victory.zscene"
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
       },
       "properties": {
         "scene_path": "Assets/Scenes/Victory.zscene"
@@ -126,76 +219,112 @@
   ],
   "edges": [
     {
-      "from": "frame_loop",
-      "from_pin": "frame",
-      "to": "get_boss_health",
-      "to_pin": "execute"
+      "id": "b6d57ce1c81048d4a017dd80d2d992e9",
+      "from_node": "frame_loop",
+      "from_port": "next",
+      "to_node": "get_boss_health",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
     },
     {
-      "from": "get_boss_health",
-      "from_pin": "done",
-      "to": "get_max_health",
-      "to_pin": "execute"
+      "id": "33895686d98547d886c22ef21a4ebe12",
+      "from_node": "get_boss_health",
+      "from_port": "next",
+      "to_node": "get_max_health",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 1
     },
     {
-      "from": "get_max_health",
-      "from_pin": "done",
-      "to": "update_boss_hud",
-      "to_pin": "execute"
+      "id": "dcca158d79aa4efe9e6353fbe953926a",
+      "from_node": "get_max_health",
+      "from_port": "next",
+      "to_node": "update_boss_hud",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 2
     },
     {
-      "from": "update_boss_hud",
-      "from_pin": "done",
-      "to": "check_dead",
-      "to_pin": "execute"
+      "id": "4a26e82dafb94728a7c8498cf9dda8cb",
+      "from_node": "update_boss_hud",
+      "from_port": "next",
+      "to_node": "check_dead",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
     },
     {
-      "from": "get_boss_health",
-      "from_pin": "value",
-      "to": "calc_health_percent",
-      "to_pin": "a"
+      "id": "588a40a74d6042d2ad7263bed9601a30",
+      "from_node": "get_boss_health",
+      "from_port": "value",
+      "to_node": "calc_health_percent",
+      "to_port": "a",
+      "kind": "any",
+      "order": 4
     },
     {
-      "from": "get_max_health",
-      "from_pin": "value",
-      "to": "calc_health_percent",
-      "to_pin": "b"
+      "id": "0fd21e3644ff4d8a99eb2b1006b679eb",
+      "from_node": "get_max_health",
+      "from_port": "value",
+      "to_node": "calc_health_percent",
+      "to_port": "b",
+      "kind": "any",
+      "order": 5
     },
     {
-      "from": "calc_health_percent",
-      "from_pin": "value",
-      "to": "update_boss_hud",
-      "to_pin": "value"
+      "id": "bcd829a7bf5e4d619f63d88546a900c9",
+      "from_node": "calc_health_percent",
+      "from_port": "value",
+      "to_node": "update_boss_hud",
+      "to_port": "value",
+      "kind": "any",
+      "order": 6
     },
     {
-      "from": "get_boss_health",
-      "from_pin": "value",
-      "to": "check_dead",
-      "to_pin": "value"
+      "id": "b1927bf8be6e4d1e835bfaff1dfbd382",
+      "from_node": "get_boss_health",
+      "from_port": "value",
+      "to_node": "check_dead",
+      "to_port": "value",
+      "kind": "any",
+      "order": 7
     },
     {
-      "from": "check_dead",
-      "from_pin": "true",
-      "to": "set_dead_trigger",
-      "to_pin": "execute"
+      "id": "74e39a31fd3f45ec89ce17bfcb864fef",
+      "from_node": "check_dead",
+      "from_port": "true",
+      "to_node": "set_dead_trigger",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 8
     },
     {
-      "from": "check_dead",
-      "from_pin": "true",
-      "to": "set_boss_defeated",
-      "to_pin": "execute"
+      "id": "92a1e1df58ea47c6965ed932536cfeea",
+      "from_node": "check_dead",
+      "from_port": "true",
+      "to_node": "set_boss_defeated",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 9
     },
     {
-      "from": "set_boss_defeated",
-      "from_pin": "done",
-      "to": "disable_collider",
-      "to_pin": "execute"
+      "id": "f66e4eb86e6845c6814a8aa41395037e",
+      "from_node": "set_boss_defeated",
+      "from_port": "next",
+      "to_node": "disable_collider",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 10
     },
     {
-      "from": "disable_collider",
-      "from_pin": "success",
-      "to": "load_victory",
-      "to_pin": "execute"
+      "id": "9c8f589d8f5b460b99bf2f767f09778c",
+      "from_node": "disable_collider",
+      "from_port": "exec_success",
+      "to_node": "load_victory",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 11
     }
   ]
 }
