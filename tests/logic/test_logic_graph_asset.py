@@ -914,7 +914,7 @@ def test_beginner_recipe_search_builds_move_x_flow():
     assert matches[0]["id"] == "move_x_every_frame"
     fragment = build_logic_recipe("move_x_every_frame", (50.0, 80.0))
     assert [node["type"] for node in fragment["nodes"]] == ["event_update", "move_by"]
-    assert fragment["nodes"][1]["properties"] == {"x": 120.0, "y": 0.0}
+    assert fragment["nodes"][1]["properties"] == {"x": 120.0, "y": 0.0, "target": ""}
     assert fragment["edges"][0]["kind"] == "flow"
     assert fragment["nodes"][0]["position"] == [50.0, 80.0]
 

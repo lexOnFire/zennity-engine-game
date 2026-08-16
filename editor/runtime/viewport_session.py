@@ -389,6 +389,10 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 "prefab_base": str(obj.get("prefab_base", "")),
                 "prefab_parameters": deepcopy(obj.get("prefab_parameters", {}))
                 if isinstance(obj.get("prefab_parameters"), dict) else {},
+                "variables": deepcopy(obj.get("variables", {}))
+                if isinstance(obj.get("variables"), dict) else {},
+                "logic_assets": deepcopy(obj.get("logic_assets", []))
+                if isinstance(obj.get("logic_assets"), list) else [],
                 "logic_motions": [
                     {"handle": str(handle), **deepcopy(state)}
                     for handle, state in motions.items() if isinstance(state, dict)

@@ -18,6 +18,26 @@ def execute_move(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list
     game.move(amount * float(properties.get("speed", 100.0)) * dt)
     return ["next"]
 
+@registry.register_executor('move_y')
+def execute_move_y(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    node_id = str(node['id'])
+    node_type = str(node.get('type'))
+    properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
+    fallback = runtime.values.get("axis", 0.0)
+    amount = float(runtime._read_input(node_id, "value", fallback, game, dt, set()))
+    dy = amount * float(properties.get("speed", 100.0)) * dt
+    if callable(getattr(game, "move_y", None)):
+        game.move_y(dy)
+    elif callable(getattr(game, "move", None)):
+        try:
+            game.move(0.0, dy)
+        except TypeError:
+            if hasattr(game, "y"):
+                game.y += dy
+    elif hasattr(game, "y"):
+        game.y += dy
+    return ["next"]
+
 @registry.register_executor('move_by')
 def execute_move_by(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
     node_id = str(node['id'])

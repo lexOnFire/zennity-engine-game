@@ -282,6 +282,9 @@ class PlayLogicAPI:
         self.x += float(dx)
         self.y += float(dy)
 
+    def move_y(self, dy: float) -> None:
+        self.y += float(dy)
+
     def override_physics_axis(self, axis: str) -> None:
         """Evita que a gravidade desfaça um movimento visual controlado neste frame."""
         self.obj.setdefault("_logic_motion_axes", set()).add(str(axis).lower())

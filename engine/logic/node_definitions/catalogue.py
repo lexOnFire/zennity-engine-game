@@ -248,6 +248,7 @@ _EXPLICIT_PORT_CONTRACTS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "remove_component": {"inputs": [("in", "flow"), ("target", "object")], "outputs": [("next", "flow")]},
     "input_axis": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "number")]},
     "move": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},
+    "move_y": {"inputs": [("in", "flow"), ("value", "number")], "outputs": [("next", "flow")]},
     "jump": {"inputs": [("in", "flow"), ("force", "number")], "outputs": [("next", "flow")]},
     "get_position": {"inputs": [("target", "object")], "outputs": [("x", "number"), ("y", "number")]},
     # One entry: this key was declared TWICE with different pins and the second
@@ -327,7 +328,6 @@ _EXPLICIT_PORT_CONTRACTS: dict[str, dict[str, list[tuple[str, str]]]] = {
     "magnitude_vector": {"inputs": [("vector", "vector2")], "outputs": [("value", "number")]},
     "sign_number": {"inputs": [("value", "number")], "outputs": [("value", "number")]},
     "move_x": {"inputs": [("in", "flow"), ("target", "object"), ("speed", "number"), ("x", "number")], "outputs": [("next", "flow"), ("movement", "movement")]},
-    "move_y": {"inputs": [("in", "flow"), ("target", "object"), ("speed", "number"), ("y", "number")], "outputs": [("next", "flow"), ("movement", "movement")]},
     "move_towards": {"inputs": [("in", "flow"), ("target", "object"), ("destination_x", "number"), ("destination_y", "number"), ("speed", "number")], "outputs": [("next", "flow"), ("handle", "movement")]},
     "set_animator_parameter": {"inputs": [("in", "flow"), ("value", "any")], "outputs": [("next", "flow")]},
     "input_axis": {"inputs": [("in", "flow")], "outputs": [("next", "flow"), ("value", "number")]},
@@ -407,6 +407,7 @@ NODE_ID_ALIASES: Mapping[str, str] = MappingProxyType({
     "variables.set": "set_variable",
     "game.load_game": "load_game",
     "game.has_save": "has_save",
+    "move.y": "move_y",
 })
 
 #: Deprecated spelling kept so existing importers keep working.

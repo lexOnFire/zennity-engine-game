@@ -29,6 +29,24 @@ class MoveNode(NodeDefinition):
     )
 
 
+class MoveYNode(NodeDefinition):
+    """Move o objeto no eixo vertical Y."""
+
+    __node_definition__ = NodeDefinition(
+        id="move_y",
+        title_key="Mover Y",
+        category_key="Movement",
+        description_key="Move o objeto verticalmente no eixo Y",
+        inputs=[
+            PinDefinition(id="exec", label_key="Exec", pin_type=PinType.EXEC),
+            PinDefinition(id="speed", label_key="Velocidade", pin_type=PinType.FLOAT, default_value=100.0),
+        ],
+        outputs=[
+            PinDefinition(id="exec_done", label_key="Pronto", pin_type=PinType.EXEC),
+        ]
+    )
+
+
 class MoveByNode(NodeDefinition):
     """Move o objeto por uma distância."""
 

@@ -58,6 +58,7 @@ LEGACY_NODE_TYPES = {
     # does NOT exist -- see the item 17 doc; that one is still debt.
     "animator.set_trigger": "animator_set_trigger",
     "input.keyboard_key_down": "key_pressed",
+    "move.y": "move_y",
 }
 
 LEGACY_PORTS = {

@@ -55,8 +55,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -71,11 +71,12 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
-        "name": "cooldown_timer"
+        "name": "cooldown_timer",
+        "scope": "object"
       }
     },
     {
@@ -89,8 +90,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 100.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -105,10 +106,13 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "clamp_timer",
@@ -121,10 +125,11 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
+        "value": 0.0,
         "minimum": 0.0,
         "maximum": 0.4
       }
@@ -140,11 +145,13 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
-        "name": "cooldown_timer"
+        "value": "",
+        "name": "cooldown_timer",
+        "scope": "object"
       }
     },
     {
@@ -158,8 +165,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "key": "SPACE"
@@ -176,11 +183,12 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
-        "name": "cooldown_timer"
+        "name": "cooldown_timer",
+        "scope": "object"
       }
     },
     {
@@ -194,8 +202,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 140.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": ">=",
@@ -213,31 +221,13 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
+        "value": 0.0,
         "name": "cooldown_timer",
-        "value": 0.0
-      }
-    },
-    {
-      "id": "play_anim",
-      "type": "play_animation",
-      "title": "Play Attack Animation",
-      "category": "Animation",
-      "position": [
-        720.0,
-        450.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
-      },
-      "properties": {
-        "state": "PlayerAttack",
-        "target": "Player"
+        "scope": "object"
       }
     },
     {
@@ -252,7 +242,7 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 140.0
+        "height": 212.0
       },
       "properties": {
         "tag": "Enemy",
@@ -270,10 +260,12 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "get_player_pos_e",
@@ -286,10 +278,12 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "sub_dx_e",
@@ -302,10 +296,13 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "get_facing_e",
@@ -318,11 +315,12 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
-        "name": "facing_x"
+        "name": "facing_x",
+        "scope": "object"
       }
     },
     {
@@ -336,10 +334,13 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "check_facing_e",
@@ -352,8 +353,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 140.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": ">",
@@ -371,10 +372,11 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
+        "payload": "",
         "name": "enemy_damage"
       }
     },
@@ -390,7 +392,7 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 140.0
+        "height": 212.0
       },
       "properties": {
         "tag": "Boss",
@@ -408,10 +410,12 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "get_player_pos_b",
@@ -424,10 +428,12 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "target": ""
+      }
     },
     {
       "id": "sub_dx_b",
@@ -440,10 +446,13 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "get_facing_b",
@@ -456,11 +465,12 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
-        "name": "facing_x"
+        "name": "facing_x",
+        "scope": "object"
       }
     },
     {
@@ -469,15 +479,18 @@
       "title": "Check Direction Alignment (Boss)",
       "category": "Math",
       "position": [
-        1620.0,
-        750.0
+        1641.15,
+        1024.9
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
-      "properties": {}
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
     },
     {
       "id": "check_facing_b",
@@ -490,8 +503,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 140.0
+        "width": 220.0,
+        "height": 184.0
       },
       "properties": {
         "operator": ">",
@@ -509,14 +522,14 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 120.0
+        "width": 220.0,
+        "height": 156.0
       },
       "properties": {
+        "payload": "",
         "name": "boss_damage"
       }
-    }
-    ,
+    },
     {
       "id": "self_player",
       "type": "self_object",
@@ -528,8 +541,8 @@
       ],
       "editor": {
         "collapsed": false,
-        "width": 200.0,
-        "height": 80.0
+        "width": 220.0,
+        "height": 150.0
       },
       "properties": {}
     },
@@ -545,10 +558,11 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 120.0
+        "height": 156.0
       },
       "properties": {
-        "name": "attack_damage"
+        "name": "attack_damage",
+        "scope": "object"
       }
     },
     {
@@ -563,11 +577,48 @@
       "editor": {
         "collapsed": false,
         "width": 220.0,
-        "height": 120.0
+        "height": 156.0
       },
       "properties": {
-        "name": "attack_damage"
+        "name": "attack_damage",
+        "scope": "object"
       }
+    },
+    {
+      "id": "play_anim",
+      "type": "play_animation",
+      "title": "Play Attack Animation",
+      "category": "Animation",
+      "position": [
+        940.0,
+        300.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 212.0
+      },
+      "properties": {
+        "target": "Player",
+        "state": "PlayerAttack",
+        "force": false
+      }
+    },
+    {
+      "id": "combat_sequence",
+      "type": "sequence",
+      "title": "Combat Targets Sequence",
+      "category": "Flow",
+      "position": [
+        720.0,
+        450.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {}
     }
   ],
   "edges": [
@@ -576,7 +627,7 @@
       "from_node": "update_event",
       "from_port": "next",
       "to_node": "set_timer_update",
-      "to_port": "in",
+      "to_port": "exec",
       "kind": "flow",
       "order": 0
     },
@@ -648,27 +699,9 @@
       "from_node": "check_cooldown",
       "from_port": "true",
       "to_node": "reset_cooldown",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 7
-    },
-    {
-      "id": "e_reset_anim",
-      "from_node": "reset_cooldown",
-      "from_port": "next",
-      "to_node": "play_anim",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 8
-    },
-    {
-      "id": "e_anim_find_enemy",
-      "from_node": "play_anim",
-      "from_port": "next",
-      "to_node": "find_enemy",
       "to_port": "exec",
       "kind": "flow",
-      "order": 9
+      "order": 7
     },
     {
       "id": "e_enemy_found_check_facing",
@@ -761,24 +794,6 @@
       "order": 18
     },
     {
-      "id": "e_enemy_none_find_boss",
-      "from_node": "find_enemy",
-      "from_port": "exec_none",
-      "to_node": "find_boss",
-      "to_port": "exec",
-      "kind": "flow",
-      "order": 18
-    },
-    {
-      "id": "e_enemy_facing_false_find_boss",
-      "from_node": "check_facing_e",
-      "from_port": "false",
-      "to_node": "find_boss",
-      "to_port": "exec",
-      "kind": "flow",
-      "order": 19
-    },
-    {
       "id": "e_boss_found_check_facing",
       "from_node": "find_boss",
       "from_port": "exec_found",
@@ -867,6 +882,42 @@
       "to_port": "payload",
       "kind": "data",
       "order": 28
+    },
+    {
+      "id": "e_reset_seq",
+      "from_node": "reset_cooldown",
+      "from_port": "next",
+      "to_node": "combat_sequence",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
+    },
+    {
+      "id": "e_seq_enemy",
+      "from_node": "combat_sequence",
+      "from_port": "then_0",
+      "to_node": "find_enemy",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 9
+    },
+    {
+      "id": "e_seq_boss",
+      "from_node": "combat_sequence",
+      "from_port": "then_1",
+      "to_node": "find_boss",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 10
+    },
+    {
+      "id": "e_seq_anim",
+      "from_node": "combat_sequence",
+      "from_port": "next",
+      "to_node": "play_anim",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 11
     }
   ]
 }
