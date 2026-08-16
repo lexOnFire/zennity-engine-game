@@ -206,6 +206,30 @@ class LogicGraphEditor(
         self.watch_expression_edit.returnPressed.connect(self._add_watch)
         self.blackboard_tree.itemSelectionChanged.connect(self._select_blackboard_variable)
         self.blackboard_tree.itemDoubleClicked.connect(lambda _item, _column: self._add_blackboard_node("get_variable"))
+        if hasattr(self, "blackboard_search_edit"):
+            self.blackboard_search_edit.textChanged.connect(lambda _text: self._refresh_blackboard_variables())
+        if hasattr(self, "blackboard_filter_scope_combo"):
+            self.blackboard_filter_scope_combo.currentIndexChanged.connect(lambda _idx: self._refresh_blackboard_variables())
+
+        def _on_blackboard_start_drag(supported_actions):
+            item = self.blackboard_tree.currentItem()
+            if item is None:
+                return
+            name = str(item.data(0, Qt.UserRole) or item.text(0))
+            definition = self.graph.get("variables", {}).get(name, {})
+            scope = str(definition.get("scope", "object"))
+            var_type = str(definition.get("type", "number"))
+            from PySide6.QtGui import QDrag
+            from PySide6.QtCore import QMimeData
+            drag = QDrag(self.blackboard_tree)
+            mime = QMimeData()
+            payload = json.dumps({"name": name, "scope": scope, "type": var_type, "node_type": "get_variable"}).encode("utf-8")
+            mime.setData("application/x-zennity-blackboard-variable", payload)
+            drag.setMimeData(mime)
+            drag.exec(Qt.CopyAction)
+
+        self.blackboard_tree.startDrag = _on_blackboard_start_drag
+
         self.blackboard_save_button.clicked.connect(self._save_blackboard_variable)
         self.blackboard_remove_button.clicked.connect(self._remove_blackboard_variable)
         self.blackboard_get_button.clicked.connect(lambda: self._add_blackboard_node("get_variable"))

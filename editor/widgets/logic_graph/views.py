@@ -27,11 +27,40 @@ class LogicGraphView(QGraphicsView):
         self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
         self.setViewportUpdateMode(QGraphicsView.BoundingRectViewportUpdate)
         self.setCacheMode(QGraphicsView.CacheBackground)
+        self.setAcceptDrops(True)
         self.setStyleSheet(
             "QGraphicsView#LogicGraphView {"
             "background: #12141c; border: 1px solid #1f2430; border-radius: 6px;"
             "}"
         )
+
+    def dragEnterEvent(self, event) -> None:
+        if event.mimeData().hasFormat("application/x-zennity-blackboard-variable"):
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event) -> None:
+        if event.mimeData().hasFormat("application/x-zennity-blackboard-variable"):
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event) -> None:
+        if event.mimeData().hasFormat("application/x-zennity-blackboard-variable"):
+            try:
+                data = json.loads(bytes(event.mimeData().data("application/x-zennity-blackboard-variable")).decode("utf-8"))
+                name = str(data.get("name", ""))
+                scope = str(data.get("scope", "object"))
+                node_type = str(data.get("node_type", "get_variable"))
+                pos = self.mapToScene(event.position().toPoint())
+                if name and hasattr(self.editor, "_create_blackboard_accessor_node"):
+                    self.editor._create_blackboard_accessor_node(name, scope, node_type, position=(pos.x(), pos.y()))
+                    event.acceptProposedAction()
+                    return
+            except Exception:
+                pass
+        super().dropEvent(event)
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
         visible_rect = self.mapToScene(self.viewport().rect()).boundingRect()

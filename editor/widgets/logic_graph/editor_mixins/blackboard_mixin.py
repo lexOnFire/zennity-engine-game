@@ -51,13 +51,28 @@ class LogicGraphBlackboardMixin:
         self.blackboard_tree.clear()
         labels = {"number": "Número", "bool": "Booleano", "text": "Texto", "object": "Objeto"}
         scopes = {"object": "Objeto", "scene": "Cena", "project": "Projeto"}
+
+        search_text = self.blackboard_search_edit.text().strip().lower() if hasattr(self, "blackboard_search_edit") else ""
+        scope_filter = str(self.blackboard_filter_scope_combo.currentData() or "all") if hasattr(self, "blackboard_filter_scope_combo") else "all"
+
         for name, definition in self.graph.get("variables", {}).items():
+            var_scope = str(definition.get("scope", "object"))
+            if scope_filter != "all" and var_scope != scope_filter:
+                continue
+            if search_text and search_text not in str(name).lower():
+                continue
+
+            default_val = definition.get("default")
+            default_str = json.dumps(default_val, ensure_ascii=False) if not isinstance(default_val, str) else default_val
+
             item = QTreeWidgetItem([
                 str(name),
                 labels.get(str(definition.get("type")), str(definition.get("type"))),
-                scopes.get(str(definition.get("scope")), str(definition.get("scope"))),
+                scopes.get(var_scope, var_scope),
+                default_str,
             ])
             item.setData(0, Qt.UserRole, str(name))
+            item.setFlags(item.flags() | Qt.ItemIsDragEnabled)
             self.blackboard_tree.addTopLevelItem(item)
 
     def _select_blackboard_variable(self) -> None:
@@ -103,11 +118,35 @@ class LogicGraphBlackboardMixin:
         self.debug_command.emit("sync")
         self.message.emit("INFO", f"Variável criada: {scope}.{name}")
 
+    def _count_variable_references(self, name: str, scope: str) -> int:
+        count = 0
+        for node in self.graph.get("nodes", []):
+            if str(node.get("type")) in ("get_variable", "set_variable"):
+                props = node.get("properties", {})
+                if props.get("name") == name and props.get("scope", "object") == scope:
+                    count += 1
+        return count
+
     def _remove_blackboard_variable(self) -> None:
         item = self.blackboard_tree.currentItem()
         if item is None:
             return
         name = str(item.data(0, Qt.UserRole) or item.text(0))
+        definition = self.graph.get("variables", {}).get(name, {})
+        scope = str(definition.get("scope", "object"))
+
+        refs = self._count_variable_references(name, scope)
+        if refs > 0:
+            reply = QMessageBox.question(
+                self,
+                "Excluir Variável",
+                f"A variável '{name}' é referenciada por {refs} nó(s) neste grafo.\nExcluir a definição do Blackboard mesmo assim?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if reply != QMessageBox.Yes:
+                return
+
         self.graph.setdefault("variables", {}).pop(name, None)
         self._refresh_blackboard_variables()
         self.blackboard_name_edit.clear()
@@ -118,6 +157,29 @@ class LogicGraphBlackboardMixin:
         self.debug_command.emit("sync")
         self.message.emit("INFO", f"Variável excluída: {name}")
 
+    def _create_blackboard_accessor_node(
+        self,
+        name: str,
+        scope: str,
+        node_type: str = "get_variable",
+        position: tuple[float, float] | None = None,
+    ) -> Any:
+        definition = self.graph.get("variables", {}).get(name, {})
+        if position is None:
+            center = self.view.mapToScene(self.view.viewport().rect().center())
+            position = (center.x(), center.y())
+        node = create_logic_node(node_type, position)
+        node.setdefault("properties", {}).update({"name": name, "scope": scope or definition.get("scope", "object")})
+        if node_type == "set_variable":
+            node["properties"]["value"] = deepcopy(definition.get("default", 0))
+        self.graph["nodes"].append(node)
+        self.scene.clearSelection()
+        item = self._create_node_item(node)
+        item.setSelected(True)
+        self.mark_dirty()
+        self._update_validation()
+        return item
+
     def _add_blackboard_node(self, node_type: str) -> None:
         item = self.blackboard_tree.currentItem()
         if item is None:
@@ -125,16 +187,7 @@ class LogicGraphBlackboardMixin:
             return
         name = str(item.data(0, Qt.UserRole) or item.text(0))
         definition = self.graph.get("variables", {}).get(name, {})
-        center = self.view.mapToScene(self.view.viewport().rect().center())
-        node = create_logic_node(node_type, (center.x(), center.y()))
-        node.setdefault("properties", {}).update({"name": name, "scope": definition.get("scope", "object")})
-        if node_type == "set_variable":
-            node["properties"]["value"] = deepcopy(definition.get("default"))
-        self.graph["nodes"].append(node)
-        self.scene.clearSelection()
-        self._create_node_item(node).setSelected(True)
-        self.mark_dirty()
-        self._update_validation()
+        self._create_blackboard_accessor_node(name, definition.get("scope", "object"), node_type)
 
     def _sync_project_blackboard(self) -> None:
         variables: dict[str, dict[str, Any]] = {}
