@@ -263,23 +263,42 @@ class LogicCommentItem(QGraphicsRectItem):
         return result
 
 class LogicFlipControl(QGraphicsTextItem):
-    """Controle pequeno que alterna frente e pseudocódigo do bloco."""
+    """Controle no cabeçalho do bloco que abre o visualizador de código real (Code View Read-Only)."""
 
     def __init__(self, node: "LogicNodeItem") -> None:
         super().__init__("</>", node)
         self.node = node
-        self.setDefaultTextColor(QColor("#dce6f2"))
+        self._hovered = False
+        self.setDefaultTextColor(QColor("#94a3b8"))
         font = self.font()
         font.setBold(True)
-        font.setPointSizeF(8.0)
+        font.setFamily("Consolas")
+        font.setPointSizeF(8.5)
         self.setFont(font)
         self.setPos(node.width - 52.0, 2.0)
-        self.setToolTip("Show editable code preview")
+        self.setToolTip("Ver código-fonte Python do nó (Read-Only)")
         self.setCursor(Qt.PointingHandCursor)
+        self.setAcceptHoverEvents(True)
+
+    def hoverEnterEvent(self, event) -> None:
+        self._hovered = True
+        self.setDefaultTextColor(QColor("#38bdf8"))
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event) -> None:
+        self._hovered = False
+        self.setDefaultTextColor(QColor("#94a3b8"))
+        super().hoverLeaveEvent(event)
 
     def mousePressEvent(self, event) -> None:
-        self.node.toggle_code_preview()
-        event.accept()
+        if event.button() == Qt.LeftButton:
+            from editor.widgets.logic_graph.dialogs.node_code_view_dialog import NodeCodeViewDialog
+            parent_widget = getattr(self.node, "editor", None)
+            dialog = NodeCodeViewDialog(self.node.node, parent=parent_widget)
+            dialog.exec()
+            event.accept()
+        else:
+            super().mousePressEvent(event)
 
 class LogicCollapseControl(QGraphicsTextItem):
     """Recolhe o corpo do bloco sem perder suas conexões."""
