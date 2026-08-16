@@ -183,6 +183,7 @@ class LogicGraphPaletteMixin:
         if self.palette.itemDelegate().__class__ != CategoryNodeDelegate:
             self.palette.setItemDelegate(CategoryNodeDelegate(self.palette))
 
+        # Adiciona nós built-in
         for node_type, definition in NODE_DEFINITIONS.items():
             node_category = str(definition.get("category", "Custom"))
             searchable = self._search_key(
@@ -204,6 +205,30 @@ class LogicGraphPaletteMixin:
             description = NODE_DESCRIPTIONS.get(node_type, "Arraste as portas para conectar este bloco ao fluxo.")
             item.setToolTip(f"{node_category} • {description}")
             self.palette.addItem(item)
+
+        # Adiciona custom nodes reutilizáveis (.znode)
+        from engine.logic.custom_node_registry import get_custom_node_registry
+        project_root = getattr(self, "project_path", None)
+        custom_registry = get_custom_node_registry(project_root)
+        for custom_id, custom_data in custom_registry.nodes.items():
+            node_category = "Custom"
+            title = custom_data.get("title", custom_id)
+            searchable = self._search_key(f"{title} {node_category} {custom_id} custom_node")
+            if query:
+                if query not in searchable:
+                    continue
+            elif self._palette_category != "All" and self._palette_category != "Custom":
+                continue
+
+            label = f"{title} (Custom)"
+            if query:
+                label = f"{label}  —  {node_category}"
+            item = QListWidgetItem(label)
+            item.setData(Qt.UserRole, f"custom_asset:{custom_id}")
+            item.setData(Qt.UserRole + 1, node_category)
+            item.setToolTip(f"Custom Node • {custom_data.get('execution_model', 'pure_data').upper()}")
+            self.palette.addItem(item)
+
         self.palette_count.setText(f"{self.palette.count()} bloco(s)" + (" encontrados" if query else " nesta categoria"))
 
     def _add_palette_item_tree(self, item: QTreeWidgetItem) -> None:
@@ -211,28 +236,7 @@ class LogicGraphPaletteMixin:
         node_type = item.data(0, Qt.UserRole)
         if not node_type:
             return
-        if node_type in UNIQUE_EVENT_TYPES:
-            existing = next(
-                (node_item for node_item in self.node_items.values() if node_item.node.get("type") == node_type),
-                None,
-            )
-            if existing is not None:
-                self.scene.clearSelection()
-                existing.setSelected(True)
-                self.view.centerOn(existing)
-                self.message.emit(
-                    "INFO",
-                    "Esse evento já existe; conecte outra ação usando a mesma saída",
-                )
-                return
-        center = self.view.mapToScene(self.view.viewport().rect().center())
-        offset = len(self.node_items) * 18.0
-        node = create_logic_node(node_type, (center.x() + offset, center.y() + offset))
-        self.graph["nodes"].append(node)
-        self._create_node_item(node)
-        self.node_added.emit(node)
-        self.mark_dirty()
-        self._update_validation()
+        self._add_palette_item(item)
 
     def _add_palette_item(self, item: Any) -> None:
         if isinstance(item, QTreeWidgetItem):
@@ -245,23 +249,36 @@ class LogicGraphPaletteMixin:
         node_type = str(raw_data) if raw_data else ""
         if not node_type or node_type == "None":
             return
-        if node_type in UNIQUE_EVENT_TYPES:
-            existing = next(
-                (node_item for node_item in self.node_items.values() if node_item.node.get("type") == node_type),
-                None,
-            )
-            if existing is not None:
-                self.scene.clearSelection()
-                existing.setSelected(True)
-                self.view.centerOn(existing)
-                self.message.emit(
-                    "INFO",
-                    "Esse evento já existe; conecte outra ação usando a mesma saída",
-                )
-                return
+
         center = self.view.mapToScene(self.view.viewport().rect().center())
         offset = len(self.node_items) * 18.0
-        node = create_logic_node(node_type, (center.x() + offset, center.y() + offset))
+        pos = (center.x() + offset, center.y() + offset)
+
+        if node_type.startswith("custom_asset:"):
+            custom_id = node_type.split("custom_asset:", 1)[1]
+            from engine.logic.custom_node_registry import get_custom_node_registry
+            project_root = getattr(self, "project_path", None)
+            custom_registry = get_custom_node_registry(project_root)
+            new_id = f"node_{uuid.uuid4().hex[:6]}"
+            node = custom_registry.instantiate_node_data(custom_id, new_id)
+            node["position"] = [pos[0], pos[1]]
+        else:
+            if node_type in UNIQUE_EVENT_TYPES:
+                existing = next(
+                    (node_item for node_item in self.node_items.values() if node_item.node.get("type") == node_type),
+                    None,
+                )
+                if existing is not None:
+                    self.scene.clearSelection()
+                    existing.setSelected(True)
+                    self.view.centerOn(existing)
+                    self.message.emit(
+                        "INFO",
+                        "Esse evento já existe; conecte outra ação usando a mesma saída",
+                    )
+                    return
+            node = create_logic_node(node_type, pos)
+
         self.graph["nodes"].append(node)
         self._create_node_item(node)
         self.node_added.emit(node)

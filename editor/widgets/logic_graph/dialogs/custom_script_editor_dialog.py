@@ -161,6 +161,9 @@ class CustomScriptEditorDialog(QDialog):
         validate_btn.setObjectName("ValidateButton")
         validate_btn.clicked.connect(self._validate_only)
 
+        export_btn = QPushButton("Exportar como .znode...")
+        export_btn.clicked.connect(self._export_as_znode)
+
         apply_btn = QPushButton("Aplicar e Salvar")
         apply_btn.setObjectName("ApplyButton")
         apply_btn.clicked.connect(self._apply_and_close)
@@ -169,6 +172,7 @@ class CustomScriptEditorDialog(QDialog):
         cancel_btn.clicked.connect(self.reject)
 
         footer_layout.addWidget(validate_btn)
+        footer_layout.addWidget(export_btn)
         footer_layout.addStretch(1)
         footer_layout.addWidget(cancel_btn)
         footer_layout.addWidget(apply_btn)
@@ -359,3 +363,74 @@ class CustomScriptEditorDialog(QDialog):
                 parent_editor.refresh_graph_layout()
 
         self.accept()
+
+    def _export_as_znode(self) -> None:
+        """Exporta a definição atual do nó para um asset reutilizável .znode."""
+        if not self._validate_only():
+            return
+
+        from PySide6.QtWidgets import QInputDialog
+        from pathlib import Path
+        from engine.logic.custom_node_asset import (
+            CANONICAL_CUSTOM_NODE_DIR,
+            is_valid_custom_node_id,
+            save_custom_node_asset,
+        )
+        from engine.logic.custom_node_registry import get_custom_node_registry
+        from engine.logic.graph_asset import NODE_DEFINITIONS
+
+        # Solicita o node_id
+        suggested_id = self.node_title.lower().replace(" ", "_")
+        node_id, ok = QInputDialog.getText(
+            self,
+            "Exportar como Node Reutilizável",
+            "Identificador técnico do nó (snake_case, ex: calculate_damage):",
+            text=suggested_id,
+        )
+        if not ok or not node_id.strip():
+            return
+
+        node_id = node_id.strip().lower()
+        if not is_valid_custom_node_id(node_id):
+            QMessageBox.warning(self, "Identificador Inválido", "O node_id deve conter apenas letras minúsculas, números e sublinhados.")
+            return
+
+        if node_id in NODE_DEFINITIONS:
+            QMessageBox.warning(self, "Colisão de Nome", f"'{node_id}' já é um nó built-in da engine.")
+            return
+
+        # Diretório do projeto
+        parent_editor = getattr(self.parent(), "editor", self.parent())
+        project_root = Path.cwd()
+        if parent_editor and hasattr(parent_editor, "project_path") and parent_editor.project_path:
+            project_root = Path(parent_editor.project_path)
+
+        target_dir = project_root / CANONICAL_CUSTOM_NODE_DIR
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_file = target_dir / f"{node_id}.znode"
+
+        inputs, outputs = self._collect_ports()
+        source = self.script_edit.toPlainText()
+        model = self.model_combo.currentData()
+
+        asset_data = {
+            "node_id": node_id,
+            "title": self.node_title,
+            "category": "Custom",
+            "execution_model": model,
+            "inputs": inputs,
+            "outputs": outputs,
+            "script": source,
+        }
+
+        try:
+            save_custom_node_asset(target_file, asset_data)
+            # Atualiza o registry global
+            get_custom_node_registry(project_root).refresh()
+            QMessageBox.information(
+                self,
+                "Exportação Concluída",
+                f"Nó customizado salvo com sucesso em:\n{CANONICAL_CUSTOM_NODE_DIR}/{node_id}.znode\n\nEle estará disponível na paleta sob a categoria 'Custom'.",
+            )
+        except Exception as exc:
+            QMessageBox.critical(self, "Erro ao Exportar", f"Falha ao salvar asset: {exc}")
