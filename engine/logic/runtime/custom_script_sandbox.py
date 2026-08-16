@@ -47,6 +47,7 @@ DISALLOWED_AST_NODES = (
     ast.Yield,
     ast.YieldFrom,
     ast.Await,
+    ast.While,
 )
 
 # Funções e identificadores globais proibidos
@@ -70,6 +71,9 @@ DISALLOWED_CALL_NAMES = frozenset({
     "quit",
 })
 
+# Portas de fluxo permitidas para emissão
+ALLOWED_FLOW_PORTS = frozenset({"next", "failure"})
+
 # Cache em memória para scripts compilados: hash(source) -> CodeType
 _COMPILED_SCRIPT_CACHE: dict[str, CodeType] = {}
 
@@ -82,11 +86,14 @@ class ScriptContext:
         inputs: Mapping[str, Any],
         declared_inputs: set[str],
         declared_outputs: set[str],
+        execution_model: str = "pure_data",
     ) -> None:
         self._inputs = inputs
         self._declared_inputs = declared_inputs
         self._declared_outputs = declared_outputs
+        self._execution_model = str(execution_model or "pure_data")
         self._outputs: dict[str, Any] = {}
+        self._emitted_flow: str | None = None
 
     def get_input(self, name: str, default: Any = None) -> Any:
         """Lê o valor de uma porta de entrada conectada ou seu valor padrão."""
@@ -106,6 +113,21 @@ class ScriptContext:
             raise ValueError(f"Porta de saída '{name}' não foi declarada neste nó.")
         self._outputs[name] = value
 
+    def emit(self, port_name: str) -> None:
+        """Emite uma porta de saída de fluxo (apenas para execution_model='action')."""
+        if not isinstance(port_name, str):
+            raise TypeError("O nome da porta de fluxo emitida deve ser uma string.")
+        if port_name not in ALLOWED_FLOW_PORTS:
+            raise ValueError(f"Porta de fluxo inválida: '{port_name}'. Permitidas: 'next', 'failure'.")
+        if self._emitted_flow is not None:
+            raise ValueError("Custom Script emitted more than one flow output.")
+        self._emitted_flow = port_name
+
+    @property
+    def emitted_flow(self) -> str | None:
+        """Retorna a porta de fluxo emitida pelo script, se houver."""
+        return self._emitted_flow
+
     @property
     def outputs(self) -> dict[str, Any]:
         """Retorna os outputs gerados pelo script."""
@@ -115,9 +137,15 @@ class ScriptContext:
 class CustomScriptSecurityVisitor(ast.NodeVisitor):
     """Varredor de AST para garantir conformidade com a superfície restrita do MVP."""
 
-    def __init__(self, declared_inputs: set[str], declared_outputs: set[str]) -> None:
+    def __init__(
+        self,
+        declared_inputs: set[str],
+        declared_outputs: set[str],
+        execution_model: str = "pure_data",
+    ) -> None:
         self.declared_inputs = declared_inputs
         self.declared_outputs = declared_outputs
+        self.execution_model = execution_model
         self.errors: list[str] = []
 
     def generic_visit(self, node: ast.AST) -> None:
@@ -144,11 +172,26 @@ class CustomScriptSecurityVisitor(ast.NodeVisitor):
             if func_name in DISALLOWED_CALL_NAMES:
                 self.errors.append(f"Chamada a '{func_name}()' é proibida (linha {node.lineno}).")
 
-        # Checa chamadas a ctx.get_input / ctx.set_output
+        # Checa chamadas a ctx.get_input / ctx.set_output / ctx.emit
         if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id == "ctx":
             method_name = node.func.attr
-            if method_name not in {"get_input", "set_output"}:
+            if method_name not in {"get_input", "set_output", "emit"}:
                 self.errors.append(f"Método 'ctx.{method_name}()' não existe no contexto do script (linha {node.lineno}).")
+            elif method_name == "emit":
+                if not node.args:
+                    self.errors.append(f"Chamada a 'ctx.emit()' requer o nome da porta de fluxo como argumento (linha {node.lineno}).")
+                else:
+                    first_arg = node.args[0]
+                    if not isinstance(first_arg, ast.Constant) or not isinstance(first_arg.value, str):
+                        self.errors.append(
+                            f"Chamada a 'ctx.emit()' deve usar string literal ('next' ou 'failure') (linha {node.lineno})."
+                        )
+                    else:
+                        flow_name = first_arg.value
+                        if flow_name not in ALLOWED_FLOW_PORTS:
+                            self.errors.append(
+                                f"Porta de fluxo '{flow_name}' em ctx.emit() é inválida. Use 'next' ou 'failure' (linha {node.lineno})."
+                            )
             else:
                 if not node.args:
                     self.errors.append(f"Chamada a 'ctx.{method_name}()' requer o nome da porta como argumento (linha {node.lineno}).")
@@ -176,6 +219,7 @@ def validate_custom_script(
     source: str,
     declared_inputs: set[str] | list[str],
     declared_outputs: set[str] | list[str],
+    execution_model: str = "pure_data",
 ) -> tuple[bool, str]:
     """Valida sintaxe e conformidade de segurança do script com as portas declaradas."""
     if not str(source).strip():
@@ -186,7 +230,7 @@ def validate_custom_script(
     except SyntaxError as e:
         return False, f"Erro de sintaxe na linha {e.lineno}: {e.msg}"
 
-    visitor = CustomScriptSecurityVisitor(set(declared_inputs), set(declared_outputs))
+    visitor = CustomScriptSecurityVisitor(set(declared_inputs), set(declared_outputs), execution_model)
     visitor.visit(tree)
 
     if visitor.errors:

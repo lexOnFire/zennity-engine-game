@@ -148,14 +148,19 @@ class EmitEventNode(NodeDefinition):
 
 
 class CustomScriptNode(NodeDefinition):
-    """Nó de script Python customizado avaliado como Pure Data."""
+    """Nó de script Python customizado avaliado como Pure Data ou Action Flow."""
 
     __node_definition__ = NodeDefinition(
         id="custom_script",
         title_key="Script Customizado",
         category_key="Custom",
-        description_key="Executa lógica em Python restrito sobre entradas e saídas de dados",
+        description_key="Executa lógica em Python restrito sobre entradas e saídas de dados e fluxo",
         execution_model="pure_data",
-        inputs=[],
-        outputs=[],
+        inputs=[
+            PinDefinition(id="in", label_key="In", pin_type=PinType.EXEC),
+        ],
+        outputs=[
+            PinDefinition(id="next", label_key="Próximo", pin_type=PinType.EXEC),
+            PinDefinition(id="failure", label_key="Falha", pin_type=PinType.EXEC),
+        ],
     )

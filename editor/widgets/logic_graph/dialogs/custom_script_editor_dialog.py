@@ -68,12 +68,20 @@ class CustomScriptEditorDialog(QDialog):
         title_label = QLabel(self.node_title)
         title_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #f8fafc;")
 
-        mode_badge = QLabel("⚡ PURE DATA (EVALUATOR)")
-        mode_badge.setStyleSheet("font-size: 11px; color: #38bdf8; background: #0c4a6e; padding: 2px 8px; border-radius: 4px; font-weight: bold;")
+        model_label = QLabel("Modelo:")
+        model_label.setStyleSheet("font-weight: bold; color: #94a3b8;")
+        self.model_combo = QComboBox()
+        self.model_combo.addItem("Pure Data (Evaluator)", "pure_data")
+        self.model_combo.addItem("Action (Flow in/next/failure)", "action")
+        current_model = str(self.properties.get("execution_model", "pure_data")).lower()
+        idx = 1 if current_model == "action" else 0
+        self.model_combo.setCurrentIndex(idx)
+        self.model_combo.currentIndexChanged.connect(self._on_model_changed)
 
         header_layout.addWidget(title_label)
         header_layout.addStretch(1)
-        header_layout.addWidget(mode_badge)
+        header_layout.addWidget(model_label)
+        header_layout.addWidget(self.model_combo)
         main_layout.addLayout(header_layout)
 
         # Splitter principal: Painel de Portas à Esquerda, Editor de Script à Direita
@@ -287,13 +295,21 @@ class CustomScriptEditorDialog(QDialog):
 
         return inputs, outputs
 
+    def _on_model_changed(self, index: int) -> None:
+        model = self.model_combo.currentData()
+        if model == "action":
+            self.status_label.setText("Modo Action selecionado: requer fluxo 'in' e saídas 'next' / 'failure'. Use ctx.emit().")
+        else:
+            self.status_label.setText("Modo Pure Data selecionado: avaliado sob demanda pelo Evaluator.")
+
     def _validate_only(self) -> bool:
         inputs, outputs = self._collect_ports()
         declared_in = {entry["name"] for entry in inputs}
         declared_out = {entry["name"] for entry in outputs}
         source = self.script_edit.toPlainText()
+        model = self.model_combo.currentData()
 
-        valid, err = validate_custom_script(source, declared_in, declared_out)
+        valid, err = validate_custom_script(source, declared_in, declared_out, execution_model=model)
         if not valid:
             self.status_label.setText(f"Erro: {err.splitlines()[0]}")
             self.status_label.setStyleSheet("font-size: 11px; color: #ef4444; font-family: Consolas, monospace;")
@@ -310,6 +326,7 @@ class CustomScriptEditorDialog(QDialog):
 
         inputs, outputs = self._collect_ports()
         source = self.script_edit.toPlainText()
+        model = self.model_combo.currentData()
 
         # Identifica portas removidas para remoção de edges órfãs
         old_inputs = {entry.get("name") for entry in self.properties.get("inputs", []) if isinstance(entry, Mapping)}
@@ -320,6 +337,7 @@ class CustomScriptEditorDialog(QDialog):
         removed_inputs = old_inputs - new_inputs
         removed_outputs = old_outputs - new_outputs
 
+        self.properties["execution_model"] = model
         self.properties["inputs"] = inputs
         self.properties["outputs"] = outputs
         self.properties["script"] = source

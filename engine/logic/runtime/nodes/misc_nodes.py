@@ -1,11 +1,13 @@
 from __future__ import annotations
+import logging
 import math
 import random
 from types import SimpleNamespace
 from typing import Any, Mapping
 from copy import deepcopy
-from copy import deepcopy
 from ..registry import registry
+
+_log = logging.getLogger(__name__)
 
 @registry.register_executor('set_hud')
 def execute_set_hud(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
@@ -335,3 +337,72 @@ def evaluate_custom_script(runtime, node_id: str, port: str, node: Mapping[str, 
         runtime._store(node_id, out_name, out_value)
 
     return runtime.values.get((node_id, port), None)
+
+
+@registry.register_executor('custom_script')
+def execute_custom_script_node(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Executa nós Custom Script no modo Action, emitindo fluxo ('next' ou 'failure') e salvando data outputs."""
+    properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
+    model = str(properties.get("execution_model", "pure_data")).lower()
+    if model != "action":
+        return ["next"]
+
+    node_id = str(node.get("id", ""))
+    raw_inputs = properties.get("inputs", [])
+    raw_outputs = properties.get("outputs", [])
+    script_source = str(properties.get("script", ""))
+
+    declared_inputs: dict[str, Any] = {}
+    if isinstance(raw_inputs, list):
+        for entry in raw_inputs:
+            if isinstance(entry, Mapping) and str(entry.get("name", "")).strip():
+                name = str(entry["name"]).strip()
+                default_val = entry.get("default", 0.0 if entry.get("type") == "number" else (True if entry.get("type") == "bool" else ""))
+                declared_inputs[name] = default_val
+
+    declared_outputs: set[str] = set()
+    if isinstance(raw_outputs, list):
+        for entry in raw_outputs:
+            if isinstance(entry, Mapping) and str(entry.get("name", "")).strip():
+                declared_outputs.add(str(entry["name"]).strip())
+
+    # Resolve data inputs
+    resolved_inputs: dict[str, Any] = {}
+    for in_name, default_val in declared_inputs.items():
+        val = runtime._read_input(node_id, in_name, default_val, game, dt, set())
+        resolved_inputs[in_name] = val
+
+    from ..custom_script_sandbox import (
+        ScriptContext,
+        compile_custom_script,
+        execute_custom_script,
+        validate_custom_script,
+    )
+
+    valid, err_msg = validate_custom_script(
+        script_source,
+        set(declared_inputs.keys()),
+        declared_outputs,
+        execution_model="action",
+    )
+    if not valid:
+        _log.error(f"Erro de validação no nó Action '{node.get('title', node_id)}':\n{err_msg}")
+        return ["failure"]
+
+    ctx = ScriptContext(resolved_inputs, set(declared_inputs.keys()), declared_outputs, execution_model="action")
+    try:
+        code = compile_custom_script(script_source, f"custom_script_{node_id}")
+        execute_custom_script(code, ctx)
+    except Exception as exc:
+        _log.error(f"Erro de execução no script Action do nó '{node.get('title', node_id)}': {exc}", exc_info=True)
+        return ["failure"]
+
+    # Salva outputs de dados no runtime para nós downstream
+    for out_name, out_value in ctx.outputs.items():
+        runtime._store(node_id, out_name, out_value)
+
+    emitted = ctx.emitted_flow
+    if emitted is not None:
+        return [emitted]
+
+    return ["next"]

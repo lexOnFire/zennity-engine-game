@@ -134,8 +134,13 @@ def node_port_definitions(node_type: str | Mapping[str, Any]) -> dict[str, list[
         ports["inputs"].extend(_declared_interface_ports(properties.get("inputs")))
         ports["outputs"].extend(_declared_interface_ports(properties.get("outputs")))
     elif type_name == "custom_script":
-        ports["inputs"] = _declared_interface_ports(properties.get("inputs"))
-        ports["outputs"] = _declared_interface_ports(properties.get("outputs"))
+        model = str(properties.get("execution_model", "pure_data")).lower()
+        if model == "action":
+            ports["inputs"] = [("in", "flow")] + _declared_interface_ports(properties.get("inputs"))
+            ports["outputs"] = [("next", "flow"), ("failure", "flow")] + _declared_interface_ports(properties.get("outputs"))
+        else:
+            ports["inputs"] = _declared_interface_ports(properties.get("inputs"))
+            ports["outputs"] = _declared_interface_ports(properties.get("outputs"))
     return ports
 
 
