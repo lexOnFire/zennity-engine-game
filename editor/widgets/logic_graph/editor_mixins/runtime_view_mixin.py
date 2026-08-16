@@ -168,17 +168,35 @@ class LogicGraphRuntimeViewMixin:
         error_node = active_node_list[-1] if error and active_node_list else ""
         self._runtime_trace_active = True
         self._update_validation()
+        input_values = trace.get("input_values", {}) if isinstance(trace.get("input_values"), dict) else {}
         for node_id, item in self.node_items.items():
             item.set_breakpoint(node_id in breakpoints or node_id in self.graph.get("debug", {}).get("breakpoints", []))
             is_active = node_id in active_nodes
             is_data = (node_id in data_nodes) and not is_active
+            node_outputs = values.get(node_id) if isinstance(values.get(node_id), dict) else {}
+            node_inputs = input_values.get(node_id) if isinstance(input_values.get(node_id), dict) else {}
+
             item.set_runtime_state(
                 is_active,
-                values.get(node_id) if isinstance(values.get(node_id), dict) else {},
+                node_outputs,
                 error if node_id == error_node else "",
                 paused=node_id == pause_node and paused,
                 data_evaluated=is_data,
             )
+
+            # Atualiza tooltips individuais das portas
+            for port_name, port_item in item.output_ports.items():
+                if port_name in node_outputs:
+                    port_item.set_runtime_value(node_outputs[port_name], has_value=True)
+                else:
+                    port_item.set_runtime_value(None, has_value=False)
+
+            for port_name, port_item in item.input_ports.items():
+                if port_name in node_inputs:
+                    port_item.set_runtime_value(node_inputs[port_name], has_value=True)
+                else:
+                    port_item.set_runtime_value(None, has_value=False)
+
         for edge in self.edge_items:
             edge.set_runtime_active(edge.edge_id in active_edges)
 
@@ -247,6 +265,10 @@ class LogicGraphRuntimeViewMixin:
             self._refresh_watch_values()
         for item in self.node_items.values():
             item.set_runtime_state(False)
+            for port_item in item.input_ports.values():
+                port_item.set_runtime_value(None, has_value=False)
+            for port_item in item.output_ports.values():
+                port_item.set_runtime_value(None, has_value=False)
         for edge in self.edge_items:
             edge.set_runtime_active(False)
         if hasattr(self, "validation_label"):

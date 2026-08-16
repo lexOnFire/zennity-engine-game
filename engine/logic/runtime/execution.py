@@ -286,13 +286,19 @@ class LogicGraphExecutionMixin:
     ) -> Any:
         edge = self.incoming.get((node_id, port))
         if edge is None:
-            return deepcopy(default)
+            val = deepcopy(default)
+            if hasattr(self, "input_values"):
+                self.input_values[(str(node_id), str(port))] = val
+            return val
         edge_id = str(edge.get("id", ""))
         if edge_id and edge_id not in self.executed_edges:
             self.executed_edges.append(edge_id)
-        return self._evaluate_output(
+        val = self._evaluate_output(
             str(edge["from_node"]), str(edge.get("from_port", "value")), game, dt, resolving
         )
+        if hasattr(self, "input_values"):
+            self.input_values[(str(node_id), str(port))] = val
+        return val
 
     def _read_target(self, node_id: str, game: Any, dt: float, resolving: set[tuple[str, str]]) -> Any:
         if (node_id, "target") not in self.incoming:

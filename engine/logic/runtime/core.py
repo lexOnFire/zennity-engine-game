@@ -62,6 +62,7 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin, LogicGraphE
             edges.sort(key=lambda edge: (int(edge.get("order", 0)), str(edge.get("id", ""))))
         self.variables = self.blackboard.values_for_object(self.object_key)
         self.values: dict[Any, Any] = {}
+        self.input_values: dict[tuple[str, str], Any] = {}
         self.executed_nodes: list[str] = []
         self.data_evaluated_nodes: list[str] = []
         self.executed_edges: list[str] = []
@@ -215,6 +216,7 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin, LogicGraphE
         try:
             self.event_bus = LogicEventBus()
             self.values.clear()
+            self.input_values.clear()
             self.executed_nodes.clear()
             self.data_evaluated_nodes.clear()
             self.executed_edges.clear()

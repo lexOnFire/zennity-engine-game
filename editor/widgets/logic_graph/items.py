@@ -87,9 +87,21 @@ class LogicPortItem(QGraphicsEllipseItem):
         self.setBrush(QBrush(QColor("#12151d")))
         self.setTransformOriginPoint(self.boundingRect().center())
         self.setAcceptHoverEvents(True)
-        self.setAcceptedMouseButtons(Qt.LeftButton)
-        self.setZValue(5)
-        self.setToolTip(f"{self.name} • {self.data_type}")
+        self._runtime_value: Any = None
+        self._has_runtime_value: bool = False
+        self._refresh_tooltip()
+
+    def _refresh_tooltip(self) -> None:
+        if self._has_runtime_value:
+            val_str = str(self._runtime_value)
+            self.setToolTip(f"{self.name} • {self.data_type}\n[Runtime]: {val_str}")
+        else:
+            self.setToolTip(f"{self.name} • {self.data_type}")
+
+    def set_runtime_value(self, value: Any, has_value: bool = True) -> None:
+        self._runtime_value = value
+        self._has_runtime_value = bool(has_value)
+        self._refresh_tooltip()
 
     def scene_position(self) -> QPointF:
         return self.mapToScene(self.boundingRect().center())

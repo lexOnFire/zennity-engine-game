@@ -144,6 +144,15 @@ class LogicGraphDebugMixin:
                 continue
             node_id, port = str(key[0]), str(key[1])
             values.setdefault(node_id, {})[port] = self._debug_value(value)
+
+        input_values: dict[str, dict[str, Any]] = {}
+        if hasattr(self, "input_values"):
+            for key, value in self.input_values.items():
+                if not isinstance(key, tuple) or len(key) != 2:
+                    continue
+                node_id, port = str(key[0]), str(key[1])
+                input_values.setdefault(node_id, {})[port] = self._debug_value(value)
+
         blackboard = {
             scope: {str(name): self._debug_value(value) for name, value in values.items()}
             for scope, values in self.blackboard.snapshot(self.object_key).items()
@@ -157,6 +166,7 @@ class LogicGraphDebugMixin:
             "trace_sequence": getattr(self, "_trace_sequence", 0),
             "trace_events": trace_events,
             "values": values,
+            "input_values": input_values,
             "variables": {str(name): self._debug_value(value) for name, value in self.variables.items()},
             "blackboard": blackboard,
             "paused": self.debug_paused,
@@ -250,7 +260,19 @@ class LogicGraphDebugMixin:
 
     @staticmethod
     def _debug_value(value: Any) -> Any:
-        if value is None or isinstance(value, (bool, int, float, str)):
+        if value is None or isinstance(value, (bool, int, float)):
             return value
+        if isinstance(value, str):
+            return value if len(value) <= 128 else value[:125] + "..."
+        if isinstance(value, (list, tuple)):
+            if len(value) <= 4:
+                return [LogicGraphDebugMixin._debug_value(v) for v in value]
+            return [LogicGraphDebugMixin._debug_value(v) for v in value[:4]] + [f"... +{len(value)-4} itens"]
+        if isinstance(value, dict):
+            keys = list(value.keys())[:4]
+            res = {str(k): LogicGraphDebugMixin._debug_value(value[k]) for k in keys}
+            if len(value) > 4:
+                res["..."] = f"+{len(value)-4} chaves"
+            return res
         name = getattr(value, "name", None)
         return f"<{name or type(value).__name__}>"
