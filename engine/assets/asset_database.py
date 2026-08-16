@@ -109,11 +109,11 @@ class AssetDatabase(IService):
         normalized = AssetType(str(asset_type))
         return [asset for asset in self.list_assets() if asset.type == normalized]
 
-    def import_asset(self, path: str | Path) -> AssetInfo:
+    def import_asset(self, path: str | Path, sync_to_disk: bool = False) -> AssetInfo:
         absolute_path = self._absolute_asset_path(path)
         if absolute_path.suffix.lower() == ".meta":
             raise ValueError(".meta files are metadata, not primary assets")
-        meta = self.ensure_meta(absolute_path)
+        meta = self.ensure_meta(absolute_path, sync_to_disk=sync_to_disk)
         stat = absolute_path.stat()
         rel_path = self._relative_asset_path(absolute_path)
         info = AssetInfo(
@@ -159,7 +159,7 @@ class AssetDatabase(IService):
                     removed += 1
         return removed
 
-    def ensure_meta(self, asset_path: str | Path) -> AssetMeta:
+    def ensure_meta(self, asset_path: str | Path, sync_to_disk: bool = False) -> AssetMeta:
         absolute_path = self._absolute_asset_path(asset_path)
         metadata_path = self._metadata_path(absolute_path)
         source_path = self._relative_asset_path(absolute_path)
@@ -169,8 +169,13 @@ class AssetDatabase(IService):
         existing_meta = None
         if metadata_path.exists():
             try:
-                data = json.loads(metadata_path.read_text(encoding="utf-8"))
+                raw_text = metadata_path.read_text(encoding="utf-8")
+                data = json.loads(raw_text)
                 existing_meta = AssetMeta.from_dict(data)
+                # Se o arquivo no disco é válido e canônico (contém guid e hash), não precisa de reescrita
+                if "guid" in data and not sync_to_disk:
+                    existing_meta.source_path = source_path
+                    return existing_meta
             except Exception:
                 pass
 
