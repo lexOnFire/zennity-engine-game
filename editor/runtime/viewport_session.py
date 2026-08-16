@@ -393,6 +393,12 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 if isinstance(obj.get("variables"), dict) else {},
                 "logic_assets": deepcopy(obj.get("logic_assets", []))
                 if isinstance(obj.get("logic_assets"), list) else [],
+                "components": deepcopy(obj.get("components", {}))
+                if isinstance(obj.get("components"), dict) else {},
+                "ui": deepcopy(obj.get("ui", {}))
+                if isinstance(obj.get("ui"), dict) else None,
+                "camera": deepcopy(obj.get("camera", {}))
+                if isinstance(obj.get("camera"), dict) else None,
                 "logic_motions": [
                     {"handle": str(handle), **deepcopy(state)}
                     for handle, state in motions.items() if isinstance(state, dict)

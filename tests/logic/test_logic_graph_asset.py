@@ -1001,7 +1001,7 @@ def test_code_editing_recipes_are_searchable_and_build_editable_graphs():
     node_types = [node["type"] for node in fragment["nodes"]]
     move = next(node for node in fragment["nodes"] if node["type"] == "move_by")
     assert node_types == ["event_update", "move_by"]
-    assert move["properties"] == {"x": 120.0, "y": -60.0}
+    assert move["properties"] == {"x": 120.0, "y": -60.0, "target": ""}
     assert "target.x += 120.0 * dt" in node_code_preview(move)
 
 

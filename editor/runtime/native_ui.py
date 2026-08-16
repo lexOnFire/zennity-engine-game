@@ -231,13 +231,14 @@ class NativeUIRenderer:
                                 continue
                             result.append((canvas_obj, item_ui))
 
-        # Adiciona demais componentes isolados da cena
-        for obj in values:
-            if not bool(obj.get("active", True)):
-                continue
-            ui = normalize_ui(obj.get("ui"))
-            if ui is not None and ui["type"] != "canvas" and bool(ui.get("visible", True)):
-                result.append((obj, ui))
+        # Adiciona demais componentes isolados da cena apenas se houver um Canvas ativo na cena
+        if canvas_objs:
+            for obj in values:
+                if not bool(obj.get("active", True)):
+                    continue
+                ui = normalize_ui(obj.get("ui"))
+                if ui is not None and ui["type"] != "canvas" and bool(ui.get("visible", True)):
+                    result.append((obj, ui))
         return sorted(result, key=lambda pair: int(pair[1].get("z_order", 0)))
 
     def draw(self, objects: Any, screen: pygame.Surface, world_to_screen: Callable[[float, float], tuple[float, float]] | None = None) -> None:
