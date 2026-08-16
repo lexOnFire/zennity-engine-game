@@ -37,8 +37,9 @@ class LogicNodeItemRuntimeMixin:
         values: dict[str, Any] | None = None,
         error: str = "",
         paused: bool = False,
+        data_evaluated: bool = False,
     ) -> None:
-        self._runtime_display = (bool(active), values, str(error), bool(paused))
+        self._runtime_display = (bool(active), values, str(error), bool(paused), bool(data_evaluated))
         if self.collapsed:
             self.summary_item.hide()
             self.target_item.hide()
@@ -48,7 +49,7 @@ class LogicNodeItemRuntimeMixin:
             self.summary_item.hide()
             self.debug_item.hide()
             return
-        visible = bool(active or error or paused)
+        visible = bool(active or error or paused or data_evaluated)
         self.summary_item.setVisible(not visible)
         self.target_item.setVisible(bool(self._target_hint) and not visible)
         self.debug_item.setVisible(visible)
@@ -61,10 +62,15 @@ class LogicNodeItemRuntimeMixin:
             elif paused:
                 self.debug_item.setDefaultTextColor(QColor("#e6b85c"))
                 self.debug_item.setPlainText("PAUSADO ANTES DE EXECUTAR")
-            else:
+            elif active:
                 self.debug_item.setDefaultTextColor(QColor("#7ee787"))
                 pairs = list((values or {}).items())[:2]
                 text = " • ".join(f"{name}={value}" for name, value in pairs) if pairs else "EXECUTANDO"
+                self.debug_item.setPlainText(text)
+            elif data_evaluated:
+                self.debug_item.setDefaultTextColor(QColor("#00e5ff"))
+                pairs = list((values or {}).items())[:2]
+                text = " • ".join(f"{name}={value}" for name, value in pairs) if pairs else "DADOS AVALIADOS"
                 self.debug_item.setPlainText(text)
         self._update_border_style()
 
@@ -72,8 +78,9 @@ class LogicNodeItemRuntimeMixin:
         self.breakpoint_item.setVisible(bool(enabled))
 
     def _update_border_style(self) -> None:
-        active, values, error, paused = self._runtime_display
-        visible = bool(active or error or paused)
+        active, values, error, paused, *rest = self._runtime_display
+        data_evaluated = rest[0] if rest else False
+        visible = bool(active or error or paused or data_evaluated)
         if not visible:
             if self.isSelected():
                 self.setPen(QPen(QColor("#7c5cff"), 2.4))
@@ -84,5 +91,7 @@ class LogicNodeItemRuntimeMixin:
                 self.setPen(QPen(QColor("#ff5d62"), 3.5 if self.isSelected() else 2.5))
             elif paused:
                 self.setPen(QPen(QColor("#e6b85c"), 4.5 if self.isSelected() else 3.5))
-            else:
+            elif active:
                 self.setPen(QPen(QColor("#7ee787"), 3.5 if self.isSelected() else 2.5))
+            elif data_evaluated:
+                self.setPen(QPen(QColor("#00e5ff"), 2.6 if self.isSelected() else 1.8))

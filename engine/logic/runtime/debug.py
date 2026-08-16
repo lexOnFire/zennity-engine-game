@@ -148,9 +148,14 @@ class LogicGraphDebugMixin:
             scope: {str(name): self._debug_value(value) for name, value in values.items()}
             for scope, values in self.blackboard.snapshot(self.object_key).items()
         }
+        trace_events = list(self._trace_events) if hasattr(self, "_trace_events") else []
         return {
             "nodes": list(dict.fromkeys([*self.executed_nodes, *([self.pause_node] if self.pause_node else [])])),
+            "data_nodes": list(dict.fromkeys(getattr(self, "data_evaluated_nodes", []))),
             "edges": list(dict.fromkeys(self.executed_edges)),
+            "flow_traces": list(getattr(self, "flow_traces", [])),
+            "trace_sequence": getattr(self, "_trace_sequence", 0),
+            "trace_events": trace_events,
             "values": values,
             "variables": {str(name): self._debug_value(value) for name, value in self.variables.items()},
             "blackboard": blackboard,

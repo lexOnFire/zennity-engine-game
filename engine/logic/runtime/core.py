@@ -63,7 +63,12 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin, LogicGraphE
         self.variables = self.blackboard.values_for_object(self.object_key)
         self.values: dict[Any, Any] = {}
         self.executed_nodes: list[str] = []
+        self.data_evaluated_nodes: list[str] = []
         self.executed_edges: list[str] = []
+        self.flow_traces: list[dict[str, Any]] = []
+        self._trace_sequence = 0
+        from collections import deque
+        self._trace_events: deque[dict[str, Any]] = deque(maxlen=512)
         self.breakpoints = {str(value) for value in self.graph.get("debug", {}).get("breakpoints", [])}
         self.breakpoint_conditions = {
             str(node_id): str(expression)
@@ -211,11 +216,27 @@ class LogicGraphRuntime(LogicGraphDebugMixin, LogicGraphMotionMixin, LogicGraphE
             self.event_bus = LogicEventBus()
             self.values.clear()
             self.executed_nodes.clear()
+            self.data_evaluated_nodes.clear()
+            self.executed_edges.clear()
+            self.flow_traces.clear()
+            self._trace_events.clear()
             self._last_game = None
             self._implicit_target = None
             self.started = False
         except Exception:
             pass
+
+    def _record_trace(self, kind: str, **kwargs: Any) -> None:
+        self._trace_sequence += 1
+        event = {
+            "sequence": self._trace_sequence,
+            "kind": kind,
+            **kwargs,
+        }
+        self._trace_events.append(event)
+
+    def trace_events_since(self, sequence: int = 0) -> list[dict[str, Any]]:
+        return [e for e in self._trace_events if e.get("sequence", 0) > int(sequence)]
 
     def __del__(self) -> None:
         """Backstop only -- the lifecycle owner calls stop() explicitly."""

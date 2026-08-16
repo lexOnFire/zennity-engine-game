@@ -25,6 +25,10 @@ def evaluate_output(
         raise RuntimeError(f"Origem de dados não encontrada: {node_id}")
     if node_id not in runtime.executed_nodes:
         runtime.executed_nodes.append(node_id)
+    if hasattr(runtime, "data_evaluated_nodes") and node_id not in runtime.data_evaluated_nodes:
+        runtime.data_evaluated_nodes.append(node_id)
+    if hasattr(runtime, "_record_trace"):
+        runtime._record_trace("data_evaluated", node_id=node_id, port=port)
     resolving = set(resolving)
     resolving.add(key)
     properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}

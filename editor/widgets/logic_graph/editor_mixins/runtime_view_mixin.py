@@ -149,7 +149,13 @@ class LogicGraphRuntimeViewMixin:
 
         active_node_list = [str(node_id) for node_id in trace.get("nodes", [])]
         active_nodes = set(active_node_list)
+        data_nodes = set(str(node_id) for node_id in trace.get("data_nodes", []))
+        flow_traces = trace.get("flow_traces", []) if isinstance(trace.get("flow_traces"), list) else []
         active_edges = {str(edge_id) for edge_id in trace.get("edges", [])}
+        for ft in flow_traces:
+            if isinstance(ft, dict) and "edge_id" in ft:
+                active_edges.add(str(ft["edge_id"]))
+
         values = trace.get("values", {}) if isinstance(trace.get("values"), dict) else {}
         variables = trace.get("variables", {}) if isinstance(trace.get("variables"), dict) else {}
         blackboard = trace.get("blackboard", {}) if isinstance(trace.get("blackboard"), dict) else {}
@@ -164,11 +170,14 @@ class LogicGraphRuntimeViewMixin:
         self._update_validation()
         for node_id, item in self.node_items.items():
             item.set_breakpoint(node_id in breakpoints or node_id in self.graph.get("debug", {}).get("breakpoints", []))
+            is_active = node_id in active_nodes
+            is_data = (node_id in data_nodes) and not is_active
             item.set_runtime_state(
-                node_id in active_nodes,
+                is_active,
                 values.get(node_id) if isinstance(values.get(node_id), dict) else {},
                 error if node_id == error_node else "",
                 paused=node_id == pause_node and paused,
+                data_evaluated=is_data,
             )
         for edge in self.edge_items:
             edge.set_runtime_active(edge.edge_id in active_edges)

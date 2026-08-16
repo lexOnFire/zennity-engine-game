@@ -186,6 +186,8 @@ class LogicGraphExecutionMixin:
         node_id = str(node["id"])
         if node_id not in self.executed_nodes:
             self.executed_nodes.append(node_id)
+        if hasattr(self, "_record_trace"):
+            self._record_trace("node_executed", node_id=node_id, node_type=str(node.get("type", "")))
         self._follow(node_id, "next", game, dt, budget or [self.MAX_STEPS], set())
 
     def _follow(
@@ -212,15 +214,37 @@ class LogicGraphExecutionMixin:
             edge_id = str(edge.get("id", ""))
             if edge_id and edge_id not in self.executed_edges:
                 self.executed_edges.append(edge_id)
+            if hasattr(self, "_record_trace"):
+                self._record_trace(
+                    "flow_emitted",
+                    source_node=node_id,
+                    source_port=port,
+                    target_node=target_id,
+                    target_port=str(edge.get("to_port", "exec")),
+                    edge_id=edge_id,
+                )
+                self.flow_traces.append({
+                    "source_node": node_id,
+                    "source_port": port,
+                    "target_node": target_id,
+                    "target_port": str(edge.get("to_port", "exec")),
+                    "edge_id": edge_id,
+                })
             previous_target = self._implicit_target
             self._implicit_target = self._node_state.get(node_id, {}).get("flow_target", previous_target)
             try:
                 self.executed_nodes.append(target_id)
+                if hasattr(self, "_record_trace"):
+                    self._record_trace("node_executed", node_id=target_id, node_type=str(target.get("type", "")))
                 try:
                     next_ports = self._execute(target, game, dt)
-                except RuntimeError:
+                except RuntimeError as exc:
+                    if hasattr(self, "_record_trace"):
+                        self._record_trace("node_error", node_id=target_id, message=str(exc))
                     raise
                 except Exception as exc:
+                    if hasattr(self, "_record_trace"):
+                        self._record_trace("node_error", node_id=target_id, message=str(exc))
                     raise RuntimeError(f"Node '{target.get('title', target_id)}': {exc}") from exc
                 next_branch = set(branch)
                 next_branch.add(target_id)
