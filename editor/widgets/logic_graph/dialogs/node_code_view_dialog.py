@@ -118,8 +118,10 @@ class NodeCodeViewDialog(QDialog):
             "QPushButton#CopyButton:hover { background-color: #1d4ed8; }"
         )
 
+        self.info: dict[str, Any] = {}
         self._setup_ui()
         self._load_sources()
+        self.tabs.currentChanged.connect(self._on_tab_changed)
 
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
@@ -154,7 +156,6 @@ class NodeCodeViewDialog(QDialog):
 
         # Tabs para Definition, Executor, Evaluator
         self.tabs = QTabWidget()
-        self.tabs.currentChanged.connect(self._on_tab_changed)
         layout.addWidget(self.tabs, 1)
 
         # Editor de Código Read-Only por Aba
