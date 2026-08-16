@@ -133,6 +133,9 @@ def node_port_definitions(node_type: str | Mapping[str, Any]) -> dict[str, list[
     elif type_name == "call_subgraph":
         ports["inputs"].extend(_declared_interface_ports(properties.get("inputs")))
         ports["outputs"].extend(_declared_interface_ports(properties.get("outputs")))
+    elif type_name == "custom_script":
+        ports["inputs"] = _declared_interface_ports(properties.get("inputs"))
+        ports["outputs"] = _declared_interface_ports(properties.get("outputs"))
     return ports
 
 

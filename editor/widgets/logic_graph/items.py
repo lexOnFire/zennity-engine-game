@@ -292,10 +292,21 @@ class LogicFlipControl(QGraphicsTextItem):
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
-            from editor.widgets.logic_graph.dialogs.node_code_view_dialog import NodeCodeViewDialog
             parent_widget = getattr(self.node, "editor", None)
-            dialog = NodeCodeViewDialog(self.node.node, parent=parent_widget)
-            dialog.exec()
+            node_type = str(self.node.node.get("type", ""))
+            if node_type == "custom_script":
+                from editor.widgets.logic_graph.dialogs.custom_script_editor_dialog import CustomScriptEditorDialog
+                dialog = CustomScriptEditorDialog(self.node.node, parent=parent_widget)
+                if dialog.exec():
+                    # Recarrega portas e layout do nó no canvas
+                    if hasattr(self.node, "refresh_ports_and_geometry"):
+                        self.node.refresh_ports_and_geometry()
+                    elif parent_widget and hasattr(parent_widget, "refresh_graph_layout"):
+                        parent_widget.refresh_graph_layout()
+            else:
+                from editor.widgets.logic_graph.dialogs.node_code_view_dialog import NodeCodeViewDialog
+                dialog = NodeCodeViewDialog(self.node.node, parent=parent_widget)
+                dialog.exec()
             event.accept()
         else:
             super().mousePressEvent(event)

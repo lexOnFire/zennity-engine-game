@@ -273,3 +273,65 @@ def execute_find_nearest_object(runtime, node: Mapping[str, Any], game: Any, dt:
 def evaluate_find_nearest_object(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
     """The data pins the executor stored -- the same shape ``raycast`` uses."""
     return runtime.values.get((node_id, str(port)))
+
+
+@registry.register_evaluator('custom_script')
+def evaluate_custom_script(runtime, node_id: str, port: str, node: Mapping[str, Any], game: Any, dt: float, branch: set[str]) -> Any:
+    """Avalia nós Custom Script como Pure Data, com execução coerente e multi-output."""
+    properties = node.get("properties", {}) if isinstance(node.get("properties"), Mapping) else {}
+    raw_inputs = properties.get("inputs", [])
+    raw_outputs = properties.get("outputs", [])
+    script_source = str(properties.get("script", ""))
+
+    declared_inputs: dict[str, Any] = {}
+    if isinstance(raw_inputs, list):
+        for entry in raw_inputs:
+            if isinstance(entry, Mapping) and str(entry.get("name", "")).strip():
+                name = str(entry["name"]).strip()
+                default_val = entry.get("default", 0.0 if entry.get("type") == "number" else (True if entry.get("type") == "bool" else ""))
+                declared_inputs[name] = default_val
+
+    declared_outputs: set[str] = set()
+    if isinstance(raw_outputs, list):
+        for entry in raw_outputs:
+            if isinstance(entry, Mapping) and str(entry.get("name", "")).strip():
+                declared_outputs.add(str(entry["name"]).strip())
+
+    # Se a porta solicitada já tiver sido computada nesta passagem, retorna do cache
+    if (node_id, port) in runtime.values:
+        return runtime.values[(node_id, port)]
+
+    # Coleta valores de entrada respeitando precedência (edge conectada > default da propriedade)
+    resolved_inputs: dict[str, Any] = {}
+    for in_name, default_val in declared_inputs.items():
+        val = runtime._read_input(node_id, in_name, default_val, game, dt, branch)
+        resolved_inputs[in_name] = val
+
+    # Validação e Execução
+    from ..custom_script_sandbox import (
+        ScriptContext,
+        compile_custom_script,
+        execute_custom_script,
+        validate_custom_script,
+    )
+
+    valid, err_msg = validate_custom_script(script_source, set(declared_inputs.keys()), declared_outputs)
+    if not valid:
+        _log.error(f"Erro de validação no nó '{node.get('title', node_id)}':\n{err_msg}")
+        runtime._store(node_id, port, None)
+        return None
+
+    ctx = ScriptContext(resolved_inputs, set(declared_inputs.keys()), declared_outputs)
+    try:
+        code = compile_custom_script(script_source, f"custom_script_{node_id}")
+        execute_custom_script(code, ctx)
+    except Exception as exc:
+        _log.error(f"Erro de execução no script do nó '{node.get('title', node_id)}': {exc}", exc_info=True)
+        runtime._store(node_id, port, None)
+        return None
+
+    # Armazena todas as saídas geradas para coerência em caso de multi-output
+    for out_name, out_value in ctx.outputs.items():
+        runtime._store(node_id, out_name, out_value)
+
+    return runtime.values.get((node_id, port), None)
