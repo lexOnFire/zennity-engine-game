@@ -43,6 +43,9 @@ INTERNAL_PROPERTIES = {
     "widget",        # runtime widget handle, resolved from widget_name
     "properties",    # add_component: nested component payload
     "inputs",        # call_subgraph: dynamic interface, edited via the graph
+    "outputs",       # custom_script: dynamic outputs
+    "script",        # custom_script: script body, edited via CustomScriptEditorDialog
+    "execution_model", # custom_script: pure_data / action mode, edited via CustomScriptEditorDialog
     "options",       # show_dialog: list of choices, edited via its own UI
     "default",       # type-dependent, follows the pin type
     "color",         # None means "inherit theme"; declaring it changes behaviour

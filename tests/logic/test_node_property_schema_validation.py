@@ -27,7 +27,7 @@ RUNTIME_NODES = Path(__file__).resolve().parents[2] / "engine/logic/runtime/node
 #: Resolved by the runtime, not authored by the user. Explicit rather than a
 #: broad pattern so a genuinely missing property cannot hide behind it.
 INTERNAL_PROPERTIES = {
-    "object", "widget", "properties", "inputs", "outputs", "script", "options", "default",
+    "object", "widget", "properties", "inputs", "outputs", "script", "execution_model", "options", "default",
     "color", "bg_color", "fill_color", "acceleration",
     "exposed_properties", "parameters",
 }
