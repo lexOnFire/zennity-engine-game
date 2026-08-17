@@ -11,6 +11,7 @@ Executa diagnósticos de desempenho de:
   - BENCH F: SimulationRenderBuffer + BatchedSimulationRenderer (frações de visibilidade)
   - BENCH G: Simulação Sintética Integrada (Pipeline Completo: Scheduler + Pool + SpatialHash + FlowField + RenderBuffer + Renderer)
   - BENCH H: Simulation LOD (Classificação O(N), tiers de frequência e redução de expensive updates)
+  - BENCH I: Spatial Update Optimization & Transitions (Same-cell vs Transitions vs Bulk sync)
   - Testes de Lifecycle Reset e Memory Leak.
 """
 from __future__ import annotations
@@ -394,11 +395,8 @@ class IntegratedSpatialSyncSystem(System):
         self.spatial_hash = spatial_hash
 
     def update(self, scene, dt: float) -> None:
-        px = self.pool.position_x
-        py = self.pool.position_y
-        for idx in self.pool.iter_alive_indices():
-            h = EntityHandle(idx, self.pool.generation[idx])
-            self.spatial_hash.update(h, px[idx], py[idx])
+        # Usa sync_from_pool bulk otimizado
+        self.spatial_hash.sync_from_pool(self.pool)
 
 
 class IntegratedNeighborQuerySystem(System):
@@ -529,6 +527,8 @@ def run_bench_g(populations: List[int], warmup_frames: int, measured_frames: int
                 "same_cell_percent": same_cell_pct,
                 "query_calls": sh_stats["query_calls"],
                 "candidate_entities_evaluated": sh_stats["candidate_entities_evaluated"],
+                "bucket_mutations": sh_stats["bucket_mutations"],
+                "bulk_sync_calls": sh_stats["bulk_sync_calls"],
             },
         }
     return results
@@ -640,6 +640,84 @@ def run_bench_h(populations: List[int], rng: random.Random) -> Dict[str, Any]:
 
 
 # ==============================================================================
+# BENCH I: SPATIAL UPDATE OPTIMIZATION & TRANSITIONS
+# ==============================================================================
+def run_bench_i(populations: List[int], rng: random.Random) -> Dict[str, Any]:
+    results = {}
+    for count in populations:
+        pool = SimulationEntityPool(initial_capacity=count)
+        handles = []
+        for _ in range(count):
+            x = rng.uniform(-1000.0, 1000.0)
+            y = rng.uniform(-1000.0, 1000.0)
+            h = pool.create(position=(x, y))
+            handles.append(h)
+
+        # 1. Same-Cell Updates (100% permanência)
+        sh_same = SpatialHash2D(cell_size=64.0)
+        for h in handles:
+            idx = h.index
+            sh_same.insert(h, pool.position_x[idx], pool.position_y[idx])
+
+        t0 = time.perf_counter()
+        for _ in range(60):
+            for h in handles:
+                idx = h.index
+                # Pequeno deslocamento que mantém na mesma célula
+                sh_same.update(h, pool.position_x[idx] + 0.1, pool.position_y[idx] + 0.1)
+        same_cell_60_ms = (time.perf_counter() - t0) * 1000.0
+
+        # 2. Bulk Sync Same-Cell
+        sh_bulk_same = SpatialHash2D(cell_size=64.0)
+        for h in handles:
+            idx = h.index
+            sh_bulk_same.insert(h, pool.position_x[idx], pool.position_y[idx])
+
+        t0 = time.perf_counter()
+        for _ in range(60):
+            sh_bulk_same.sync_from_pool(pool)
+        bulk_same_cell_60_ms = (time.perf_counter() - t0) * 1000.0
+
+        # 3. Transitions (100% mudança de célula)
+        sh_trans = SpatialHash2D(cell_size=64.0)
+        for h in handles:
+            idx = h.index
+            sh_trans.insert(h, pool.position_x[idx], pool.position_y[idx])
+
+        t0 = time.perf_counter()
+        for f in range(60):
+            offset = (f + 1) * 70.0
+            for h in handles:
+                idx = h.index
+                sh_trans.update(h, pool.position_x[idx] + offset, pool.position_y[idx] + offset)
+        trans_60_ms = (time.perf_counter() - t0) * 1000.0
+
+        # 4. Realistic Mix (~98.7% same-cell / 1.3% transitions)
+        sh_mix = SpatialHash2D(cell_size=64.0)
+        for h in handles:
+            idx = h.index
+            sh_mix.insert(h, pool.position_x[idx], pool.position_y[idx])
+
+        t0 = time.perf_counter()
+        for f in range(60):
+            for i, h in enumerate(handles):
+                idx = h.index
+                # 1.3% das entidades saltam para fora da célula
+                step = 80.0 if (i % 75 == 0) else 0.5
+                sh_mix.update(h, pool.position_x[idx] + step, pool.position_y[idx] + step)
+        mix_60_ms = (time.perf_counter() - t0) * 1000.0
+
+        results[str(count)] = {
+            "same_cell_individual_per_frame_ms": same_cell_60_ms / 60.0,
+            "same_cell_bulk_per_frame_ms": bulk_same_cell_60_ms / 60.0,
+            "bulk_speedup_over_individual": (same_cell_60_ms / bulk_same_cell_60_ms) if bulk_same_cell_60_ms > 0 else 1.0,
+            "realistic_mix_per_frame_ms": mix_60_ms / 60.0,
+            "full_transitions_per_frame_ms": trans_60_ms / 60.0,
+        }
+    return results
+
+
+# ==============================================================================
 # LEAK TEST
 # ==============================================================================
 def run_leak_test() -> Dict[str, Any]:
@@ -660,6 +738,7 @@ def run_leak_test() -> Dict[str, Any]:
             h = pool.create(position=(float(i), float(i)))
             sh.insert(h, float(i), float(i))
         mgr.classify(pool, focus)
+        sh.sync_from_pool(pool)
         pool.clear()
         sh.clear()
         mgr.clear()
@@ -739,6 +818,9 @@ def main():
     print("Running Bench H (Simulation LOD)...")
     bench_h = run_bench_h(pop_matrix, rng)
 
+    print("Running Bench I (Spatial Update Optimization)...")
+    bench_i = run_bench_i(pop_matrix, rng)
+
     print("Running Leak Test...")
     leak_test = run_leak_test()
 
@@ -763,6 +845,7 @@ def main():
         "bench_f_renderer": bench_f,
         "bench_g_integrated": bench_g,
         "bench_h_lod": bench_h,
+        "bench_i_spatial_optimization": bench_i,
         "leak_test": leak_test,
     }
 
@@ -779,7 +862,7 @@ def main():
         sh_p = data.get("spatial_profiling", {})
         print(f"Pop: {pop:5s} | Avg: {data['mean_ms']:6.2f}ms | P95: {data['p95_ms']:6.2f}ms | Est FPS: {data['estimated_fps']:6.1f} | Top: {data['primary_bottleneck']}")
         if sh_p:
-            print(f"       -> Spatial Updates: {sh_p.get('update_calls', 0):6d} (SameCell: {sh_p.get('same_cell_percent', 0.0):5.1f}% | Transitions: {sh_p.get('cell_transitions', 0):5d}) | Queries: {sh_p.get('query_calls', 0):4d}")
+            print(f"       -> Spatial Updates: {sh_p.get('update_calls', 0):6d} (SameCell: {sh_p.get('same_cell_percent', 0.0):5.1f}% | Transitions: {sh_p.get('cell_transitions', 0):5d}) | Mutations: {sh_p.get('bucket_mutations', 0):5d}")
 
     print("\n" + "=" * 60)
     print("SIMULATION LOD SUMMARY")
@@ -787,6 +870,12 @@ def main():
     for pop, data in bench_h.items():
         tc = data.get("tier_counts", {})
         print(f"Pop: {pop:5s} | Classify: {data['classification_ms_per_call']:5.3f}ms | Work Reduction: {data['work_reduction_percent']:5.1f}% | Tiers: [H:{tc.get('high', 0)} M:{tc.get('medium', 0)} L:{tc.get('low', 0)} S:{tc.get('sleep', 0)}]")
+
+    print("\n" + "=" * 60)
+    print("SPATIAL OPTIMIZATION SUMMARY (BENCH I)")
+    print("=" * 60)
+    for pop, data in bench_i.items():
+        print(f"Pop: {pop:5s} | SameCell Indiv: {data['same_cell_individual_per_frame_ms']:5.3f}ms | SameCell Bulk: {data['same_cell_bulk_per_frame_ms']:5.3f}ms | Bulk Speedup: {data['bulk_speedup_over_individual']:4.2f}x | Realistic Mix: {data['realistic_mix_per_frame_ms']:5.3f}ms")
 
     print(f"\nLeak Test: {'PASS' if leak_test['passed'] else 'FAIL'} (Net growth: {leak_test['net_growth_kb']:.2f} KB)")
     print("=" * 60)

@@ -6,9 +6,11 @@ Oferece:
   - Mapeamento uniforme e esparso sem world bounds obrigatório
   - Suporte completo a coordenadas positivas, negativas e fracionárias
   - Inserção, remoção e atualização de células em O(1) amortizado/médio
+  - Same-cell inline fast-path com eliminação de alocação de tuplas temporárias
+  - sync_from_pool / update_many: sincronização em lote (bulk) de alta velocidade
   - Consultas de célula, retângulo e raio (candidatos e filtragem exata)
   - Integração com SimulationEntityPool com proteção a stale handles
-  - Contadores de trabalho granulares e passivos de profiling
+  - Contadores de trabalho e mutação de buckets granulares e passivos
   - Desacoplamento total de Qt, GameObject, Physics, LogicGraph e Threads.
 """
 from __future__ import annotations
@@ -47,8 +49,11 @@ class SpatialHash2D:
         self._update_calls: int = 0
         self._same_cell_updates: int = 0
         self._cell_transitions: int = 0
+        self._bucket_mutations: int = 0
         self._query_calls: int = 0
         self._candidate_entities_evaluated: int = 0
+        self._bulk_sync_calls: int = 0
+        self._bulk_entities_processed: int = 0
 
     @property
     def entity_count(self) -> int:
@@ -71,8 +76,11 @@ class SpatialHash2D:
             "update_calls": self._update_calls,
             "same_cell_updates": self._same_cell_updates,
             "cell_transitions": self._cell_transitions,
+            "bucket_mutations": self._bucket_mutations,
             "query_calls": self._query_calls,
             "candidate_entities_evaluated": self._candidate_entities_evaluated,
+            "bulk_sync_calls": self._bulk_sync_calls,
+            "bulk_entities_processed": self._bulk_entities_processed,
         }
 
     def reset_profiling_stats(self) -> None:
@@ -82,8 +90,11 @@ class SpatialHash2D:
         self._update_calls = 0
         self._same_cell_updates = 0
         self._cell_transitions = 0
+        self._bucket_mutations = 0
         self._query_calls = 0
         self._candidate_entities_evaluated = 0
+        self._bulk_sync_calls = 0
+        self._bulk_entities_processed = 0
 
     def get_cell_coords(self, x: float, y: float) -> CellCoord:
         """Mapeia uma coordenada do mundo (x, y) para a célula (cx, cy) usando piso estrito."""
@@ -102,7 +113,9 @@ class SpatialHash2D:
         cell = self.get_cell_coords(x, y)
         if cell not in self._cells:
             self._cells[cell] = set()
+            self._bucket_mutations += 1
         self._cells[cell].add(entity)
+        self._bucket_mutations += 1
         self._entity_cells[entity] = cell
 
     def remove(self, entity: Any) -> bool:
@@ -115,36 +128,123 @@ class SpatialHash2D:
         cell_set = self._cells.get(cell)
         if cell_set is not None:
             cell_set.discard(entity)
+            self._bucket_mutations += 1
             if not cell_set:
                 del self._cells[cell]
+                self._bucket_mutations += 1
         return True
 
     def update(self, entity: Any, x: float, y: float) -> None:
-        """Atualiza a posição da entidade em O(1) médio."""
+        """Atualiza a posição da entidade em O(1) médio com fast-path otimizado para same-cell."""
         self._update_calls += 1
-        if entity not in self._entity_cells:
+        if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
+            raise ValueError(f"Coordenadas devem ser numéricas: ({x}, {y})")
+        if math.isnan(x) or math.isnan(y) or math.isinf(x) or math.isinf(y):
+            raise ValueError(f"Coordenadas inválidas (NaN ou Inf): ({x}, {y})")
+
+        old_cell = self._entity_cells.get(entity)
+        if old_cell is None:
             raise KeyError(f"Entidade não está indexada para update: {entity}")
 
-        old_cell = self._entity_cells[entity]
-        new_cell = self.get_cell_coords(x, y)
+        # Inline coordinate calculation sem alocação de tupla prévia
+        new_cx = math.floor(x * self._inv_cell_size)
+        new_cy = math.floor(y * self._inv_cell_size)
 
-        if old_cell == new_cell:
+        old_cx, old_cy = old_cell
+        if old_cx == new_cx and old_cy == new_cy:
             self._same_cell_updates += 1
             return
 
         self._cell_transitions += 1
+        new_cell: CellCoord = (new_cx, new_cy)
 
         # Move entre células
         old_set = self._cells.get(old_cell)
         if old_set is not None:
             old_set.discard(entity)
+            self._bucket_mutations += 1
             if not old_set:
                 del self._cells[old_cell]
+                self._bucket_mutations += 1
 
-        if new_cell not in self._cells:
-            self._cells[new_cell] = set()
-        self._cells[new_cell].add(entity)
+        new_set = self._cells.get(new_cell)
+        if new_set is None:
+            new_set = set()
+            self._cells[new_cell] = new_set
+            self._bucket_mutations += 1
+
+        new_set.add(entity)
+        self._bucket_mutations += 1
         self._entity_cells[entity] = new_cell
+
+    def sync_from_pool(
+        self,
+        pool: Any,
+        indices: Optional[Union[List[int], Iterator[int]]] = None,
+    ) -> None:
+        """
+        Sincroniza um lote de entidades diretamente dos arrays contíguos de um SimulationEntityPool.
+        Executa loop interno de alta velocidade minimizando dispatch overhead.
+        """
+        self._bulk_sync_calls += 1
+
+        # Local bindings para velocidade máxima no loop
+        px = pool.position_x
+        py = pool.position_y
+        gens = pool.generation
+        inv_cell = self._inv_cell_size
+        cells = self._cells
+        entity_cells = self._entity_cells
+
+        target_indices = indices if indices is not None else pool.iter_alive_indices()
+        from engine.simulation.entity_pool import EntityHandle
+
+        for idx in target_indices:
+            self._update_calls += 1
+            self._bulk_entities_processed += 1
+
+            x = px[idx]
+            y = py[idx]
+
+            # Validação rápida de NaN / Inf
+            if math.isnan(x) or math.isnan(y) or math.isinf(x) or math.isinf(y):
+                raise ValueError(f"Coordenadas inválidas no pool: ({x}, {y}) no índice {idx}")
+
+            handle = EntityHandle(idx, gens[idx])
+            old_cell = entity_cells.get(handle)
+
+            new_cx = math.floor(x * inv_cell)
+            new_cy = math.floor(y * inv_cell)
+
+            if old_cell is not None:
+                old_cx, old_cy = old_cell
+                if old_cx == new_cx and old_cy == new_cy:
+                    self._same_cell_updates += 1
+                    continue
+
+                # Transição entre células
+                self._cell_transitions += 1
+                old_set = cells.get(old_cell)
+                if old_set is not None:
+                    old_set.discard(handle)
+                    self._bucket_mutations += 1
+                    if not old_set:
+                        del cells[old_cell]
+                        self._bucket_mutations += 1
+            else:
+                # Entidade recém-inserida via bulk sync
+                self._insert_calls += 1
+
+            new_cell = (new_cx, new_cy)
+            new_set = cells.get(new_cell)
+            if new_set is None:
+                new_set = set()
+                cells[new_cell] = new_set
+                self._bucket_mutations += 1
+
+            new_set.add(handle)
+            self._bucket_mutations += 1
+            entity_cells[handle] = new_cell
 
     def clear(self) -> None:
         """Limpa todas as células e entidades indexadas."""
