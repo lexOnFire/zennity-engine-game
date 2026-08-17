@@ -8,6 +8,7 @@ Oferece:
   - Inserção, remoção e atualização de células em O(1) amortizado/médio
   - Consultas de célula, retângulo e raio (candidatos e filtragem exata)
   - Integração com SimulationEntityPool com proteção a stale handles
+  - Contadores de trabalho granulares e passivos de profiling
   - Desacoplamento total de Qt, GameObject, Physics, LogicGraph e Threads.
 """
 from __future__ import annotations
@@ -21,7 +22,7 @@ CellCoord = Tuple[int, int]
 
 class SpatialHash2D:
     """
-    Estrutura esparsa de indexação espacial em 2D.
+    Estrutura esparsa de indexação espacial em 2D com contadores de profiling integrados.
     """
 
     def __init__(self, cell_size: float = 64.0) -> None:
@@ -40,6 +41,15 @@ class SpatialHash2D:
         # _entity_cells: mapeia entidade -> sua (cx, cy) atual
         self._entity_cells: Dict[Any, CellCoord] = {}
 
+        # Contadores de trabalho e profiling
+        self._insert_calls: int = 0
+        self._remove_calls: int = 0
+        self._update_calls: int = 0
+        self._same_cell_updates: int = 0
+        self._cell_transitions: int = 0
+        self._query_calls: int = 0
+        self._candidate_entities_evaluated: int = 0
+
     @property
     def entity_count(self) -> int:
         """Número de entidades atualmente indexadas."""
@@ -53,6 +63,28 @@ class SpatialHash2D:
     def __len__(self) -> int:
         return len(self._entity_cells)
 
+    def get_profiling_stats(self) -> Dict[str, int]:
+        """Retorna uma cópia imutável dos contadores de profiling de trabalho espacial."""
+        return {
+            "insert_calls": self._insert_calls,
+            "remove_calls": self._remove_calls,
+            "update_calls": self._update_calls,
+            "same_cell_updates": self._same_cell_updates,
+            "cell_transitions": self._cell_transitions,
+            "query_calls": self._query_calls,
+            "candidate_entities_evaluated": self._candidate_entities_evaluated,
+        }
+
+    def reset_profiling_stats(self) -> None:
+        """Zera apenas as métricas de profiling sem alterar a estrutura espacial."""
+        self._insert_calls = 0
+        self._remove_calls = 0
+        self._update_calls = 0
+        self._same_cell_updates = 0
+        self._cell_transitions = 0
+        self._query_calls = 0
+        self._candidate_entities_evaluated = 0
+
     def get_cell_coords(self, x: float, y: float) -> CellCoord:
         """Mapeia uma coordenada do mundo (x, y) para a célula (cx, cy) usando piso estrito."""
         if not isinstance(x, (int, float)) or not isinstance(y, (int, float)):
@@ -63,6 +95,7 @@ class SpatialHash2D:
 
     def insert(self, entity: Any, x: float, y: float) -> None:
         """Insere uma entidade na posição (x, y) em O(1) médio."""
+        self._insert_calls += 1
         if entity in self._entity_cells:
             raise ValueError(f"Entidade já indexada no SpatialHash2D: {entity}")
 
@@ -74,6 +107,7 @@ class SpatialHash2D:
 
     def remove(self, entity: Any) -> bool:
         """Remove uma entidade do hash em O(1) médio. Retorna False se não estiver indexada."""
+        self._remove_calls += 1
         cell = self._entity_cells.pop(entity, None)
         if cell is None:
             return False
@@ -87,6 +121,7 @@ class SpatialHash2D:
 
     def update(self, entity: Any, x: float, y: float) -> None:
         """Atualiza a posição da entidade em O(1) médio."""
+        self._update_calls += 1
         if entity not in self._entity_cells:
             raise KeyError(f"Entidade não está indexada para update: {entity}")
 
@@ -94,7 +129,10 @@ class SpatialHash2D:
         new_cell = self.get_cell_coords(x, y)
 
         if old_cell == new_cell:
+            self._same_cell_updates += 1
             return
+
+        self._cell_transitions += 1
 
         # Move entre células
         old_set = self._cells.get(old_cell)
@@ -115,10 +153,13 @@ class SpatialHash2D:
 
     def query_cell(self, cx: int, cy: int) -> Tuple[Any, ...]:
         """Retorna uma tupla segura de entidades ocupando a célula (cx, cy)."""
+        self._query_calls += 1
         cell_set = self._cells.get((cx, cy))
         if not cell_set:
             return ()
-        return tuple(cell_set)
+        cands = tuple(cell_set)
+        self._candidate_entities_evaluated += len(cands)
+        return cands
 
     def query_rect_candidates(
         self,
@@ -126,8 +167,11 @@ class SpatialHash2D:
         min_y: float,
         max_x: float,
         max_y: float,
+        _count_query: bool = True,
     ) -> List[Any]:
         """Retorna candidatos das células intersectadas pelo retângulo delimitador."""
+        if _count_query:
+            self._query_calls += 1
         if min_x > max_x:
             min_x, max_x = max_x, min_x
         if min_y > max_y:
@@ -143,13 +187,16 @@ class SpatialHash2D:
                 if cell_set:
                     candidates.update(cell_set)
 
-        return list(candidates)
+        cand_list = list(candidates)
+        self._candidate_entities_evaluated += len(cand_list)
+        return cand_list
 
     def query_radius_candidates(
         self,
         center_x: float,
         center_y: float,
         radius: float,
+        _count_query: bool = True,
     ) -> List[Any]:
         """Retorna candidatos das células intersectadas pelo bounding box do raio."""
         if not isinstance(radius, (int, float)):
@@ -164,6 +211,7 @@ class SpatialHash2D:
             center_y - radius,
             center_x + radius,
             center_y + radius,
+            _count_query=_count_query,
         )
 
     def query_radius(
@@ -179,7 +227,8 @@ class SpatialHash2D:
         Executa consulta por raio com filtragem euclidiana exata (dx^2 + dy^2 <= r^2).
         Se 'pool' for fornecido, utiliza SimulationEntityPool para obter posições e validar is_alive.
         """
-        candidates = self.query_radius_candidates(center_x, center_y, radius)
+        self._query_calls += 1
+        candidates = self.query_radius_candidates(center_x, center_y, radius, _count_query=False)
         if not candidates:
             return []
 

@@ -456,6 +456,9 @@ def run_bench_g(populations: List[int], warmup_frames: int, measured_frames: int
             buf.sync_from_pool(pool, sprite_id=1)
             renderer.render(buf, camera=(250.0, 250.0), target_surface=target_surf, sprite_registry=registry)
 
+        # Reseta métricas do SpatialHash após o warmup para isolar os frames medidos
+        sh.reset_profiling_stats()
+
         # Measured frames
         frame_times = []
         breakdown_movement = []
@@ -495,6 +498,12 @@ def run_bench_g(populations: List[int], warmup_frames: int, measured_frames: int
             p_bot = "Simulation Scheduler / Spatial Sync"
             s_bot = "Batched Renderer (Culling + Blit)"
 
+        sh_stats = sh.get_profiling_stats()
+        tot_up = sh_stats["update_calls"]
+        same_cell = sh_stats["same_cell_updates"]
+        transitions = sh_stats["cell_transitions"]
+        same_cell_pct = (same_cell / tot_up * 100.0) if tot_up > 0 else 0.0
+
         results[str(count)] = {
             "mean_ms": pcts["mean"],
             "median_ms": pcts["median"],
@@ -505,6 +514,14 @@ def run_bench_g(populations: List[int], warmup_frames: int, measured_frames: int
             "avg_render_pass_ms": avg_render,
             "primary_bottleneck": p_bot,
             "secondary_bottleneck": s_bot,
+            "spatial_profiling": {
+                "update_calls": tot_up,
+                "same_cell_updates": same_cell,
+                "cell_transitions": transitions,
+                "same_cell_percent": same_cell_pct,
+                "query_calls": sh_stats["query_calls"],
+                "candidate_entities_evaluated": sh_stats["candidate_entities_evaluated"],
+            },
         }
     return results
 
@@ -638,7 +655,10 @@ def main():
     print("BENCHMARK SUMMARY (INTEGRATED FULL PASS)")
     print("=" * 60)
     for pop, data in bench_g.items():
+        sh_p = data.get("spatial_profiling", {})
         print(f"Pop: {pop:5s} | Avg: {data['mean_ms']:6.2f}ms | P95: {data['p95_ms']:6.2f}ms | Est FPS: {data['estimated_fps']:6.1f} | Top: {data['primary_bottleneck']}")
+        if sh_p:
+            print(f"       -> Spatial Updates: {sh_p.get('update_calls', 0):6d} (SameCell: {sh_p.get('same_cell_percent', 0.0):5.1f}% | Transitions: {sh_p.get('cell_transitions', 0):5d}) | Queries: {sh_p.get('query_calls', 0):4d}")
 
     print(f"\nLeak Test: {'PASS' if leak_test['passed'] else 'FAIL'} (Net growth: {leak_test['net_growth_kb']:.2f} KB)")
     print("=" * 60)

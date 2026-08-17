@@ -7,7 +7,8 @@ Oferece:
   - Accumulator determinístico com limite de catch-up anti-spiral-of-death
   - Validação estrita de delta time e frequência
   - Ordem de execução estável por prioridade e inserção
-  - Profiling de baixa sobrecarga
+  - Profiling granular de baixa sobrecarga e métricas de frame
+  - Rastreamento determinístico de coincidência de ticks de sistemas
   - Desacoplamento total de Qt, GameObject, LogicGraph e Threads.
 """
 from __future__ import annotations
@@ -63,8 +64,8 @@ class _SystemEntry:
         self.insertion_order = insertion_order
         self.accumulator: float = 0.0
         self.initialized: bool = False
-        
-        # Profiling stats
+
+        # Profiling stats cumulativos
         self.calls: int = 0
         self.total_time_s: float = 0.0
         self.last_duration_s: float = 0.0
@@ -100,6 +101,23 @@ class SystemScheduler:
         self._pending_add: List[Tuple[Any, TickPolicy, int]] = []
         self._pending_remove: List[Any] = []
         self.paused: bool = False
+
+        # Métricas do último frame
+        self._last_frame_metrics: Dict[str, Any] = {
+            "systems_executed_this_frame": 0,
+            "fixed_ticks_executed_this_frame": 0,
+            "dropped_ticks_this_frame": 0,
+            "executed_system_types": [],
+            "executed_policies": [],
+        }
+
+    @property
+    def is_paused(self) -> bool:
+        return self.paused
+
+    @property
+    def system_count(self) -> int:
+        return len(self._entries)
 
     def register(
         self,
@@ -157,6 +175,13 @@ class SystemScheduler:
 
         self._do_remove(system)
 
+    def unregister(self, system: Any) -> bool:
+        """Alias para remove() com retorno booleano."""
+        if system not in self._system_to_entry:
+            return False
+        self.remove(system)
+        return True
+
     def _do_remove(self, system: Any) -> None:
         entry = self._system_to_entry.pop(system, None)
         if entry is None:
@@ -181,10 +206,17 @@ class SystemScheduler:
         if dt < 0:
             raise ValueError(f"Delta time 'dt' não pode ser negativo. Recebido: {dt}")
 
-        if self.paused:
+        if self.paused or dt == 0.0 or not self._entries:
+            self.reset_frame_metrics()
             return
 
         self._is_ticking = True
+        systems_run = 0
+        fixed_ticks_run = 0
+        dropped_ticks_frame = 0
+        executed_types = []
+        executed_policies = []
+
         try:
             for entry in list(self._entries):
                 system = entry.system
@@ -195,6 +227,9 @@ class SystemScheduler:
                 if not entry.policy.is_fixed:
                     # Every frame: despacha frame_dt diretamente
                     self._dispatch_update(entry, scene, dt)
+                    systems_run += 1
+                    executed_types.append(type(system).__name__)
+                    executed_policies.append("EVERY_FRAME")
                 else:
                     # Fixed rate: accumulator com catch-up limitado e epsilon
                     interval = entry.policy.interval
@@ -202,21 +237,37 @@ class SystemScheduler:
                     steps = 0
                     eps = 1e-9
 
+                    executed_steps_entry = 0
                     while (entry.accumulator + eps) >= interval and steps < self.max_catch_up_steps:
                         entry.scheduled_ticks += 1
                         self._dispatch_update(entry, scene, interval)
                         entry.accumulator -= interval
                         steps += 1
+                        executed_steps_entry += 1
+                        fixed_ticks_run += 1
 
-                    # Política de excesso: se sobrou tempo acumulado acima do limite,
-                    # descarta o excedente para evitar spiral-of-death
+                    if executed_steps_entry > 0:
+                        systems_run += 1
+                        executed_types.append(type(system).__name__)
+                        executed_policies.append(f"FIXED_{entry.policy.hz:.0f}HZ")
+
+                    # Política de excesso: descarta excedente para evitar spiral-of-death
                     if (entry.accumulator + eps) >= interval:
                         dropped = int((entry.accumulator + eps) // interval)
                         entry.dropped_ticks += dropped
+                        dropped_ticks_frame += dropped
                         entry.accumulator = max(0.0, entry.accumulator - (dropped * interval))
         finally:
             self._is_ticking = False
             self._flush_pending_mutations()
+
+            self._last_frame_metrics = {
+                "systems_executed_this_frame": systems_run,
+                "fixed_ticks_executed_this_frame": fixed_ticks_run,
+                "dropped_ticks_this_frame": dropped_ticks_frame,
+                "executed_system_types": executed_types,
+                "executed_policies": executed_policies,
+            }
 
     def _dispatch_update(self, entry: _SystemEntry, scene: Any, dt: float) -> None:
         system = entry.system
@@ -256,6 +307,25 @@ class SystemScheduler:
         for entry in self._entries:
             entry.reset_stats()
         self.paused = False
+        self.reset_frame_metrics()
+
+    def reset_stats(self) -> None:
+        """Alias para reset()."""
+        self.reset()
+
+    def reset_frame_metrics(self) -> None:
+        """Zera as métricas do frame."""
+        self._last_frame_metrics = {
+            "systems_executed_this_frame": 0,
+            "fixed_ticks_executed_this_frame": 0,
+            "dropped_ticks_this_frame": 0,
+            "executed_system_types": [],
+            "executed_policies": [],
+        }
+
+    def get_last_frame_metrics(self) -> Dict[str, Any]:
+        """Retorna uma cópia das métricas registradas no último frame."""
+        return dict(self._last_frame_metrics)
 
     def clear(self) -> None:
         """Remove todos os sistemas e executa shutdown."""
@@ -268,6 +338,7 @@ class SystemScheduler:
         self._pending_add.clear()
         self._pending_remove.clear()
         self.paused = False
+        self.reset_frame_metrics()
 
     def profiling_snapshot(self) -> Dict[str, Dict[str, Any]]:
         """Retorna snapshot read-only das métricas de profiling dos sistemas."""
@@ -289,3 +360,7 @@ class SystemScheduler:
                 "policy": str(entry.policy),
             }
         return snapshot
+
+    def get_profiling_snapshot(self) -> Dict[str, Dict[str, Any]]:
+        """Alias para profiling_snapshot()."""
+        return self.profiling_snapshot()
