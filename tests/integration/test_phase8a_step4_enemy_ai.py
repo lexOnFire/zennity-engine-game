@@ -263,15 +263,26 @@ class TestEnemyAILogic:
         assert "check_in_attack_range" in node_ids
         assert "stop_enemy" in node_ids
 
-    def test_logic_has_attack_cooldown_nodes(self):
-        """Verify logic has attack cooldown mechanics."""
-        logic_path = project_root / "Assets" / "Logic" / "EnemyAILogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+    def test_attack_cooldown_lives_in_the_attack_graph_not_this_one(self):
+        """Inverted by hotfix H1: the cooldown moved out of the AI graph.
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "check_can_attack" in node_ids
-        assert "set_attack_trigger" in node_ids
-        assert "reset_cooldown_timer" in node_ids
+        This used to require ``check_can_attack`` / ``set_attack_trigger`` /
+        ``reset_cooldown_timer`` inside ``EnemyAILogic``. Item 19 gave
+        ``EnemyAttackLogic`` the damage pipeline and the ownership of
+        ``cooldown_timer``; the copy left here kept resetting that timer one
+        graph earlier in the frame, and the enemy dealt no damage at all in
+        Level2. So the mechanics are asserted where they now live, and their
+        absence is asserted where they used to be.
+        """
+        ai = json.loads((project_root / "Assets" / "Logic" / "EnemyAILogic.zlogic").read_text(encoding="utf-8"))
+        attack = json.loads((project_root / "Assets" / "Logic" / "EnemyAttackLogic.zlogic").read_text(encoding="utf-8"))
+
+        ai_ids = {n.get("id") for n in ai.get("nodes", [])}
+        attack_ids = {n.get("id") for n in attack.get("nodes", [])}
+
+        for node_id in ("check_can_attack", "set_attack_trigger", "reset_cooldown_timer"):
+            assert node_id in attack_ids, f"{node_id} must live in EnemyAttackLogic"
+            assert node_id not in ai_ids, f"{node_id} came back to EnemyAILogic"
 
     def test_logic_node_count(self):
         """Record AI logic node count."""

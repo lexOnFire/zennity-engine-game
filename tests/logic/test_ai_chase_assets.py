@@ -78,9 +78,12 @@ REJECTED_TYPES = frozenset({"vector2", "normalize_vector", "math.distance"})
 #: so it left this set on both graphs -- a recovered id must leave the baseline.
 #: variable.increment stays for the enemy: it is still NEVER_IMPLEMENTED, and
 #: only the boss graph was reauthored off it.
+#: Hotfix H1 removed the enemy's duplicate attack chain, and ``variable.increment``
+#: went with it -- it was that chain's cooldown tick. A recovered id leaves the
+#: set rather than lingering as a blanket exemption.
 ACCEPTED_PHANTOM_DEBT = {
     "boss": {"set_animator_parameter"},
-    "enemy": {"set_animator_parameter", "variable.increment"},
+    "enemy": {"set_animator_parameter"},
 }
 
 
@@ -419,13 +422,36 @@ def test_the_boss_phase_branch_still_exists():
     assert "set_phase2" in reached
 
 
-def test_the_enemy_attack_branch_still_exists():
+def test_the_enemy_no_longer_decides_attacks_in_its_ai_graph():
+    """Inverted by hotfix H1, not deleted.
+
+    This used to assert that ``EnemyAILogic`` reached ``set_attack_trigger``
+    through its own ``check_can_attack``. That chain was legacy: it read and
+    reset the same ``cooldown_timer`` that ``EnemyAttackLogic`` owns since item
+    19, ran first because graphs are ordered by casefolded path, and stole the
+    threshold every cycle -- the enemy dealt zero damage in Level2.
+
+    So the record flips. The AI graph detects, chases and stops; the attack
+    graph decides attacks. One owner per variable.
+    """
     g = graph("enemy")
     nodes = _by_id(g)
-    assert "set_attack_trigger" in nodes
-    assert nodes["reset_cooldown_timer"]["type"] == "set_variable"
-    reached = {str(e["to_node"]) for e in g["edges"] if str(e.get("from_node")) == "check_can_attack"}
-    assert "set_attack_trigger" in reached
+    for removed in ("set_attack_trigger", "reset_cooldown_timer", "check_can_attack",
+                    "get_attack_cooldown", "get_cooldown_timer", "margin_cooldown",
+                    "decrease_cooldown_timer"):
+        assert removed not in nodes, f"{removed} came back to EnemyAILogic"
+
+    writers = {str(n.get("properties", {}).get("name", ""))
+               for n in g["nodes"] if str(n["type"]) == "set_variable"}
+    assert "cooldown_timer" not in writers
+
+
+def test_the_enemy_ai_graph_still_stops_inside_attack_range():
+    """The half of that branch which was never the problem."""
+    g = graph("enemy")
+    edges = {(str(e["from_node"]), str(e["from_port"]), str(e["to_node"])) for e in g["edges"]}
+    assert ("check_in_attack_range", "true", "stop_enemy") in edges
+    assert ("check_in_attack_range", "false", "chase_guard") in edges
 
 
 def test_the_enemy_idle_animation_edge_survives():

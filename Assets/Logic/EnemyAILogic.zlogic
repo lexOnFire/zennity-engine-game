@@ -292,125 +292,6 @@
       }
     },
     {
-      "id": "get_attack_cooldown",
-      "type": "get_variable",
-      "title": "Obter Variável",
-      "category": "Variables",
-      "position": [
-        200.0,
-        430.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "name": "attack_cooldown",
-        "scope": "object",
-        "variable_name": "attack_cooldown"
-      }
-    },
-    {
-      "id": "get_cooldown_timer",
-      "type": "get_variable",
-      "title": "Obter Variável",
-      "category": "Variables",
-      "position": [
-        200.0,
-        490.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "name": "cooldown_timer",
-        "scope": "object",
-        "variable_name": "cooldown_timer"
-      }
-    },
-    {
-      "id": "check_can_attack",
-      "type": "compare_number",
-      "title": "Comparar Número",
-      "category": "Logic",
-      "position": [
-        350.0,
-        460.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "operator": ">=",
-        "value": 0.0
-      }
-    },
-    {
-      "id": "set_attack_trigger",
-      "type": "animator_set_trigger",
-      "title": "Set Animator Trigger",
-      "category": "Animation",
-      "position": [
-        500.0,
-        460.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "target": "player",
-        "trigger_name": "attack"
-      }
-    },
-    {
-      "id": "reset_cooldown_timer",
-      "type": "set_variable",
-      "title": "Definir Variável",
-      "category": "Variables",
-      "position": [
-        650.0,
-        460.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "value": 0,
-        "name": "cooldown_timer",
-        "scope": "object",
-        "variable_name": "cooldown_timer"
-      }
-    },
-    {
-      "id": "decrease_cooldown_timer",
-      "type": "variable.increment",
-      "title": "variable.increment",
-      "category": "Custom",
-      "position": [
-        650.0,
-        520.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "variable_name": "cooldown_timer",
-        "increment": 0.016,
-        "name": "cooldown_timer"
-      }
-    },
-    {
       "id": "idle_state",
       "type": "set_animator_parameter",
       "title": "set_animator_parameter",
@@ -475,25 +356,6 @@
       "position": [
         650.0,
         270.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "a": 0.0,
-        "b": 0.0
-      }
-    },
-    {
-      "id": "margin_cooldown",
-      "type": "subtract_number",
-      "title": "Subtrair",
-      "category": "Math",
-      "position": [
-        650.0,
-        340.0
       ],
       "editor": {
         "collapsed": false,
@@ -685,60 +547,6 @@
       "order": 6
     },
     {
-      "id": "42e5cb9959f84bd4afa500d81b90fd6f",
-      "from_node": "check_in_attack_range",
-      "from_port": "true",
-      "to_node": "decrease_cooldown_timer",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 7
-    },
-    {
-      "id": "0eee47f07cfd42e3924b2d6559e7100f",
-      "from_node": "check_in_attack_range",
-      "from_port": "true",
-      "to_node": "get_attack_cooldown",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 8
-    },
-    {
-      "id": "316e174b62204c69b47a3094000d402b",
-      "from_node": "get_attack_cooldown",
-      "from_port": "next",
-      "to_node": "get_cooldown_timer",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 9
-    },
-    {
-      "id": "3e46c349dfb1447b828ab670d6ef4b68",
-      "from_node": "get_cooldown_timer",
-      "from_port": "next",
-      "to_node": "check_can_attack",
-      "to_port": "in",
-      "kind": "flow",
-      "order": 10
-    },
-    {
-      "id": "43a127113ff6462b979de54dd9a8e39d",
-      "from_node": "check_can_attack",
-      "from_port": "true",
-      "to_node": "set_attack_trigger",
-      "to_port": "exec",
-      "kind": "flow",
-      "order": 11
-    },
-    {
-      "id": "2afcdf504e7d4e49bee784f8c771cd3a",
-      "from_node": "set_attack_trigger",
-      "from_port": "exec_success",
-      "to_node": "reset_cooldown_timer",
-      "to_port": "exec",
-      "kind": "flow",
-      "order": 12
-    },
-    {
       "id": "d7f63fc618eb4452bb7de65d67a06049",
       "from_node": "check_in_attack_range",
       "from_port": "false",
@@ -863,33 +671,6 @@
       "to_port": "value",
       "kind": "any",
       "order": 26
-    },
-    {
-      "id": "c7ea75b0f7a147caba9f29d35cd4860d",
-      "from_node": "get_cooldown_timer",
-      "from_port": "value",
-      "to_node": "margin_cooldown",
-      "to_port": "a",
-      "kind": "any",
-      "order": 27
-    },
-    {
-      "id": "0b45243b66754c0f87725e2b25052855",
-      "from_node": "get_attack_cooldown",
-      "from_port": "value",
-      "to_node": "margin_cooldown",
-      "to_port": "b",
-      "kind": "any",
-      "order": 28
-    },
-    {
-      "id": "9455a8657698478f8fe28735c6be57ce",
-      "from_node": "margin_cooldown",
-      "from_port": "value",
-      "to_node": "check_can_attack",
-      "to_port": "value",
-      "kind": "any",
-      "order": 29
     },
     {
       "id": "5e11565123a64fc9a1cfbdd28c359fcc",

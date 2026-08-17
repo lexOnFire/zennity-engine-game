@@ -1,6 +1,6 @@
 {
   "_comment": "PHASE 9 recovery item 14C recorded this as a design gate: BossAILogic and EnemyAILogic were authored against an API this engine never had, and the chase chain did not fail at one missing node -- the majority of its edges dangled (Boss 16/23, Enemy 20/25). Item 14C declined to adopt the vector API; item 14D chose scalar reauthoring; item 14D.2 proved it in a prototype. PHASE 9 recovery item 14E applied it to both assets, and these numbers are the result, not the original measurement -- each chain keeps its pre-14E counts under '_before_item14E'. What remains unresolved is the animation debt alone (set_animator_parameter, animator.set_trigger, variable.increment), which item 14E deliberately did not touch. The decision fields below are unchanged: the vector API was still not adopted.",
-  "_provenance": "PHASE 9 recovery item 14E, regenerated from the reauthored assets. Only BossAILogic.zlogic and EnemyAILogic.zlogic were modified. PHASE 9 recovery item 17 remeasured both chains: animator.set_trigger now resolves everywhere, and BossAILogic gained the phase2_threshold edges.",
+  "_provenance": "PHASE 9 recovery item 14E, regenerated from the reauthored assets. Only BossAILogic.zlogic and EnemyAILogic.zlogic were modified. PHASE 9 recovery item 17 remeasured both chains: animator.set_trigger now resolves everywhere, and BossAILogic gained the phase2_threshold edges. | Hotfix H1 removed EnemyAILogic's duplicate attack chain, so the graph lost 7 nodes and 9 edges; the counts are remeasured, not rebaselined.",
   "decision": "C_REAUTHOR_ASSETS_ONTO_EXISTING_API",
   "vector_api_adopted": false,
   "existing_scalar_pieces": {
@@ -153,8 +153,8 @@
     },
     "EnemyAILogic": {
       "total_edges": 45,
-      "unresolved_edges": 3,
-      "resolved_edges": 42,
+      "unresolved_edges": 2,
+      "resolved_edges": 34,
       "broken": [
         {
           "edge": "compare_number.true -> set_animator_parameter.in",
