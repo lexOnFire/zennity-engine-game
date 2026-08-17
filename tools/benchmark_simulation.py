@@ -14,6 +14,7 @@ Executa diagnósticos de desempenho de:
   - BENCH I: Spatial Update Optimization & Transitions (Same-cell vs Transitions vs Bulk sync)
   - BENCH J: Batch Renderer Optimization (Individual Blit vs Surface.blits por contagem visível)
   - BENCH K: Temporal Query Smoothing (Burst 10Hz vs Distributed Temporal Smoothing)
+  - SCALE GATE: Validação de escalabilidade para 10k, 15k e 25k entidades
   - Testes de Lifecycle Reset e Memory Leak.
 """
 from __future__ import annotations
@@ -59,19 +60,25 @@ from engine.system import System
 
 def calculate_percentiles(values: List[float]) -> Dict[str, float]:
     if not values:
-        return {"mean": 0.0, "median": 0.0, "p95": 0.0, "max": 0.0}
+        return {"mean": 0.0, "median": 0.0, "p95": 0.0, "p99": 0.0, "max": 0.0, "stddev": 0.0}
     sorted_vals = sorted(values)
     n = len(sorted_vals)
     mean_val = sum(sorted_vals) / n
     median_val = sorted_vals[n // 2]
     p95_idx = min(int(n * 0.95), n - 1)
     p95_val = sorted_vals[p95_idx]
+    p99_idx = min(int(n * 0.99), n - 1)
+    p99_val = sorted_vals[p99_idx]
     max_val = sorted_vals[-1]
+    variance = sum((x - mean_val) ** 2 for x in sorted_vals) / n
+    stddev_val = math.sqrt(variance)
     return {
         "mean": mean_val,
         "median": median_val,
         "p95": p95_val,
+        "p99": p99_val,
         "max": max_val,
+        "stddev": stddev_val,
     }
 
 
@@ -325,13 +332,12 @@ def run_bench_e(populations: List[int], rng: random.Random) -> Dict[str, Any]:
 # ==============================================================================
 # BENCH F: RENDERER & VISIBLE FRACTIONS
 # ==============================================================================
-def run_bench_f(fractions: List[float]) -> Dict[str, Any]:
+def run_bench_f(fractions: List[float], count: int = 5000) -> Dict[str, Any]:
     pygame.init()
     target_surf = pygame.Surface((1280, 720))
     sprite_surf = pygame.Surface((16, 16))
     registry = {1: sprite_surf}
 
-    count = 5000
     results = {}
 
     for frac in fractions:
@@ -525,7 +531,9 @@ def run_bench_g(populations: List[int], warmup_frames: int, measured_frames: int
             "mean_ms": pcts["mean"],
             "median_ms": pcts["median"],
             "p95_ms": pcts["p95"],
+            "p99_ms": pcts.get("p99", pcts["p95"]),
             "max_ms": pcts["max"],
+            "stddev_ms": pcts.get("stddev", 0.0),
             "estimated_fps": est_fps,
             "avg_scheduler_sim_ms": avg_sched,
             "avg_render_pass_ms": avg_render,
@@ -824,6 +832,107 @@ def run_bench_k(populations: List[int], rng: random.Random) -> Dict[str, Any]:
 
 
 # ==============================================================================
+# SCALE GATE (10K / 15K / 25K)
+# ==============================================================================
+def run_scale_gate(rng: random.Random) -> Dict[str, Any]:
+    pygame.init()
+    target_surf = pygame.Surface((1280, 720))
+    sprite_surf = pygame.Surface((16, 16))
+    registry = {1: sprite_surf}
+    scale_results = {}
+    counts = [10000, 15000, 25000]
+
+    for count in counts:
+        gc.collect()
+        tracemalloc.start()
+
+        pool = SimulationEntityPool(initial_capacity=count)
+        sh = SpatialHash2D(cell_size=64.0)
+
+        # Mundo dimensionado para manter densidade e visibilidade realistas de ~10-20%
+        world_size = 1000.0 * math.sqrt(count / 1000.0)
+        half_world = world_size / 2.0
+
+        grid = NavigationGrid2D(width=80, height=80, cell_size=32.0)
+        for y in range(20, 60):
+            grid.set_walkable(40, y, False)
+
+        goal = (70, 70)
+        flow = FlowField2D(grid)
+        flow.build(goal)
+
+        for i in range(count):
+            wx = rng.uniform(32.0, world_size - 32.0)
+            wy = rng.uniform(32.0, world_size - 32.0)
+            h = pool.create(position=(wx, wy), velocity=(1.0, 1.0))
+            sh.insert(h, wx, wy)
+
+        buf = SimulationRenderBuffer(initial_capacity=count)
+        renderer = BatchedSimulationRenderer()
+
+        scheduler = SystemScheduler()
+        move_sys = IntegratedAgentMovementSystem(pool, flow)
+        spatial_sys = IntegratedSpatialSyncSystem(pool, sh)
+        distributor = TemporalWorkDistributor(target_hz=10.0, base_hz=60.0)
+        neighbor_sys = IntegratedSmoothNeighborQuerySystem(pool, sh, distributor)
+
+        scheduler.register(move_sys, TickPolicy.fixed_hz(60), priority=100)
+        scheduler.register(spatial_sys, TickPolicy.fixed_hz(60), priority=200)
+        scheduler.register(neighbor_sys, TickPolicy.every_frame(), priority=300)
+
+        dt = 1.0 / 60.0
+
+        # Warmup
+        for _ in range(10):
+            scheduler.update(None, dt)
+            buf.sync_from_pool(pool, sprite_id=1)
+            renderer.render(buf, camera=(half_world, half_world), target_surface=target_surf, sprite_registry=registry)
+
+        cur_mem, peak_mem = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        frame_times = []
+        breakdown_movement = []
+        breakdown_render = []
+
+        # Medição de 30 frames
+        for _ in range(30):
+            t_frame_start = time.perf_counter()
+
+            # Scheduler update
+            t0 = time.perf_counter()
+            scheduler.update(None, dt)
+            t_sched = time.perf_counter() - t0
+
+            # Render sync + draw (realistic ~10% visibility via camera framing)
+            t0 = time.perf_counter()
+            buf.sync_from_pool(pool, sprite_id=1)
+            renderer.render(buf, camera=(half_world, half_world), target_surface=target_surf, sprite_registry=registry)
+            t_render = time.perf_counter() - t0
+
+            total_frame = time.perf_counter() - t_frame_start
+            frame_times.append(total_frame * 1000.0)
+            breakdown_movement.append(t_sched * 1000.0)
+            breakdown_render.append(t_render * 1000.0)
+
+        pcts = calculate_percentiles(frame_times)
+
+        scale_results[str(count)] = {
+            "mean_ms": pcts["mean"],
+            "median_ms": pcts["median"],
+            "p95_ms": pcts["p95"],
+            "p99_ms": pcts["p99"],
+            "max_ms": pcts["max"],
+            "stddev_ms": pcts["stddev"],
+            "estimated_fps": (1000.0 / pcts["mean"]) if pcts["mean"] > 0 else 0.0,
+            "avg_scheduler_ms": sum(breakdown_movement) / len(breakdown_movement),
+            "avg_render_ms": sum(breakdown_render) / len(breakdown_render),
+            "peak_memory_mb": peak_mem / (1024.0 * 1024.0),
+        }
+    return scale_results
+
+
+# ==============================================================================
 # LEAK TEST
 # ==============================================================================
 def run_leak_test() -> Dict[str, Any]:
@@ -872,6 +981,7 @@ def main():
     parser = argparse.ArgumentParser(description="Zennity Engine Large-Scale Simulation Benchmark")
     parser.add_argument("--quick", action="store_true", help="Executa versão rápida para CI")
     parser.add_argument("--full", action="store_true", help="Executa matriz completa de benchmarks")
+    parser.add_argument("--scale-gate", action="store_true", help="Executa validação formal de 10k, 15k e 25k entidades")
     parser.add_argument("--entities", type=int, default=None, help="Número customizado de entidades")
     parser.add_argument("--frames", type=int, default=None, help="Número customizado de frames medidos")
     parser.add_argument("--json-output", type=str, default=None, help="Salva relatório em formato JSON")
@@ -941,6 +1051,11 @@ def main():
     print("Running Bench K (Temporal Query Smoothing)...")
     bench_k = run_bench_k(pop_matrix, rng)
 
+    scale_gate = {}
+    if args.scale_gate or args.full:
+        print("Running Scale Gate (10K / 15K / 25K)...")
+        scale_gate = run_scale_gate(rng)
+
     print("Running Leak Test...")
     leak_test = run_leak_test()
 
@@ -968,6 +1083,7 @@ def main():
         "bench_i_spatial_optimization": bench_i,
         "bench_j_batch_renderer": bench_j,
         "bench_k_temporal_smoothing": bench_k,
+        "scale_gate": scale_gate,
         "leak_test": leak_test,
     }
 
@@ -1010,6 +1126,13 @@ def main():
     print("=" * 60)
     for pop, data in bench_k.items():
         print(f"Pop: {pop:5s} | Burst P95: {data['burst_p95_ms']:5.3f}ms | Dist P95: {data['dist_p95_ms']:5.3f}ms | P95 Drop: {data['p95_reduction_percent']:5.1f}% | Max Drop: {data['max_reduction_percent']:5.1f}%")
+
+    if scale_gate:
+        print("\n" + "=" * 60)
+        print("SCALE GATE SUMMARY (10K / 15K / 25K)")
+        print("=" * 60)
+        for count, data in scale_gate.items():
+            print(f"Pop: {count:5s} | Mean: {data['mean_ms']:6.2f}ms | P95: {data['p95_ms']:6.2f}ms | Est FPS: {data['estimated_fps']:6.1f} | Peak Mem: {data['peak_memory_mb']:5.2f}MB")
 
     print(f"\nLeak Test: {'PASS' if leak_test['passed'] else 'FAIL'} (Net growth: {leak_test['net_growth_kb']:.2f} KB)")
     print("=" * 60)
