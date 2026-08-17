@@ -10,6 +10,7 @@ Executa diagnósticos de desempenho de:
   - BENCH E: FlowField2D vs N A* (destinos compartilhados e frequência de rebuild)
   - BENCH F: SimulationRenderBuffer + BatchedSimulationRenderer (frações de visibilidade)
   - BENCH G: Simulação Sintética Integrada (Pipeline Completo: Scheduler + Pool + SpatialHash + FlowField + RenderBuffer + Renderer)
+  - BENCH H: Simulation LOD (Classificação O(N), tiers de frequência e redução de expensive updates)
   - Testes de Lifecycle Reset e Memory Leak.
 """
 from __future__ import annotations
@@ -31,12 +32,19 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 import pygame
 from engine.simulation import (
+    LOD_HIGH,
+    LOD_LOW,
+    LOD_MEDIUM,
+    LOD_SLEEP,
     AStarPathfinder,
     BatchedSimulationRenderer,
     EntityHandle,
     FlowField2D,
     NavigationGrid2D,
     SimulationEntityPool,
+    SimulationFocus,
+    SimulationLODConfig,
+    SimulationLODManager,
     SimulationRenderBuffer,
     SpatialHash2D,
     SystemScheduler,
@@ -527,6 +535,111 @@ def run_bench_g(populations: List[int], warmup_frames: int, measured_frames: int
 
 
 # ==============================================================================
+# BENCH H: SIMULATION LOD
+# ==============================================================================
+class SyntheticLODDecisionSystem(System):
+    def __init__(self, pool: SimulationEntityPool, lod_mgr: SimulationLODManager, tier: int) -> None:
+        super().__init__()
+        self.pool = pool
+        self.lod_mgr = lod_mgr
+        self.tier = tier
+        self.expensive_updates = 0
+
+    def update(self, scene, dt: float) -> None:
+        states = self.pool.state
+        for idx in self.lod_mgr.iter_tier(self.tier):
+            # Trabalho sintético pesado idêntico em baseline e LOD
+            for _ in range(10):
+                states[idx] = (states[idx] * 3 + 7) % 1000
+            self.expensive_updates += 1
+
+
+class SyntheticBaselineDecisionSystem(System):
+    def __init__(self, pool: SimulationEntityPool) -> None:
+        super().__init__()
+        self.pool = pool
+        self.expensive_updates = 0
+
+    def update(self, scene, dt: float) -> None:
+        states = self.pool.state
+        for idx in self.pool.iter_alive_indices():
+            for _ in range(10):
+                states[idx] = (states[idx] * 3 + 7) % 1000
+            self.expensive_updates += 1
+
+
+def run_bench_h(populations: List[int], rng: random.Random) -> Dict[str, Any]:
+    results = {}
+    for count in populations:
+        # Distribui entidades espacialmente ao redor da origem (0, 0)
+        pool_base = SimulationEntityPool(initial_capacity=count)
+        pool_lod = SimulationEntityPool(initial_capacity=count)
+
+        for _ in range(count):
+            # Distribuição radial determinística
+            dist = rng.uniform(50.0, 2000.0)
+            angle = rng.uniform(0.0, 6.28318)
+            x = dist * math.cos(angle)
+            y = dist * math.sin(angle)
+            pool_base.create(position=(x, y))
+            pool_lod.create(position=(x, y))
+
+        focus = SimulationFocus(0.0, 0.0, enabled=True)
+        cfg = SimulationLODConfig(high_distance=300.0, medium_distance=800.0, low_distance=1500.0, hysteresis_margin=50.0)
+        lod_mgr = SimulationLODManager(config=cfg, initial_capacity=count)
+
+        # 1. Mede custo puro de classificação O(N)
+        t0 = time.perf_counter()
+        for _ in range(60):
+            lod_mgr.classify(pool_lod, focus)
+        class_time_60_s = time.perf_counter() - t0
+        class_per_frame_ms = (class_time_60_s / 60.0) * 1000.0
+
+        # 2. Baseline sem LOD (60Hz para 100% das entidades em full simulation rate)
+        sched_base = SystemScheduler()
+        base_dec = SyntheticBaselineDecisionSystem(pool_base)
+        sched_base.register(base_dec, TickPolicy.fixed_hz(60), priority=100)
+
+        t0 = time.perf_counter()
+        for _ in range(60):
+            sched_base.update(None, 1.0 / 60.0)
+        base_dur_ms = (time.perf_counter() - t0) * 1000.0
+
+        # 3. Com LOD (High=60Hz, Medium=20Hz, Low=5Hz, Sleep=0Hz, Classifier=10Hz)
+        sched_lod = SystemScheduler()
+        lod_high = SyntheticLODDecisionSystem(pool_lod, lod_mgr, LOD_HIGH)
+        lod_med = SyntheticLODDecisionSystem(pool_lod, lod_mgr, LOD_MEDIUM)
+        lod_low = SyntheticLODDecisionSystem(pool_lod, lod_mgr, LOD_LOW)
+
+        sched_lod.register(lod_high, TickPolicy.fixed_hz(60), priority=100)
+        sched_lod.register(lod_med, TickPolicy.fixed_hz(20), priority=200)
+        sched_lod.register(lod_low, TickPolicy.fixed_hz(5), priority=300)
+
+        t0 = time.perf_counter()
+        for frame_idx in range(60):
+            if frame_idx % 6 == 0:  # Classificação a 10Hz
+                lod_mgr.classify(pool_lod, focus)
+            sched_lod.update(None, 1.0 / 60.0)
+        lod_dur_ms = (time.perf_counter() - t0) * 1000.0
+
+        stats = lod_mgr.get_stats()
+        tot_lod_updates = lod_high.expensive_updates + lod_med.expensive_updates + lod_low.expensive_updates
+        tot_base_updates = base_dec.expensive_updates
+        reduction_pct = ((tot_base_updates - tot_lod_updates) / tot_base_updates * 100.0) if tot_base_updates > 0 else 0.0
+
+        results[str(count)] = {
+            "classification_ms_per_call": class_per_frame_ms,
+            "tier_counts": stats["tier_counts"],
+            "baseline_expensive_updates_60f": tot_base_updates,
+            "lod_expensive_updates_60f": tot_lod_updates,
+            "work_reduction_percent": reduction_pct,
+            "baseline_60f_ms": base_dur_ms,
+            "lod_60f_ms": lod_dur_ms,
+        }
+    return results
+
+
+# ==============================================================================
 # LEAK TEST
 # ==============================================================================
 def run_leak_test() -> Dict[str, Any]:
@@ -541,11 +654,15 @@ def run_leak_test() -> Dict[str, Any]:
     for _ in range(10):
         pool = SimulationEntityPool(initial_capacity=1000)
         sh = SpatialHash2D(cell_size=64.0)
+        mgr = SimulationLODManager(initial_capacity=1000)
+        focus = SimulationFocus(0.0, 0.0)
         for i in range(1000):
             h = pool.create(position=(float(i), float(i)))
             sh.insert(h, float(i), float(i))
+        mgr.classify(pool, focus)
         pool.clear()
         sh.clear()
+        mgr.clear()
 
     gc.collect()
     snap_end = tracemalloc.take_snapshot()
@@ -619,6 +736,9 @@ def main():
     print("Running Bench G (Integrated Simulation)...")
     bench_g = run_bench_g(pop_matrix, warmup, frames, rng)
 
+    print("Running Bench H (Simulation LOD)...")
+    bench_h = run_bench_h(pop_matrix, rng)
+
     print("Running Leak Test...")
     leak_test = run_leak_test()
 
@@ -642,6 +762,7 @@ def main():
         "bench_e_flow_field": bench_e,
         "bench_f_renderer": bench_f,
         "bench_g_integrated": bench_g,
+        "bench_h_lod": bench_h,
         "leak_test": leak_test,
     }
 
@@ -659,6 +780,13 @@ def main():
         print(f"Pop: {pop:5s} | Avg: {data['mean_ms']:6.2f}ms | P95: {data['p95_ms']:6.2f}ms | Est FPS: {data['estimated_fps']:6.1f} | Top: {data['primary_bottleneck']}")
         if sh_p:
             print(f"       -> Spatial Updates: {sh_p.get('update_calls', 0):6d} (SameCell: {sh_p.get('same_cell_percent', 0.0):5.1f}% | Transitions: {sh_p.get('cell_transitions', 0):5d}) | Queries: {sh_p.get('query_calls', 0):4d}")
+
+    print("\n" + "=" * 60)
+    print("SIMULATION LOD SUMMARY")
+    print("=" * 60)
+    for pop, data in bench_h.items():
+        tc = data.get("tier_counts", {})
+        print(f"Pop: {pop:5s} | Classify: {data['classification_ms_per_call']:5.3f}ms | Work Reduction: {data['work_reduction_percent']:5.1f}% | Tiers: [H:{tc.get('high', 0)} M:{tc.get('medium', 0)} L:{tc.get('low', 0)} S:{tc.get('sleep', 0)}]")
 
     print(f"\nLeak Test: {'PASS' if leak_test['passed'] else 'FAIL'} (Net growth: {leak_test['net_growth_kb']:.2f} KB)")
     print("=" * 60)
