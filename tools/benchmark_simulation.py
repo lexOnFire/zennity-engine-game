@@ -12,6 +12,7 @@ Executa diagnósticos de desempenho de:
   - BENCH G: Simulação Sintética Integrada (Pipeline Completo: Scheduler + Pool + SpatialHash + FlowField + RenderBuffer + Renderer)
   - BENCH H: Simulation LOD (Classificação O(N), tiers de frequência e redução de expensive updates)
   - BENCH I: Spatial Update Optimization & Transitions (Same-cell vs Transitions vs Bulk sync)
+  - BENCH J: Batch Renderer Optimization (Individual Blit vs Surface.blits por contagem visível)
   - Testes de Lifecycle Reset e Memory Leak.
 """
 from __future__ import annotations
@@ -357,6 +358,7 @@ def run_bench_f(fractions: List[float]) -> Dict[str, Any]:
             "visible": stats["visible_instances"],
             "culled": stats["culled_instances"],
             "draw_operations": stats["draw_operations"],
+            "backend_submit_calls": stats.get("backend_submit_calls", 0),
             "buffer_sync_ms": sync_time * 1000.0,
             "culling_ms": stats["culling_s"] * 1000.0,
             "draw_ms": stats["draw_s"] * 1000.0,
@@ -718,6 +720,46 @@ def run_bench_i(populations: List[int], rng: random.Random) -> Dict[str, Any]:
 
 
 # ==============================================================================
+# BENCH J: BATCH RENDERER (BLIT VS BLITS)
+# ==============================================================================
+def run_bench_j(visible_counts: List[int]) -> Dict[str, Any]:
+    pygame.init()
+    target_indiv = pygame.Surface((1280, 720))
+    target_blits = pygame.Surface((1280, 720))
+    sprite_surf = pygame.Surface((16, 16))
+    registry = {1: sprite_surf}
+
+    results = {}
+    renderer = BatchedSimulationRenderer()
+
+    for count in visible_counts:
+        buf = SimulationRenderBuffer(initial_capacity=count)
+        for i in range(count):
+            x = float((i % 50) * 20 - 450)
+            y = float((i // 50) * 15 - 250)
+            buf.submit(x, y, sprite_id=1)
+
+        # 1. Individual Blit
+        t0 = time.perf_counter()
+        for _ in range(60):
+            renderer.render(buf, camera=(0.0, 0.0), target_surface=target_indiv, sprite_registry=registry, use_blits=False)
+        indiv_ms = (time.perf_counter() - t0) * 1000.0 / 60.0
+
+        # 2. Batch Surface.blits
+        t0 = time.perf_counter()
+        for _ in range(60):
+            renderer.render(buf, camera=(0.0, 0.0), target_surface=target_blits, sprite_registry=registry, use_blits=True)
+        blits_ms = (time.perf_counter() - t0) * 1000.0 / 60.0
+
+        results[str(count)] = {
+            "individual_blit_per_frame_ms": indiv_ms,
+            "batch_blits_per_frame_ms": blits_ms,
+            "blits_speedup": (indiv_ms / blits_ms) if blits_ms > 0 else 1.0,
+        }
+    return results
+
+
+# ==============================================================================
 # LEAK TEST
 # ==============================================================================
 def run_leak_test() -> Dict[str, Any]:
@@ -733,15 +775,18 @@ def run_leak_test() -> Dict[str, Any]:
         pool = SimulationEntityPool(initial_capacity=1000)
         sh = SpatialHash2D(cell_size=64.0)
         mgr = SimulationLODManager(initial_capacity=1000)
+        buf = SimulationRenderBuffer(initial_capacity=1000)
         focus = SimulationFocus(0.0, 0.0)
         for i in range(1000):
             h = pool.create(position=(float(i), float(i)))
             sh.insert(h, float(i), float(i))
         mgr.classify(pool, focus)
         sh.sync_from_pool(pool)
+        buf.sync_from_pool(pool, sprite_id=1)
         pool.clear()
         sh.clear()
         mgr.clear()
+        buf.clear()
 
     gc.collect()
     snap_end = tracemalloc.take_snapshot()
@@ -775,6 +820,7 @@ def main():
         frames = 20
         grid_sizes = [25, 50]
         fractions = [1.0, 0.1]
+        vis_matrix = [100, 500, 1000]
     else:
         mode_name = "FULL"
         pop_matrix = [100, 500, 1000, 2000, 5000]
@@ -782,6 +828,7 @@ def main():
         frames = 60
         grid_sizes = [50, 100]
         fractions = [1.0, 0.5, 0.1, 0.01]
+        vis_matrix = [100, 500, 2500, 5000]
 
     if args.entities is not None:
         pop_matrix = [args.entities]
@@ -821,6 +868,9 @@ def main():
     print("Running Bench I (Spatial Update Optimization)...")
     bench_i = run_bench_i(pop_matrix, rng)
 
+    print("Running Bench J (Batch Renderer Optimization)...")
+    bench_j = run_bench_j(vis_matrix)
+
     print("Running Leak Test...")
     leak_test = run_leak_test()
 
@@ -846,6 +896,7 @@ def main():
         "bench_g_integrated": bench_g,
         "bench_h_lod": bench_h,
         "bench_i_spatial_optimization": bench_i,
+        "bench_j_batch_renderer": bench_j,
         "leak_test": leak_test,
     }
 
@@ -876,6 +927,12 @@ def main():
     print("=" * 60)
     for pop, data in bench_i.items():
         print(f"Pop: {pop:5s} | SameCell Indiv: {data['same_cell_individual_per_frame_ms']:5.3f}ms | SameCell Bulk: {data['same_cell_bulk_per_frame_ms']:5.3f}ms | Bulk Speedup: {data['bulk_speedup_over_individual']:4.2f}x | Realistic Mix: {data['realistic_mix_per_frame_ms']:5.3f}ms")
+
+    print("\n" + "=" * 60)
+    print("BATCH RENDERER OPTIMIZATION SUMMARY (BENCH J)")
+    print("=" * 60)
+    for count, data in bench_j.items():
+        print(f"Vis: {count:5s} | Indiv Blit: {data['individual_blit_per_frame_ms']:5.3f}ms | Batch Blits: {data['batch_blits_per_frame_ms']:5.3f}ms | Blits Speedup: {data['blits_speedup']:4.2f}x")
 
     print(f"\nLeak Test: {'PASS' if leak_test['passed'] else 'FAIL'} (Net growth: {leak_test['net_growth_kb']:.2f} KB)")
     print("=" * 60)
