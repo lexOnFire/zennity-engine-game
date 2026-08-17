@@ -13,6 +13,7 @@ Executa diagnósticos de desempenho de:
   - BENCH H: Simulation LOD (Classificação O(N), tiers de frequência e redução de expensive updates)
   - BENCH I: Spatial Update Optimization & Transitions (Same-cell vs Transitions vs Bulk sync)
   - BENCH J: Batch Renderer Optimization (Individual Blit vs Surface.blits por contagem visível)
+  - BENCH K: Temporal Query Smoothing (Burst 10Hz vs Distributed Temporal Smoothing)
   - Testes de Lifecycle Reset e Memory Leak.
 """
 from __future__ import annotations
@@ -50,6 +51,7 @@ from engine.simulation import (
     SimulationRenderBuffer,
     SpatialHash2D,
     SystemScheduler,
+    TemporalWorkDistributor,
     TickPolicy,
 )
 from engine.system import System
@@ -368,7 +370,7 @@ def run_bench_f(fractions: List[float]) -> Dict[str, Any]:
 
 
 # ==============================================================================
-# BENCH G: FULL INTEGRATED SYNTHETIC SIMULATION
+# BENCH G: FULL INTEGRATED SYNTHETIC SIMULATION (WITH TEMPORAL SMOOTHING)
 # ==============================================================================
 class IntegratedAgentMovementSystem(System):
     def __init__(self, pool: SimulationEntityPool, flow: FlowField2D, speed: float = 50.0) -> None:
@@ -401,22 +403,27 @@ class IntegratedSpatialSyncSystem(System):
         self.spatial_hash.sync_from_pool(self.pool)
 
 
-class IntegratedNeighborQuerySystem(System):
-    def __init__(self, pool: SimulationEntityPool, spatial_hash: SpatialHash2D) -> None:
+class IntegratedSmoothNeighborQuerySystem(System):
+    def __init__(self, pool: SimulationEntityPool, spatial_hash: SpatialHash2D, distributor: TemporalWorkDistributor) -> None:
         super().__init__()
         self.pool = pool
         self.spatial_hash = spatial_hash
+        self.distributor = distributor
         self.total_neighbors = 0
 
     def update(self, scene, dt: float) -> None:
         indices = self.pool.iter_alive_indices()
         sample_size = max(1, len(indices) // 20)
+        active_sample = indices[:sample_size]
+
+        # Distribuição temporal determinística em 6 fases
+        batch = self.distributor.select(active_sample)
         px = self.pool.position_x
         py = self.pool.position_y
-        for i in range(sample_size):
-            idx = indices[i]
+        for idx in batch:
             nbrs = self.spatial_hash.query_radius(px[idx], py[idx], radius=40.0, pool=self.pool, ordered=False)
             self.total_neighbors += len(nbrs)
+        self.distributor.advance()
 
 
 def run_bench_g(populations: List[int], warmup_frames: int, measured_frames: int, rng: random.Random) -> Dict[str, Any]:
@@ -451,11 +458,13 @@ def run_bench_g(populations: List[int], warmup_frames: int, measured_frames: int
         scheduler = SystemScheduler()
         move_sys = IntegratedAgentMovementSystem(pool, flow)
         spatial_sys = IntegratedSpatialSyncSystem(pool, sh)
-        neighbor_sys = IntegratedNeighborQuerySystem(pool, sh)
+        distributor = TemporalWorkDistributor(target_hz=10.0, base_hz=60.0)
+        neighbor_sys = IntegratedSmoothNeighborQuerySystem(pool, sh, distributor)
 
         scheduler.register(move_sys, TickPolicy.fixed_hz(60), priority=100)
         scheduler.register(spatial_sys, TickPolicy.fixed_hz(60), priority=200)
-        scheduler.register(neighbor_sys, TickPolicy.fixed_hz(10), priority=300)
+        # Registrado at every_frame para distribuição suave contínua
+        scheduler.register(neighbor_sys, TickPolicy.every_frame(), priority=300)
 
         # Warmup
         dt = 1.0 / 60.0
@@ -760,6 +769,61 @@ def run_bench_j(visible_counts: List[int]) -> Dict[str, Any]:
 
 
 # ==============================================================================
+# BENCH K: TEMPORAL QUERY SMOOTHING (BURST VS DISTRIBUTED)
+# ==============================================================================
+def run_bench_k(populations: List[int], rng: random.Random) -> Dict[str, Any]:
+    results = {}
+    for count in populations:
+        pool = SimulationEntityPool(initial_capacity=count)
+        sh = SpatialHash2D(cell_size=64.0)
+        handles = []
+        for _ in range(count):
+            x = rng.uniform(-500.0, 500.0)
+            y = rng.uniform(-500.0, 500.0)
+            h = pool.create(position=(x, y))
+            handles.append(h)
+            sh.insert(h, x, y)
+
+        sample_size = max(1, count // 20)
+        sample_indices = [h.index for h in handles[:sample_size]]
+
+        # 1. Burst Mode (10Hz Scheduler tick -> executa tudo a cada 6 frames)
+        burst_frame_times = []
+        for f in range(60):
+            t0 = time.perf_counter()
+            if f % 6 == 0:
+                for idx in sample_indices:
+                    _ = sh.query_radius(pool.position_x[idx], pool.position_y[idx], radius=40.0, pool=pool, ordered=False)
+            burst_frame_times.append((time.perf_counter() - t0) * 1000.0)
+
+        # 2. Distributed Mode (60Hz base com 6 fases -> executa 1/6 a cada frame)
+        distributor = TemporalWorkDistributor(target_hz=10.0, base_hz=60.0)
+        dist_frame_times = []
+        for _ in range(60):
+            t0 = time.perf_counter()
+            batch = distributor.select(sample_indices)
+            for idx in batch:
+                _ = sh.query_radius(pool.position_x[idx], pool.position_y[idx], radius=40.0, pool=pool, ordered=False)
+            distributor.advance()
+            dist_frame_times.append((time.perf_counter() - t0) * 1000.0)
+
+        p_burst = calculate_percentiles(burst_frame_times)
+        p_dist = calculate_percentiles(dist_frame_times)
+
+        results[str(count)] = {
+            "burst_mean_ms": p_burst["mean"],
+            "burst_p95_ms": p_burst["p95"],
+            "burst_max_ms": p_burst["max"],
+            "dist_mean_ms": p_dist["mean"],
+            "dist_p95_ms": p_dist["p95"],
+            "dist_max_ms": p_dist["max"],
+            "p95_reduction_percent": ((p_burst["p95"] - p_dist["p95"]) / p_burst["p95"] * 100.0) if p_burst["p95"] > 0 else 0.0,
+            "max_reduction_percent": ((p_burst["max"] - p_dist["max"]) / p_burst["max"] * 100.0) if p_burst["max"] > 0 else 0.0,
+        }
+    return results
+
+
+# ==============================================================================
 # LEAK TEST
 # ==============================================================================
 def run_leak_test() -> Dict[str, Any]:
@@ -776,6 +840,7 @@ def run_leak_test() -> Dict[str, Any]:
         sh = SpatialHash2D(cell_size=64.0)
         mgr = SimulationLODManager(initial_capacity=1000)
         buf = SimulationRenderBuffer(initial_capacity=1000)
+        dist = TemporalWorkDistributor(target_hz=10.0, base_hz=60.0)
         focus = SimulationFocus(0.0, 0.0)
         for i in range(1000):
             h = pool.create(position=(float(i), float(i)))
@@ -783,6 +848,8 @@ def run_leak_test() -> Dict[str, Any]:
         mgr.classify(pool, focus)
         sh.sync_from_pool(pool)
         buf.sync_from_pool(pool, sprite_id=1)
+        dist.select(pool.iter_alive_indices())
+        dist.advance()
         pool.clear()
         sh.clear()
         mgr.clear()
@@ -871,6 +938,9 @@ def main():
     print("Running Bench J (Batch Renderer Optimization)...")
     bench_j = run_bench_j(vis_matrix)
 
+    print("Running Bench K (Temporal Query Smoothing)...")
+    bench_k = run_bench_k(pop_matrix, rng)
+
     print("Running Leak Test...")
     leak_test = run_leak_test()
 
@@ -897,6 +967,7 @@ def main():
         "bench_h_lod": bench_h,
         "bench_i_spatial_optimization": bench_i,
         "bench_j_batch_renderer": bench_j,
+        "bench_k_temporal_smoothing": bench_k,
         "leak_test": leak_test,
     }
 
@@ -933,6 +1004,12 @@ def main():
     print("=" * 60)
     for count, data in bench_j.items():
         print(f"Vis: {count:5s} | Indiv Blit: {data['individual_blit_per_frame_ms']:5.3f}ms | Batch Blits: {data['batch_blits_per_frame_ms']:5.3f}ms | Blits Speedup: {data['blits_speedup']:4.2f}x")
+
+    print("\n" + "=" * 60)
+    print("TEMPORAL QUERY SMOOTHING SUMMARY (BENCH K)")
+    print("=" * 60)
+    for pop, data in bench_k.items():
+        print(f"Pop: {pop:5s} | Burst P95: {data['burst_p95_ms']:5.3f}ms | Dist P95: {data['dist_p95_ms']:5.3f}ms | P95 Drop: {data['p95_reduction_percent']:5.1f}% | Max Drop: {data['max_reduction_percent']:5.1f}%")
 
     print(f"\nLeak Test: {'PASS' if leak_test['passed'] else 'FAIL'} (Net growth: {leak_test['net_growth_kb']:.2f} KB)")
     print("=" * 60)

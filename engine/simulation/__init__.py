@@ -21,6 +21,7 @@ from engine.simulation.navigation_grid import NavigationGrid2D
 from engine.simulation.render_batch import BatchedSimulationRenderer, SimulationRenderBuffer
 from engine.simulation.spatial_hash import SpatialHash2D
 from engine.simulation.system_scheduler import SystemScheduler, TickPolicy
+from engine.simulation.work_distribution import TemporalWorkDistributor
 
 __all__ = [
     "SystemScheduler",
@@ -41,4 +42,5 @@ __all__ = [
     "LOD_LOW",
     "LOD_SLEEP",
     "TIER_NAMES",
+    "TemporalWorkDistributor",
 ]
