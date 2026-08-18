@@ -147,7 +147,7 @@ class ParticleSystem(Component):
             # Conversão para o viewport offset de câmera
             px = p.position[0] - size / 2.0
             py = p.position[1] - size / 2.0
-            if cam:
+            if main_cam:
                 px = px - cx + sw / 2.0
                 py = py - cy + sh / 2.0
 

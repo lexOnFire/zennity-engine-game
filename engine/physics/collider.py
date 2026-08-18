@@ -175,7 +175,7 @@ class BoxCollider(Component):
                 tm_comp = None
                 tm_comp_is_legacy = False
                 if hasattr(scene, "game_objects"):
-                    from engine.tilemap.tilemap import TilemapRenderer, Tilemap
+                    from engine.tilemap.tilemap import TilemapRenderer, TileMap
                     for go in scene.game_objects:
                         found = go.get_component(TilemapRenderer)
                         if found is not None and found.tilemap is not None:

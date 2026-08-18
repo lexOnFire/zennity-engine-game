@@ -339,9 +339,11 @@ class TileMap:
 
 class TilemapRenderer(Component):
     """Component to render a TileMap."""
-    def __init__(self, tilemap: TileMap) -> None:
+    component_type = "TilemapRenderer"
+
+    def __init__(self, tilemap: Optional[TileMap] = None) -> None:
         super().__init__()
-        self.tilemap = tilemap
+        self.tilemap: Optional[TileMap] = tilemap
 
     def draw(self, screen: pygame.Surface) -> None:
         if self.tilemap and self.game_object:
