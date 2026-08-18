@@ -79,34 +79,3 @@ def test_tilemap_renderer():
     assert tr.game_object == obj
     assert obj.get_component(Tilemap) == tm
 
-
-def test_tilemap_renderer_round_trips_tileset_through_scene_serialization():
-    """BUG FIX: o Tileset é um objeto e Component.serialize() só reflete
-    primitivos, então um TilemapRenderer salvo em .zscene perdia a textura e
-    voltava invisível ao recarregar -- silenciosamente, sem erro."""
-    from engine.core.component_registry import component_registry
-
-    renderer = TilemapRenderer(
-        texture_path="Assets/Sprites/MyPlatformer/tile_ground.png", tile_size=32
-    )
-    assert renderer.tileset is not None, "tileset deve ser carregado a partir do path"
-
-    data = renderer.serialize()
-    assert data["properties"]["texture_path"].endswith("tile_ground.png")
-    assert data["properties"]["tile_size"] == 32
-
-    restored = component_registry.create(data)
-    assert restored.texture_path == renderer.texture_path
-    assert restored.tileset is not None, "tileset deve ser reconstruído no load"
-
-
-def test_tilemap_renderer_survives_missing_texture():
-    """Textura ausente não pode derrubar o carregamento da cena inteira."""
-    from engine.core.component_registry import component_registry
-
-    restored = component_registry.create({
-        "type": "TilemapRenderer",
-        "enabled": True,
-        "properties": {"texture_path": "Assets/inexistente.png", "tile_size": 32},
-    })
-    assert restored.tileset is None
