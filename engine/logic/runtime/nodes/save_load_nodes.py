@@ -1,43 +1,70 @@
-"""Nós de Save/Load para Logic Graph - Persistência 100% visual."""
+"""Nós de Save/Load para Logic Graph - Persistência 100% visual via SaveManager."""
 from __future__ import annotations
 
-import json
 from typing import Any, Mapping
+from engine.core.save_manager import SaveManager
 from ..registry import registry
+
+
+def _resolve_save_manager(runtime: Any, game: Any) -> SaveManager:
+    """Obtém o SaveManager canônico a partir do game, runtime ou instância padrão."""
+    if hasattr(game, "save_manager") and isinstance(game.save_manager, SaveManager):
+        return game.save_manager
+    if hasattr(runtime, "_save_manager") and isinstance(runtime._save_manager, SaveManager):
+        return runtime._save_manager
+    save_dir = getattr(game, "save_path", None) or getattr(runtime, "_save_directory", None)
+    sm = SaveManager(save_directory=save_dir)
+    if not hasattr(runtime, "_save_manager"):
+        runtime._save_manager = sm
+    return sm
 
 
 @registry.register_executor('save_game')
 def execute_save_game(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Salva o jogo em um arquivo."""
+    """Salva o jogo em um arquivo persistente via SaveManager."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
     try:
-        slot_name = str(properties.get("slot_name", "save_slot_1"))
+        slot_name = str(properties.get("slot_name", "save_slot_1")).strip()
         include_scene = bool(properties.get("include_scene", True))
 
-        if not hasattr(runtime, "_save_slots"):
-            runtime._save_slots = {}
+        if not slot_name:
+            return ["exec_failure"]
 
-        save_data = {
-            "scene": game.current_scene if (include_scene and hasattr(game, "current_scene")) else None,
-            "variables": dict(runtime._variables) if hasattr(runtime, "_variables") else {},
-            "state_machines": dict(runtime._state_machines) if hasattr(runtime, "_state_machines") else {},
-            "timestamp": str(__import__('datetime').datetime.now())
-        }
+        save_mgr = _resolve_save_manager(runtime, game)
 
-        runtime._save_slots[slot_name] = save_data
-        runtime._store(node_id, "slot_name", slot_name)
-        runtime._store(node_id, "saved", True)
+        scene_name = None
+        if include_scene:
+            if hasattr(game, "current_scene") and getattr(game.current_scene, "name", None):
+                scene_name = game.current_scene.name
+            elif hasattr(game, "scene") and getattr(game.scene, "name", None):
+                scene_name = game.scene.name
 
-        # Também salvar em arquivo JSON (opcional)
-        if hasattr(game, "save_path"):
-            import os
-            os.makedirs(game.save_path, exist_ok=True)
-            with open(f"{game.save_path}/{slot_name}.json", "w") as f:
-                json.dump(save_data, f, indent=2)
+        project_vars = dict(runtime._variables) if hasattr(runtime, "_variables") else {}
+        state_machines = dict(runtime._state_machines) if hasattr(runtime, "_state_machines") else {}
 
-        return ["exec_saved"]
+        ok = save_mgr.save_game(
+            slot_name=slot_name,
+            project_variables=project_vars,
+            scene_name=scene_name,
+            object_state={"state_machines": state_machines} if state_machines else None,
+        )
+
+        if ok:
+            # Mantém cache em runtime para compatibilidade de sessão
+            if not hasattr(runtime, "_save_slots"):
+                runtime._save_slots = {}
+            runtime._save_slots[slot_name] = {
+                "scene": scene_name,
+                "variables": project_vars,
+                "state_machines": state_machines,
+            }
+            runtime._store(node_id, "slot_name", slot_name)
+            runtime._store(node_id, "saved", True)
+            return ["exec_saved"]
+
+        return ["exec_failure"]
     except Exception as e:
         print(f"Erro em save_game: {e}")
         return ["exec_failure"]
@@ -45,44 +72,54 @@ def execute_save_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
 
 @registry.register_executor('load_game')
 def execute_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Carrega o jogo de um arquivo."""
+    """Carrega o jogo a partir de um arquivo persistente via SaveManager."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
     try:
-        slot_name = str(properties.get("slot_name", "save_slot_1"))
+        slot_name = str(properties.get("slot_name", "save_slot_1")).strip()
 
-        if not hasattr(runtime, "_save_slots"):
+        if not slot_name:
             return ["exec_no_save"]
 
-        if slot_name not in runtime._save_slots:
-            # Tentar carregar de arquivo
-            if hasattr(game, "save_path"):
-                try:
-                    with open(f"{game.save_path}/{slot_name}.json", "r") as f:
-                        save_data = json.load(f)
-                except:
-                    return ["exec_no_save"]
+        save_mgr = _resolve_save_manager(runtime, game)
+        exists_on_disk = save_mgr.save_exists(slot_name) if hasattr(save_mgr, "save_exists") else False
+
+        save_data = save_mgr.load_game(slot_name)
+
+        if save_data is None:
+            # Se o arquivo existia no disco mas load_game retornou None -> falha de integridade/schema
+            if exists_on_disk:
+                return ["exec_failure"]
+
+            # Fallback temporário para cache de sessão in-memory se existir
+            if hasattr(runtime, "_save_slots") and slot_name in runtime._save_slots:
+                save_data = runtime._save_slots[slot_name]
             else:
                 return ["exec_no_save"]
-        else:
-            save_data = runtime._save_slots[slot_name]
 
-        # Restaurar variáveis
-        if "variables" in save_data:
+        # Restaura variáveis de projeto no escopo do runtime
+        loaded_vars = save_data.get("project_variables") or save_data.get("variables")
+        if isinstance(loaded_vars, dict):
             if not hasattr(runtime, "_variables"):
                 runtime._variables = {}
-            runtime._variables.update(save_data["variables"])
+            runtime._variables.update(loaded_vars)
 
-        # Restaurar state machines
-        if "state_machines" in save_data:
+        # Restaura máquinas de estado
+        obj_state = save_data.get("object_state") or {}
+        loaded_sm = obj_state.get("state_machines") or save_data.get("state_machines")
+        if isinstance(loaded_sm, dict):
             if not hasattr(runtime, "_state_machines"):
                 runtime._state_machines = {}
-            runtime._state_machines.update(save_data["state_machines"])
+            runtime._state_machines.update(loaded_sm)
 
-        # Restaurar cena (se necessário)
-        if save_data.get("scene") and hasattr(game, "load_scene"):
-            game.load_scene(save_data["scene"])
+        # Restaura cena se especificado e suportado pelo host
+        scene_name = save_data.get("scene")
+        if scene_name and hasattr(game, "load_scene"):
+            try:
+                game.load_scene(scene_name)
+            except Exception:
+                pass
 
         runtime._store(node_id, "slot_name", slot_name)
         runtime._store(node_id, "loaded", True)
@@ -93,53 +130,56 @@ def execute_load_game(runtime, node: Mapping[str, Any], game: Any, dt: float) ->
         return ["exec_failure"]
 
 
-@registry.register_executor('delete_save')
-def execute_delete_save(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Deleta um save slot."""
+@registry.register_executor('has_save')
+def execute_has_save(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Verifica se um save slot existe via SaveManager."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
     try:
-        slot_name = str(properties.get("slot_name", "save_slot_1"))
+        slot_name = str(properties.get("slot_name", "save_slot_1")).strip()
+        if not slot_name:
+            return ["exec_not_exists"]
 
-        if hasattr(runtime, "_save_slots") and slot_name in runtime._save_slots:
-            del runtime._save_slots[slot_name]
+        save_mgr = _resolve_save_manager(runtime, game)
+        exists = False
+        if hasattr(save_mgr, "save_exists"):
+            exists = save_mgr.save_exists(slot_name)
+        elif hasattr(save_mgr, "has_save"):
+            exists = save_mgr.has_save(slot_name)
 
-        # Deletar arquivo também
-        if hasattr(game, "save_path"):
-            import os
-            try:
-                os.remove(f"{game.save_path}/{slot_name}.json")
-            except:
-                pass
+        if not exists and hasattr(runtime, "_save_slots"):
+            exists = slot_name in runtime._save_slots
 
-        return ["exec_deleted"]
+        if exists:
+            return ["exec_exists"]
+        return ["exec_not_exists"]
     except Exception as e:
-        print(f"Erro em delete_save: {e}")
+        print(f"Erro em has_save: {e}")
         return ["exec_failure"]
 
 
-@registry.register_executor('has_save')
-def execute_has_save(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
-    """Verifica se um save slot existe."""
+@registry.register_executor('delete_save')
+def execute_delete_save(runtime, node: Mapping[str, Any], game: Any, dt: float) -> list[str]:
+    """Exclui um save slot via SaveManager."""
     node_id = str(node['id'])
     properties = node.get('properties', {}) if isinstance(node.get('properties'), Mapping) else {}
 
     try:
-        slot_name = str(properties.get("slot_name", "save_slot_1"))
+        slot_name = str(properties.get("slot_name", "save_slot_1")).strip()
+        if not slot_name:
+            return ["exec_failure"]
 
-        has_save = False
-        if hasattr(runtime, "_save_slots"):
-            has_save = slot_name in runtime._save_slots
+        save_mgr = _resolve_save_manager(runtime, game)
+        deleted = save_mgr.delete_save(slot_name)
 
-        if not has_save and hasattr(game, "save_path"):
-            import os
-            has_save = os.path.exists(f"{game.save_path}/{slot_name}.json")
+        if hasattr(runtime, "_save_slots") and slot_name in runtime._save_slots:
+            del runtime._save_slots[slot_name]
+            deleted = True
 
-        if has_save:
-            return ["exec_exists"]
-        else:
-            return ["exec_not_exists"]
+        if deleted:
+            return ["exec_deleted"]
+        return ["exec_failure"]
     except Exception as e:
-        print(f"Erro em has_save: {e}")
+        print(f"Erro em delete_save: {e}")
         return ["exec_failure"]
