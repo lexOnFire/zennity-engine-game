@@ -12,6 +12,7 @@ class _Pygame:
     K_r = 13
     K_DELETE = 14
     K_KP_PERIOD = 15
+    K_BACKSPACE = 16
 
 
 def test_viewport_shortcuts_select_transform_tools_in_edit_scene_mode() -> None:
