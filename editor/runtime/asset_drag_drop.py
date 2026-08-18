@@ -332,9 +332,6 @@ class _InspectorDropFilter(QObject):
         self._editor = editor
         self._inspector = inspector
         inspector.setAcceptDrops(True)
-        # Propaga acceptDrops para todos os filhos do Inspector
-        for child in inspector.findChildren(QWidget):
-            child.setAcceptDrops(True)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.DragEnter:
@@ -413,8 +410,4 @@ def install_asset_drag_drop(editor: Any) -> None:
     if inspector is not None:
         insp_filter = _InspectorDropFilter(editor, inspector)
         inspector.installEventFilter(insp_filter)
-        # Instala tambem em todos os filhos para garantir que o drop
-        # seja capturado mesmo quando o cursor esta sobre um campo interno
-        for child in inspector.findChildren(QWidget):
-            child.installEventFilter(insp_filter)
         editor._asset_drop_filter_inspector = insp_filter
