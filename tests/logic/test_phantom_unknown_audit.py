@@ -90,13 +90,15 @@ def _loaded():
 #: 18 after item 20; Item 20 recovered scene.load and component.set_property in BossHealthLogic.
 #: 16 after item 21; Item 21 recovered object.get_variable and save.save_game in LevelExitLogic.
 #: 8 after item 22; Item 22 recovered 8 phantom types in VictoryLogic.
-EXPECTED_UNKNOWN_IDS = 8
+#: 6 after item 19/migration; variable and variable.increment migrated out of EnemyHealth/EnemyAILogic.
+EXPECTED_UNKNOWN_IDS = 6
 
 #: 39 after item 18; item 19 reauthored EnemyAttackLogic removing 4 phantom instances from EnemyAttackLogic.
 #: 32 after item 20; Item 20 recovered scene.load and component.set_property from BossHealthLogic.
 #: 30 after item 21; Item 21 recovered object.get_variable and save.save_game from LevelExitLogic.
 #: 10 after item 22; Item 22 recovered 20 phantom instances from VictoryLogic.
-EXPECTED_UNKNOWN_INSTANCES = 10
+#: 7 after item 19/migration; variable and variable.increment migrated out.
+EXPECTED_UNKNOWN_INSTANCES = 7
 
 
 
