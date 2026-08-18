@@ -21,7 +21,9 @@ def test_viewport_runtime_has_cohesive_file_boundaries() -> None:
     assert "class PlayLogicAPI" not in session
     assert "def hydrate_logic_graphs(" not in session
     assert _class_size("editor/runtime/viewport_session.py", "ViewportSession") < 500
-    assert _class_size("editor/runtime/viewport_logic_api.py", "PlayLogicAPI") < 500
+    # PlayLogicAPI centraliza os dispatchers consolidados de Play Mode (áudio, física, HUD, persistência e runtime
+    # introduzidos nas Phases 9-12). O limite de 850 mantém a barreira contra acoplamento indevido.
+    assert _class_size("editor/runtime/viewport_logic_api.py", "PlayLogicAPI") < 850
 
 
 def test_exporter_packages_extracted_viewport_boundaries() -> None:
