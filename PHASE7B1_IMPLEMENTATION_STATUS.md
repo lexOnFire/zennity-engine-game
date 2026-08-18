@@ -286,7 +286,7 @@ If any test fails:
 | File | Changes |
 |------|---------|
 | `engine/logic/runtime.py` | +registry import, +4 helpers, refactored _execute() |
-| `scripts/phase7b1_execute_refactored.py` | Reference implementation (for documentation) |
+| `scripts/archive/phase7b1_execute_refactored.py` | Reference implementation (for documentation) |
 
 **Total impact**: ~280 lines added, ~400 lines removed = **-120 net LOC**
 
