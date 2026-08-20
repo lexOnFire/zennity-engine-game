@@ -14,6 +14,8 @@ from engine.logic.node_definitions.catalogue import (
 )
 from engine.logic.node_definitions.registry import get_registry
 
+from ._probe import POST_BASELINE_DEFINITIONS
+
 
 def test_node_definitions_is_a_read_only_view():
     with pytest.raises(TypeError):
@@ -43,9 +45,24 @@ def test_registry_is_populated():
 
 
 def test_every_definition_keeps_the_baseline_identity(baseline):
-    assert sorted(NODE_DEFINITIONS) == baseline["definition_ids"], (
-        "the palette gained or lost node types; Stage 2 must not change which "
-        "nodes the editor offers"
+    """Stage 2 must not change which nodes the editor offers.
+
+    Losing a node is always a regression. Gaining one is not -- the palette has
+    grown deliberately since the snapshot -- so additions are checked against
+    the declared list rather than forbidden outright, and the snapshot stays a
+    faithful record of commit 477feee.
+    """
+    recorded = set(baseline["definition_ids"])
+    current = set(NODE_DEFINITIONS)
+
+    assert not recorded - current, (
+        f"the palette lost node types: {sorted(recorded - current)}. Stage 2 "
+        "must not remove nodes the editor already offered."
+    )
+    assert current - recorded == set(POST_BASELINE_DEFINITIONS), (
+        "the palette gained node types nobody declared: "
+        f"{sorted((current - recorded) - POST_BASELINE_DEFINITIONS)}. Add them to "
+        "POST_BASELINE_DEFINITIONS with the commit that introduced them."
     )
 
 

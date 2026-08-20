@@ -10,6 +10,8 @@ from engine.logic.graph_asset import (
 from engine.logic.node_definitions.catalogue import ensure_catalogue_loaded
 from engine.logic.node_definitions.registry import get_registry
 
+from ._probe import RESPECIFIED_SINCE_BASELINE
+
 
 def _pins(sequence):
     return [tuple(pin) for pin in sequence]
@@ -34,12 +36,41 @@ def test_pre_stage2_graph_contract_is_reproduced_exactly(baseline):
     This is the regression that matters: ``.zlogic`` assets and runtime
     executors speak these pin names, so deriving the schema is only correct if
     the derived result is byte-identical to what the hand-maintained table held.
+
+    That premise is that something spoke the recorded pins. For the entries in
+    ``RESPECIFIED_SINCE_BASELINE`` nothing ever did, so they are checked for
+    presence only; the constant carries the evidence per node, and the test
+    below keeps that exemption from growing silently.
     """
     for node_id, contract in baseline["port_schema"].items():
         assert node_id in NODE_PORT_DEFINITIONS, f"{node_id} lost its port contract"
+        if node_id in RESPECIFIED_SINCE_BASELINE:
+            continue
         actual = NODE_PORT_DEFINITIONS[node_id]
         assert _pins(actual["inputs"]) == _pins(contract["inputs"]), node_id
         assert _pins(actual["outputs"]) == _pins(contract["outputs"]), node_id
+
+
+def test_only_the_declared_contracts_diverge_from_the_pre_stage2_schema(baseline):
+    """Keep the exemption from quietly absorbing a real contract change.
+
+    Without this, adding an id to ``RESPECIFIED_SINCE_BASELINE`` would silence a
+    genuine break as easily as a justified one.
+    """
+    diverged = {
+        node_id
+        for node_id, contract in baseline["port_schema"].items()
+        if node_id in NODE_PORT_DEFINITIONS
+        and (
+            _pins(NODE_PORT_DEFINITIONS[node_id]["inputs"]) != _pins(contract["inputs"])
+            or _pins(NODE_PORT_DEFINITIONS[node_id]["outputs"]) != _pins(contract["outputs"])
+        )
+    }
+    assert diverged == set(RESPECIFIED_SINCE_BASELINE), (
+        "pre-Stage-2 port contracts changed without being declared: "
+        f"{sorted(diverged - set(RESPECIFIED_SINCE_BASELINE))}; declared but no "
+        f"longer diverging: {sorted(set(RESPECIFIED_SINCE_BASELINE) - diverged)}"
+    )
 
 
 def test_diverged_definitions_were_realigned_onto_the_graph_contract(baseline):
