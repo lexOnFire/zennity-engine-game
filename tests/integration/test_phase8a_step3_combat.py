@@ -22,6 +22,8 @@ import json
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from tests.integration import _phase8a_canonical as canonical
+
 
 class TestAttackAnimation:
     """Test PlayerAttack.zanim exists and is configured correctly."""
@@ -148,75 +150,68 @@ class TestPlayerCombatLogic:
         assert logic_path.exists(), "PlayerCombatLogic.zlogic not found"
 
     def test_combat_logic_valid_json(self):
-        """Verify combat logic is valid JSON."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.generic_graph"
+        """Verify PlayerCombatLogic.zlogic is valid JSON."""
+        data = canonical.load_logic("PlayerCombatLogic")
+        assert data.get("format") == "zennity.logic_graph"
+        assert isinstance(data.get("nodes"), list)
 
-    def test_combat_has_space_input_node(self):
-        """Verify logic has SPACE key input node."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+    # As seis assercoes seguintes exigiam ids de um desenho de combate anterior:
+    # space_key_down, set_attack_trigger, animation_hit_event,
+    # raycast_for_enemy, e um par get_enemy_health / subtract_damage /
+    # set_enemy_health que escrevia a vida do inimigo direto de dentro do grafo
+    # do player.
+    #
+    # O combate que shipou e outro, e melhor: o player dispara por key_pressed,
+    # respeita um cooldown, escolhe alvo com find_nearest_object e emite um
+    # evento de dano. Quem possui a vida do inimigo e o proprio inimigo --
+    # EnemyHealth.zlogic escuta enemy_damage, subtrai e destroi. Exigir que o
+    # player escrevesse a vida alheia descrevia justamente o acoplamento que
+    # esse desenho removeu.
+    #
+    # O requisito preservado e o pipeline ponta a ponta.
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "space_key_down" in node_ids
+    def test_attack_is_input_driven_and_rate_limited(self):
+        """O ataque parte de uma tecla e respeita cooldown."""
+        graph = canonical.load_logic("PlayerCombatLogic")
+        types = canonical.node_types(graph)
 
-    def test_combat_has_attack_trigger_node(self):
-        """Verify logic has set_attack_trigger node."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+        assert types & {"key_pressed", "event_key_pressed"}, (
+            f"nenhum no de entrada dispara o ataque: {sorted(types)}"
+        )
+        cooldown = [
+            n for n in graph.get("nodes", [])
+            if str(n.get("properties", {}).get("name")) == "cooldown_timer"
+        ]
+        assert cooldown, "o ataque nao tem cooldown"
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "set_attack_trigger" in node_ids
+    def test_attack_selects_a_target_and_emits_damage(self):
+        """O player escolhe alvo e emite o dano que o alvo consome."""
+        combat = canonical.load_logic("PlayerCombatLogic")
+        types = canonical.node_types(combat)
 
-    def test_combat_has_animation_event_node(self):
-        """Verify logic has animation.on_event 'hit' node."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+        assert "find_nearest_object" in types, (
+            f"o ataque nao escolhe alvo: {sorted(types)}"
+        )
+        emitted = {
+            str(n.get("properties", {}).get("name"))
+            for n in combat.get("nodes", [])
+            if str(n.get("type")) == "emit_event"
+        }
+        assert "enemy_damage" in emitted, f"eventos emitidos: {sorted(emitted)}"
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "animation_hit_event" in node_ids
+    def test_the_enemy_owns_its_own_health(self):
+        """EnemyHealth consome enemy_damage e destroi o inimigo."""
+        health = canonical.load_logic("EnemyHealth")
+        listened = {
+            str(n.get("properties", {}).get("name"))
+            for n in health.get("nodes", [])
+            if str(n.get("type")) == "event_custom"
+        }
+        types = canonical.node_types(health)
 
-    def test_combat_has_raycast_node(self):
-        """Verify logic has raycast_2d node."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+        assert "enemy_damage" in listened, f"eventos ouvidos: {sorted(listened)}"
+        assert "destroy_object" in types, "o inimigo nunca morre"
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "raycast_for_enemy" in node_ids
-
-    def test_combat_has_damage_nodes(self):
-        """Verify logic has damage calculation nodes."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "get_attack_damage" in node_ids
-        assert "subtract_damage" in node_ids
-        assert "get_enemy_health" in node_ids
-        assert "set_enemy_health" in node_ids
-
-    def test_combat_has_death_check_node(self):
-        """Verify logic has health <= 0 check and destroy."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "check_dead" in node_ids
-        assert "destroy_enemy" in node_ids
-
-    def test_combat_logic_node_count(self):
-        """Record combat logic node and edge counts."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerCombatLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-
-        nodes = data.get("nodes", [])
-        edges = data.get("edges", [])
-        print(f"\nPlayerCombatLogic Stats:")
-        print(f"  Nodes: {len(nodes)}")
-        print(f"  Edges: {len(edges)}")
-
-        assert len(nodes) >= 12, "Combat logic should have at least 12 nodes"
 
 
 class TestPlayerCombatVariables:
@@ -333,17 +328,26 @@ class TestLevel1Setup:
         data = json.loads(scene_path.read_text(encoding="utf-8"))
 
         # Accept either DummyEnemy or Enemy prefabs
+        accepted = {"Assets/Prefabs/DummyEnemy.zprfb", "Assets/Prefabs/Enemy.zprfb"}
         enemy = next((obj for obj in data.get("objects", [])
-                     if obj.get("prefab") in ["Assets/Prefabs/DummyEnemy.zprfb", "Assets/Prefabs/Enemy.zprfb"]), None)
+                     if obj.get("prefab") in accepted), None)
         assert enemy is not None
-        assert enemy.get("type") == "Prefab"
-        assert enemy.get("prefab") in ["Assets/Prefabs/DummyEnemy.zprfb", "Assets/Prefabs/Enemy.zprfb"]
+        # O discriminador "type": "Prefab" deixou de ser escrito no formato
+        # canonico; a referencia ao prefab e o que identifica a instancia.
+        assert enemy.get("prefab") in accepted
 
 
 class TestMovementLogicUpdate:
     """Test PlayerMovementLogic tracks facing direction."""
 
     def test_movement_logic_has_facing_update_nodes(self):
+        # DEIXADO VERMELHO DE PROPOSITO (Phase 13, item 13.1-B).
+        #
+        # Nao e schema stale. PlayerCombatLogic le facing_x duas vezes, para
+        # decidir se o alvo esta a frente do player, e nenhum grafo do
+        # repositorio escreve essa variavel -- a verificacao de direcao roda
+        # sempre contra um valor nunca definido. Ajustar esta assercao para o
+        # grafo atual esconderia exatamente esse defeito.
         """Verify movement logic has nodes to update facing_x."""
         logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
         data = json.loads(logic_path.read_text(encoding="utf-8"))
