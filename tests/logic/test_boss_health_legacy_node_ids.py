@@ -229,17 +229,43 @@ def test_save_and_reopen_does_not_reintroduce_the_legacy_ids(name: str, tmp_path
     assert "math.divide" not in types and "ui.set_progress_bar" not in types
 
 
-def test_the_legacy_spelling_is_still_exercised_on_disk():
+def test_the_legacy_spelling_still_loads_from_a_saved_graph(tmp_path):
     """The whole point of item 16C: the graph was right, the map had a hole.
 
-    ``PlayerHealthLogic`` left this list in item 18, which authored it onto
-    canonical ids -- so the legacy spelling is no longer on disk there. The
-    assertion narrows rather than disappears: BossHealthLogic still carries
-    ``math.divide``, so the alias is still load-bearing and still covered.
+    This used to read BossHealthLogic off disk and require it to still carry the
+    legacy spelling, so the alias stayed load-bearing. That assertion has now
+    narrowed to nothing: item 18 authored PlayerHealthLogic onto canonical ids,
+    and 41709d87 did the same to BossHealthLogic when it migrated the shipping
+    graphs. Nothing in the repository spells ``math.divide`` any more.
+
+    Tying alias coverage to a shipping asset was the mistake. Assets get
+    migrated; the alias still has to work, because a project saved before the
+    migration keeps the old spelling on disk forever. So the graph is written
+    here instead of borrowed from Assets/, and the contract outlives the file
+    that used to carry it.
     """
     import json
 
-    raw = json.loads((REPO_ROOT / "Assets" / "Logic" / "BossHealthLogic.zlogic").read_text(encoding="utf-8"))
-    types = {str(n.get("type")) for n in raw.get("nodes", [])}
-    assert "math.divide" in types, "the legacy spelling must still be on disk"
-    assert "ui.set_progress_bar" in types
+    legacy = {
+        "format": "zennity.logic_graph",
+        "version": 1,
+        "name": "LegacySpelling",
+        "nodes": [
+            {"id": "divide", "type": "math.divide", "position": [0.0, 0.0],
+             "properties": {"a": 30.0, "b": 60.0}},
+            {"id": "bar", "type": "ui.set_progress_bar", "position": [1.0, 0.0],
+             "properties": {}},
+        ],
+        "edges": [],
+    }
+    path = tmp_path / "LegacySpelling.zlogic"
+    path.write_text(json.dumps(legacy), encoding="utf-8")
+
+    types = {str(n["type"]) for n in normalize_logic_graph(load_logic_graph(path))["nodes"]}
+
+    assert types == {"divide_number", "set_ui_progress_bar"}, (
+        "a graph saved with the legacy spelling no longer reaches its canonical "
+        f"node: {sorted(types)}"
+    )
+    assert "divide_number" in registry.evaluators
+    assert "set_ui_progress_bar" in registry.executors
