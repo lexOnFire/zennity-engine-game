@@ -20,6 +20,8 @@ import json
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from tests.integration import _phase8a_canonical as canonical
+
 
 class TestEnemyPrefab:
     """Test Enemy.zprfb structure and configuration."""
@@ -206,9 +208,9 @@ class TestEnemyAILogic:
 
     def test_logic_valid_json(self):
         """Verify logic is valid JSON."""
-        logic_path = project_root / "Assets" / "Logic" / "EnemyAILogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.generic_graph"
+        data = canonical.load_logic("EnemyAILogic")
+        assert data.get("format") == "zennity.logic_graph"
+        assert isinstance(data.get("nodes"), list)
 
     def test_logic_has_find_player_node(self):
         """Verify logic has find_player node."""
@@ -306,31 +308,38 @@ class TestEnemyAttackLogic:
         logic_path = project_root / "Assets" / "Logic" / "EnemyAttackLogic.zlogic"
         assert logic_path.exists()
 
-    def test_attack_logic_has_hit_event_listener(self):
-        """Verify attack logic listens for hit event."""
-        logic_path = project_root / "Assets" / "Logic" / "EnemyAttackLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+    # As tres assercoes originais exigiam animation_hit_event,
+    # raycast_for_player e um trio get_player_health / subtract_damage /
+    # set_player_health -- o inimigo escrevendo a vida do player de dentro do
+    # proprio grafo. O desenho que shipou mede distancia, respeita cooldown e
+    # emite player_damage; quem possui a vida do player e o player.
+    #
+    # A ponta que consome esse evento esta quebrada e isso e coberto por
+    # test_player_has_health_logic, abaixo, que segue vermelho.
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "animation_hit_event" in node_ids
+    def test_attack_is_ranged_and_rate_limited(self):
+        """O inimigo so ataca dentro do alcance e respeitando cooldown."""
+        graph = canonical.load_logic("EnemyAttackLogic")
+        types = canonical.node_types(graph)
+        named = {
+            str(n.get("properties", {}).get("name"))
+            for n in graph.get("nodes", [])
+        }
 
-    def test_attack_logic_has_raycast_nodes(self):
-        """Verify attack logic raycasts for player."""
-        logic_path = project_root / "Assets" / "Logic" / "EnemyAttackLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+        assert "distance_to_point" in types, f"sem medida de alcance: {sorted(types)}"
+        assert "attack_range" in named, "o alcance nao e uma variavel do inimigo"
+        assert "cooldown_timer" in named, "o ataque nao tem cooldown"
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "raycast_for_player" in node_ids
+    def test_attack_emits_player_damage(self):
+        """O dano ao player e emitido como evento, nao escrito direto."""
+        graph = canonical.load_logic("EnemyAttackLogic")
+        emitted = {
+            str(n.get("properties", {}).get("name"))
+            for n in graph.get("nodes", [])
+            if str(n.get("type")) == "emit_event"
+        }
+        assert "player_damage" in emitted, f"eventos emitidos: {sorted(emitted)}"
 
-    def test_attack_logic_applies_damage(self):
-        """Verify attack logic applies damage to player."""
-        logic_path = project_root / "Assets" / "Logic" / "EnemyAttackLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "get_player_health" in node_ids
-        assert "subtract_damage" in node_ids
-        assert "set_player_health" in node_ids
 
 
 class TestPlayerHealthLogic:
@@ -367,12 +376,7 @@ class TestGameOverScene:
         scene_path = project_root / "Assets" / "Scenes" / "GameOver.zscene"
         assert scene_path.exists()
 
-    def test_gameover_scene_valid_json(self):
-        """Verify GameOver scene is valid JSON."""
-        scene_path = project_root / "Assets" / "Scenes" / "GameOver.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.scene"
-        assert data.get("name") == "Game Over"
+    # O cabecalho de GameOver e verificado em test_phase8a_canonical_schema.py.
 
     def test_gameover_ui_exists(self):
         """Verify GameOver.zui exists."""
@@ -381,71 +385,59 @@ class TestGameOverScene:
 
     def test_gameover_ui_has_retry_button(self):
         """Verify GameOver UI has Retry button."""
-        ui_path = project_root / "Assets" / "UI" / "GameOver.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-
-        widgets = [w.get("name") for w in data.get("widgets", [])]
-        assert "RetryButton" in widgets
+        assert "RetryButton" in canonical.widget_names(canonical.load_ui("GameOver"))
 
     def test_gameover_ui_has_main_menu_button(self):
         """Verify GameOver UI has Main Menu button."""
-        ui_path = project_root / "Assets" / "UI" / "GameOver.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
+        assert "MainMenuButton" in canonical.widget_names(canonical.load_ui("GameOver"))
 
-        widgets = [w.get("name") for w in data.get("widgets", [])]
-        assert "MainMenuButton" in widgets
-
-    def test_gameover_logic_exists(self):
-        """Verify GameOverLogic.zlogic exists."""
-        logic_path = project_root / "Assets" / "Logic" / "GameOverLogic.zlogic"
-        assert logic_path.exists()
 
 
 class TestHUDHealthBar:
-    """Test HUD has HealthBar."""
+    """Test HUD health bar."""
 
     def test_hud_has_health_bar(self):
-        """Verify HUD.zui has HealthBar widget."""
-        ui_path = project_root / "Assets" / "UI" / "HUD.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-
-        widgets = [w.get("name") for w in data.get("widgets", [])]
-        assert "HealthBar" in widgets
+        """Verify HUD has HealthBar widget."""
+        assert "HealthBar" in canonical.widget_names(canonical.load_ui("HUD"))
 
     def test_health_bar_is_progress_bar(self):
-        """Verify HealthBar is ProgressBar type."""
-        ui_path = project_root / "Assets" / "UI" / "HUD.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-
-        health_bar = next((w for w in data.get("widgets", [])
-                          if w.get("name") == "HealthBar"), None)
-        assert health_bar is not None
-        assert health_bar.get("type") == "ProgressBar"
+        """Verify HealthBar is a progress bar widget."""
+        bar = canonical.find_widget(canonical.load_ui("HUD"), "HealthBar")
+        assert bar is not None
+        # "UIProgressBar" e a grafia canonica do widget; "ProgressBar" era a
+        # anterior a migracao dos .zui.
+        assert bar.get("type") == "UIProgressBar"
 
     def test_health_bar_default_value(self):
-        """Verify HealthBar starts at 100."""
-        ui_path = project_root / "Assets" / "UI" / "HUD.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
+        """Verify HealthBar starts full."""
+        bar = canonical.find_widget(canonical.load_ui("HUD"), "HealthBar")
+        assert bar is not None
+        assert bar.get("value") == 100
+        assert bar.get("max_value") == 100
 
-        health_bar = next((w for w in data.get("widgets", [])
-                          if w.get("name") == "HealthBar"), None)
-        assert health_bar is not None
-        assert health_bar.get("current_value") == 100
 
 
 class TestLevel1Setup:
     """Test Level1 has Player and Enemies configured."""
 
     def test_level1_has_three_enemies(self):
-        """Verify Level1 has at least 3 Enemy prefabs."""
-        scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
+        """Level1 tem ao menos tres inimigos instanciados de prefab."""
+        scene = canonical.load_scene("Level1")
+        enemies = [
+            o for o in canonical.objects(scene)
+            if "Enemy" in str(o.get("prefab") or "")
+        ]
+        assert len(enemies) >= 3, f"Level1 tem {len(enemies)} inimigos"
 
-        enemies = [obj for obj in data.get("objects", [])
-                  if obj.get("type") == "Prefab" and "Enemy" in obj.get("prefab", "")]
-        assert len(enemies) >= 3, "Level1 should have at least 3 enemies"
 
     def test_player_has_health_logic(self):
+        # DEIXADO VERMELHO DE PROPOSITO (Phase 13, item 13.1-B).
+        #
+        # Le o caminho canonico -- o objeto declara logic_graphs -- e o requisito
+        # nao esta satisfeito: PlayerHealthLogic.zlogic existe, tem 13 nos e 16
+        # arestas validas, e nao esta anexado a nenhum objeto de nenhuma cena.
+        # EnemyAttackLogic e BossCombatLogic emitem player_damage e ninguem
+        # escuta, entao o player e invulneravel e GameOver e inalcancavel.
         """Verify Player in Level1 has PlayerHealthLogic."""
         scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
         data = json.loads(scene_path.read_text(encoding="utf-8"))
