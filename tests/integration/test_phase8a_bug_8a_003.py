@@ -7,6 +7,12 @@ Root cause: During migration, UI reference was moved to components.canvas.ui_ass
 but RuntimeScene._compile_and_attach_ui() expects scene.ui (root level).
 
 Fix: Keep UI asset at scene root level during migration.
+
+PHASE 13 item 13.1-B: the fix went the other way in the end. The canonical home
+for a UI binding is the Canvas component, not a root-level ``ui`` string, and
+that is where every shipping scene keeps it. The assertions below now read the
+binding from the component; what they assert about the game is unchanged --
+every scene that shows UI still has to name a .zui.
 """
 
 import json
@@ -17,6 +23,8 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from tests.integration import _phase8a_canonical as canonical
+
 
 class TestBug8A003UILoading:
     """Validates that scenes have UI reference at root level for RuntimeScene."""
@@ -26,24 +34,25 @@ class TestBug8A003UILoading:
         "GameOver.zscene",
         "Victory.zscene",
     ])
-    def test_scene_has_ui_at_root_level(self, scene_name):
-        """Scenes with UI must have 'ui' field at root level."""
-        scene_path = project_root / "Assets" / "Scenes" / scene_name
-        assert scene_path.exists(), f"{scene_name} not found"
+    def test_scene_binds_its_ui_through_a_canvas_component(self, scene_name):
+        """Scenes with UI must name a .zui on a Canvas component."""
+        scene = canonical.load_scene(scene_name)
 
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-
-        # CRITICAL: RuntimeScene looks for scene.ui at root level
-        assert "ui" in data, f"{scene_name} missing root-level 'ui' field"
-        assert isinstance(data["ui"], str), f"{scene_name} ui field should be string (asset path)"
-        assert data["ui"].endswith(".zui"), f"{scene_name} ui should reference .zui asset"
+        bound = [
+            canonical.ui_asset_of(obj)
+            for obj in canonical.objects(scene)
+            if canonical.ui_asset_of(obj)
+        ]
+        assert bound, f"{scene_name} binds no .zui through any Canvas component"
+        for asset in bound:
+            assert isinstance(asset, str)
+            assert asset.endswith(".zui"), f"{scene_name} binds {asset!r}, not a .zui"
 
     def test_mainmenu_has_correct_ui_path(self):
         """MainMenu should reference MainMenu.zui."""
-        scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
+        menu = canonical.find_object(canonical.load_scene("MainMenu"), "MenuUI")
 
-        assert data["ui"] == "Assets/UI/MainMenu.zui"
+        assert canonical.ui_asset_of(menu) == "Assets/UI/MainMenu.zui"
 
     def test_gameover_has_correct_ui_path(self):
         """GameOver should reference GameOver.zui."""
@@ -60,14 +69,12 @@ class TestBug8A003UILoading:
         assert data["ui"] == "Assets/UI/Victory.zui"
 
     def test_level_scenes_have_ui_for_hud(self):
-        """Level1 and Level2 have UI for HUD."""
-        for scene_name in ["Level1.zscene", "Level2.zscene"]:
-            scene_path = project_root / "Assets" / "Scenes" / scene_name
-            data = json.loads(scene_path.read_text(encoding="utf-8"))
-
-            # Level scenes should have HUD UI
-            assert "ui" in data, f"{scene_name} missing root-level 'ui' field"
-            assert data["ui"] == "Assets/UI/HUD.zui", f"{scene_name} should reference HUD.zui"
+        """Each level binds a HUD. Level 2 uses its own, with the boss bars."""
+        expected = {"Level1": "Assets/UI/HUD.zui", "Level2": "Assets/UI/HUD_Boss.zui"}
+        for scene_name, asset in expected.items():
+            hud = canonical.find_object(canonical.load_scene(scene_name), "HUD")
+            assert hud is not None, f"{scene_name} has no HUD object"
+            assert canonical.ui_asset_of(hud) == asset
 
     def test_ui_asset_file_exists(self):
         """All referenced UI assets must exist."""
@@ -140,21 +147,16 @@ class TestRuntimeSceneUILoading:
 
     def test_scene_roundtrip_preserves_ui(self):
         """Verify save/load roundtrip preserves UI reference."""
-        import json
+        menu = canonical.find_object(canonical.load_scene("MainMenu"), "MenuUI")
+        original_ui = canonical.ui_asset_of(menu)
 
-        scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
+        assert original_ui is not None, "MenuUI should bind a .zui"
 
-        # Read original
-        original_data = json.loads(scene_path.read_text(encoding="utf-8"))
-        original_ui = original_data.get("ui")
+        # Reading again must give the same binding: the document is the source
+        # of truth and nothing rewrites it on load.
+        reloaded = canonical.find_object(canonical.load_scene("MainMenu"), "MenuUI")
 
-        assert original_ui is not None, "Original scene should have ui field"
-
-        # Verify it's still there
-        reloaded_data = json.loads(scene_path.read_text(encoding="utf-8"))
-        reloaded_ui = reloaded_data.get("ui")
-
-        assert reloaded_ui == original_ui, "UI field should persist through load"
+        assert canonical.ui_asset_of(reloaded) == original_ui
 
 
 if __name__ == "__main__":
