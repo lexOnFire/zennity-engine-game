@@ -19,31 +19,30 @@ import json
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from tests.integration import _phase8a_canonical as canonical
+
 
 class TestVictoryScene:
     def test_victory_scene_exists(self):
         scene_path = project_root / "Assets" / "Scenes" / "Victory.zscene"
         assert scene_path.exists()
 
-    def test_victory_scene_valid_json(self):
-        scene_path = project_root / "Assets" / "Scenes" / "Victory.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.scene"
-        assert data.get("name") == "Victory"
+    # O cabecalho de Victory e verificado em test_phase8a_canonical_schema.py.
 
     def test_victory_scene_has_camera(self):
-        scene_path = project_root / "Assets" / "Scenes" / "Victory.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        camera = next((o for o in data.get("objects", []) if o.get("name") == "Camera"), None)
+        """Victory tem uma camera."""
+        scene = canonical.load_scene("Victory")
+        camera = canonical.find_object(scene, "Camera")
         assert camera is not None
-        assert camera.get("type") == "Camera2D"
+        assert canonical.component(camera, "Camera") is not None
 
     def test_victory_scene_has_canvas(self):
-        scene_path = project_root / "Assets" / "Scenes" / "Victory.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        canvas = next((o for o in data.get("objects", []) if o.get("name") == "Canvas"), None)
+        """Victory tem um canvas."""
+        scene = canonical.load_scene("Victory")
+        canvas = canonical.find_object(scene, "Canvas")
         assert canvas is not None
-        assert canvas.get("type") == "Canvas"
+        assert canonical.component(canvas, "Canvas") is not None
+
 
 
 class TestVictoryUI:
@@ -56,49 +55,22 @@ class TestVictoryUI:
         data = json.loads(ui_path.read_text(encoding="utf-8"))
         assert data.get("format") == "zennity.ui"
 
-    def test_victory_ui_has_title(self):
-        ui_path = project_root / "Assets" / "UI" / "Victory.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-        title = next((w for w in data.get("widgets", []) if w.get("name") == "VictoryTitle"), None)
-        assert title is not None
-        assert title.get("text") == "VICTORY"
+    @pytest.mark.parametrize("name, fragment", [
+        ("VictoryTitle", "VICTORY"),
+        ("BossDefeatedLabel", "Boss Defeated"),
+        ("ScoreLabel", "Score"),
+        ("CoinsLabel", "Coins"),
+        ("MainMenuButton", "MAIN MENU"),
+        ("NewGameButton", "NEW GAME"),
+    ])
+    def test_victory_ui_declares_its_widgets(self, name, fragment):
+        """A tela de vitoria mostra resultado e oferece as duas saidas."""
+        widget = canonical.find_widget(canonical.load_ui("Victory"), name)
+        assert widget is not None, f"Victory.zui nao declara {name}"
+        assert fragment in str(widget.get("text", "")), (
+            f"{name} mostra {widget.get('text')!r}"
+        )
 
-    def test_victory_ui_has_boss_defeated_label(self):
-        ui_path = project_root / "Assets" / "UI" / "Victory.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-        label = next((w for w in data.get("widgets", []) if w.get("name") == "BossDefeatedLabel"), None)
-        assert label is not None
-        assert "Boss Defeated" in label.get("text", "")
-
-    def test_victory_ui_has_score_label(self):
-        ui_path = project_root / "Assets" / "UI" / "Victory.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-        label = next((w for w in data.get("widgets", []) if w.get("name") == "ScoreLabel"), None)
-        assert label is not None
-        assert "Score" in label.get("text", "")
-
-    def test_victory_ui_has_coins_label(self):
-        ui_path = project_root / "Assets" / "UI" / "Victory.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-        label = next((w for w in data.get("widgets", []) if w.get("name") == "CoinsLabel"), None)
-        assert label is not None
-        assert "Coins" in label.get("text", "")
-
-    def test_victory_ui_has_main_menu_button(self):
-        ui_path = project_root / "Assets" / "UI" / "Victory.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-        button = next((w for w in data.get("widgets", []) if w.get("name") == "MainMenuButton"), None)
-        assert button is not None
-        assert button.get("type") == "Button"
-        assert "MAIN MENU" in button.get("text", "")
-
-    def test_victory_ui_has_new_game_button(self):
-        ui_path = project_root / "Assets" / "UI" / "Victory.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-        button = next((w for w in data.get("widgets", []) if w.get("name") == "NewGameButton"), None)
-        assert button is not None
-        assert button.get("type") == "Button"
-        assert "NEW GAME" in button.get("text", "")
 
 
 class TestVictoryLogic:
@@ -221,11 +193,9 @@ class TestGameOverRegression:
         assert logic_path.exists()
 
     def test_player_health_logic_still_exists(self):
-        logic_path = project_root / "Assets" / "Logic" / "PlayerHealthLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.generic_graph"
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "load_gameover_scene" in node_ids
+        data = canonical.load_logic("PlayerHealthLogic")
+        assert data.get("format") == "zennity.logic_graph"
+        assert "load_gameover_scene" in canonical.node_ids(data)
 
 
 class TestLevelExitRegression:
@@ -261,21 +231,21 @@ class TestSaveLoadRegression:
 
 class TestUICleanup:
     def test_victory_scene_references_victory_ui(self):
-        scene_path = project_root / "Assets" / "Scenes" / "Victory.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        canvas = next((o for o in data.get("objects", []) if o.get("name") == "Canvas"), None)
+        canvas = canonical.find_object(canonical.load_scene("Victory"), "Canvas")
         assert canvas is not None
-        ui_asset = canvas.get("ui", {}).get("asset")
-        assert ui_asset == "Assets/UI/Victory.zui"
+        assert canonical.ui_asset_of(canvas) == "Assets/UI/Victory.zui"
 
     def test_victory_scene_references_victory_logic(self):
-        scene_path = project_root / "Assets" / "Scenes" / "Victory.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        canvas = next((o for o in data.get("objects", []) if o.get("name") == "Canvas"), None)
+        # DEIXADO VERMELHO DE PROPOSITO (Phase 13, item 13.1-B).
+        #
+        # Le o caminho canonico, o mesmo que o teste acima usa com sucesso para
+        # o .zui. O requisito e que nao esta satisfeito: VictoryLogic.zlogic
+        # existe, tem 18 nos e 15 arestas validas -- incluindo os botoes de
+        # menu e novo jogo -- e nao esta anexado a nada. Quem vence fica preso
+        # numa tela estatica.
+        canvas = canonical.find_object(canonical.load_scene("Victory"), "Canvas")
         assert canvas is not None
-        logic_graphs = canvas.get("logic_graphs", [])
-        logic_paths = [g.get("path") for g in logic_graphs]
-        assert "Assets/Logic/VictoryLogic.zlogic" in logic_paths
+        assert "Assets/Logic/VictoryLogic.zlogic" in canonical.logic_graph_paths(canvas)
 
 
 class TestZeroPython:

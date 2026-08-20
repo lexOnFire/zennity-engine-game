@@ -18,6 +18,8 @@ import json
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from tests.integration import _phase8a_canonical as canonical
+
 
 class TestBossPrefab:
     def test_boss_prefab_exists(self):
@@ -128,9 +130,9 @@ class TestBossLogics:
         assert logic_path.exists()
 
     def test_boss_ai_logic_valid_json(self):
-        logic_path = project_root / "Assets" / "Logic" / "BossAILogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.generic_graph"
+        data = canonical.load_logic("BossAILogic")
+        assert data.get("format") == "zennity.logic_graph"
+        assert isinstance(data.get("nodes"), list)
 
     def test_boss_combat_logic_exists(self):
         logic_path = project_root / "Assets" / "Logic" / "BossCombatLogic.zlogic"
@@ -160,7 +162,11 @@ class TestLevel2:
         data = json.loads(scene_path.read_text(encoding="utf-8"))
         boss = next((o for o in data.get("objects", []) if o.get("name") == "Boss"), None)
         assert boss is not None
-        assert boss.get("type") == "Prefab"
+        # O discriminador "type": "Prefab" deixou de ser escrito; a referencia
+        # ao prefab, nao. Esta assercao segue VERMELHA de proposito: o
+        # Assets/Prefabs/Boss.zprfb existe e nao e usado -- Level2 autora o
+        # Boss inline, diferente de Player e Enemy, que referenciam seus
+        # prefabs. Isso e conteudo divergente, nao schema stale.
         assert boss.get("prefab") == "Assets/Prefabs/Boss.zprfb"
 
     def test_level2_no_regular_enemies(self):
@@ -179,25 +185,28 @@ class TestLevel2:
 
 
 class TestHUDBoss:
+    """As barras do boss vivem no HUD do nivel do boss.
+
+    Level2 vincula HUD_Boss.zui, nao HUD.zui: sao dois documentos, e so o
+    segundo declara BossNameLabel e BossHealthBar. As tres assercoes liam o
+    HUD generico, onde nada disso existe nem deveria.
+    """
+
     def test_hud_has_boss_health_bar(self):
-        ui_path = project_root / "Assets" / "UI" / "HUD.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-        widgets = [w.get("name") for w in data.get("widgets", [])]
-        assert "BossHealthBar" in widgets
+        assert "BossHealthBar" in canonical.widget_names(canonical.load_ui("HUD_Boss"))
 
     def test_hud_has_boss_name_label(self):
-        ui_path = project_root / "Assets" / "UI" / "HUD.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-        widgets = [w.get("name") for w in data.get("widgets", [])]
-        assert "BossNameLabel" in widgets
+        assert "BossNameLabel" in canonical.widget_names(canonical.load_ui("HUD_Boss"))
 
     def test_boss_health_bar_is_progress_bar(self):
-        ui_path = project_root / "Assets" / "UI" / "HUD.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-        boss_bar = next((w for w in data.get("widgets", [])
-                        if w.get("name") == "BossHealthBar"), None)
+        boss_bar = canonical.find_widget(canonical.load_ui("HUD_Boss"), "BossHealthBar")
         assert boss_bar is not None
-        assert boss_bar.get("type") == "ProgressBar"
+        assert boss_bar.get("type") == "UIProgressBar"
+
+    def test_level2_binds_the_boss_hud(self):
+        """O HUD do boss so serve se Level2 realmente o vincular."""
+        hud = canonical.find_object(canonical.load_scene("Level2"), "HUD")
+        assert canonical.ui_asset_of(hud) == "Assets/UI/HUD_Boss.zui"
 
 
 class TestZeroPython:

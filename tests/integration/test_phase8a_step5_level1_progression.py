@@ -20,6 +20,8 @@ import json
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from tests.integration import _phase8a_canonical as canonical
+
 
 class TestCoinPrefab:
     """Test Coin collectible."""
@@ -315,11 +317,7 @@ class TestLevel2Scene:
         scene_path = project_root / "Assets" / "Scenes" / "Level2.zscene"
         assert scene_path.exists()
 
-    def test_level2_valid_json(self):
-        """Verify Level2 is valid JSON."""
-        scene_path = project_root / "Assets" / "Scenes" / "Level2.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.scene"
+    # O cabecalho de Level2 e verificado em test_phase8a_canonical_schema.py.
 
     def test_level2_has_player(self):
         """Verify Level2 has Player."""
@@ -357,8 +355,9 @@ class TestLevel1Collectibles:
         scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
         data = json.loads(scene_path.read_text(encoding="utf-8"))
 
-        coins = [o for o in data.get("objects", [])
-                if o.get("name") == "Coin"]
+        # As instancias sao numeradas -- "Coin 1" .. "Coin 5" -- entao um
+        # match exato por nome nao encontra nenhuma.
+        coins = canonical.objects_named_like(canonical.load_scene("Level1"), "Coin")
         assert len(coins) == 5
 
     def test_level1_has_key(self):
@@ -397,16 +396,28 @@ class TestLevel1Collectibles:
                     if o.get("name") == "LevelExit"), None)
         assert exit is not None
 
-    def test_level1_has_project_variables(self):
-        """Verify Level1 has coins and has_key project variables."""
-        scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
+    def test_level1_collectibles_write_project_scope_variables(self):
+        """Moedas e chave gravam estado no escopo de projeto.
 
-        variables = data.get("variables", {})
-        assert "coins" in variables
-        assert "has_key" in variables
-        assert variables["coins"] == 0
-        assert variables["has_key"] is False
+        A cena nao carrega mais um mapa "variables" na raiz; o estado do run
+        pertence ao blackboard e quem o escreve sao os grafos dos coletaveis.
+        E isso que se verifica aqui.
+        """
+        for graph_name, variable in (
+            ("CoinCollectionLogic", "coins"),
+            ("KeyCollectionLogic", "has_key"),
+        ):
+            graph = canonical.load_logic(graph_name)
+            writes = [
+                n.get("properties", {})
+                for n in graph.get("nodes", [])
+                if str(n.get("type")) in {"set_variable", "variables.set"}
+            ]
+            matching = [w for w in writes if w.get("name") == variable]
+            assert matching, f"{graph_name} nunca escreve {variable!r}"
+            assert any(
+                str(w.get("scope", "")) == "project" for w in matching
+            ), f"{graph_name} escreve {variable!r} fora do escopo de projeto"
 
 
 class TestHUDCollectibles:
@@ -414,19 +425,11 @@ class TestHUDCollectibles:
 
     def test_hud_has_coins_label(self):
         """Verify HUD has CoinsLabel."""
-        ui_path = project_root / "Assets" / "UI" / "HUD.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-
-        widgets = [w.get("name") for w in data.get("widgets", [])]
-        assert "CoinsLabel" in widgets
+        assert "CoinsLabel" in canonical.widget_names(canonical.load_ui("HUD"))
 
     def test_hud_has_key_label(self):
         """Verify HUD has KeyLabel."""
-        ui_path = project_root / "Assets" / "UI" / "HUD.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-
-        widgets = [w.get("name") for w in data.get("widgets", [])]
-        assert "KeyLabel" in widgets
+        assert "KeyLabel" in canonical.widget_names(canonical.load_ui("HUD"))
 
 
 class TestZeroPythonStep5:
