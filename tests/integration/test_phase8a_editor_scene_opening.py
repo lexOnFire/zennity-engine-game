@@ -13,6 +13,8 @@ import json
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from tests.integration import _phase8a_canonical as canonical
+
 
 class TestSceneFileExtensionRecognition:
     """Testa se o editor reconhece .zscene como tipo de arquivo aberto."""
@@ -117,19 +119,13 @@ class TestSceneStructureForDeserialization:
 
     def test_gameover_has_canvas(self):
         """Verifica que GameOver tem Canvas."""
-        scene_path = project_root / "Assets" / "Scenes" / "GameOver.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        # In canonical format, canvas is in components dict
-        canvas = next((o for o in data.get("objects", []) if "canvas" in o.get("components", {})), None)
-        assert canvas is not None
+        scene = canonical.load_scene("GameOver")
+        assert any(canonical.component(o, "Canvas") for o in canonical.objects(scene))
 
     def test_victory_has_canvas(self):
         """Verifica que Victory tem Canvas."""
-        scene_path = project_root / "Assets" / "Scenes" / "Victory.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        # In canonical format, canvas is in components dict
-        canvas = next((o for o in data.get("objects", []) if "canvas" in o.get("components", {})), None)
-        assert canvas is not None
+        scene = canonical.load_scene("Victory")
+        assert any(canonical.component(o, "Canvas") for o in canonical.objects(scene))
 
 
 class TestAssetBrowserDockHandlesZScene:
@@ -238,30 +234,11 @@ class TestEditorBootstrapConnectionsAssets:
         assert mock_host.dock_assets.workflow_controller is not None
 
 
-class TestSceneSerialization:
-    """Testa que cenas foram serializadas com formato esperado pelo loader."""
-
-    def test_mainmenu_has_format_field(self):
-        """Verifica que MainMenu tem campo 'format'."""
-        scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        assert "format" in data
-        assert data["format"] == "zennity.scene"
-
-    def test_mainmenu_has_name_field(self):
-        """Verifica que MainMenu tem campo 'name'."""
-        scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        assert "name" in data
-
-    def test_all_scenes_have_format_field(self):
-        """Verifica que todas as cenas têm campo format."""
-        scene_names = ["MainMenu", "Level1", "Level2", "GameOver", "Victory"]
-        for name in scene_names:
-            scene_path = project_root / "Assets" / "Scenes" / f"{name}.zscene"
-            if scene_path.exists():
-                data = json.loads(scene_path.read_text(encoding="utf-8"))
-                assert data.get("format") == "zennity.scene", f"{name} format incorreto"
+# O cabecalho serializado -- format_version, scene_name, engine_version -- e
+# verificado para as cinco cenas em test_phase8a_canonical_schema.py, escrito
+# junto com a migracao 6a3fb0a7. As tres assercoes que existiam aqui checavam os
+# campos "format"/"name" do schema anterior a essa migracao e foram removidas em
+# 13.1-B; nao havia contrato a preservar, so a grafia antiga do mesmo cabecalho.
 
 
 class TestBugReproductionRegressions:
