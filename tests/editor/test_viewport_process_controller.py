@@ -7,7 +7,7 @@ class FakeQueue:
     def __init__(self) -> None:
         self.items = []
         self.closed = False
-        self.joined = False
+        self.join_cancelled = False
 
     def put_nowait(self, item) -> None:
         self.items.append(item)
@@ -15,8 +15,8 @@ class FakeQueue:
     def close(self) -> None:
         self.closed = True
 
-    def join_thread(self) -> None:
-        self.joined = True
+    def cancel_join_thread(self) -> None:
+        self.join_cancelled = True
 
 
 class FakeProcess:
@@ -86,7 +86,10 @@ def test_shutdown_requests_graceful_exit_then_forces_stuck_process() -> None:
     assert process.join_timeouts == [1.5, 2.0]
     assert process.terminated
     assert queue.closed
-    assert queue.joined
+    # cancel_join_thread, nao join_thread: fe218135 trocou um pelo outro
+    # justamente porque aguardar a feeder thread abortava o interpretador na
+    # saida. O contrato e fechar sem bloquear, e e isso que se verifica.
+    assert queue.join_cancelled
 
 
 def test_shutdown_is_idempotent() -> None:
@@ -98,4 +101,4 @@ def test_shutdown_is_idempotent() -> None:
 
     assert [item["type"] for item in queue.items] == ["shutdown"]
     assert queue.closed
-    assert queue.joined
+    assert queue.join_cancelled

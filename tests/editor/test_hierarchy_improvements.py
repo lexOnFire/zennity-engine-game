@@ -147,6 +147,12 @@ def test_hierarchy_delete(editor: ZennityPhase1Editor) -> None:
     assert editor.editor_context.selection.selected is None
     editor.undo()
     assert parent in editor.scene_objects()
+    # DEIXADO VERMELHO DE PROPOSITO (Phase 13, item 13.1-B).
+    #
+    # Apagar o pai remove pai e filho, o que esta certo. Desfazer restaura so o
+    # pai: o filho e perdido em definitivo. O contrato de undo -- devolver o que
+    # o delete tirou -- continua valido, entao isto e defeito de produto, nao
+    # expectativa desatualizada.
     assert child in editor.scene_objects()
 
 
