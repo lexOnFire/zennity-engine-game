@@ -2,11 +2,11 @@
 
 Data da auditoria original: 21 de julho de 2026
 
-Medição AST atualizada: 2 de agosto de 2026
+Medição AST atualizada: 20 de agosto de 2026
 
-Commit da medição: `77fad10`
+Commit da medição: `98f90b1b`
 
-Branch auditada: `integration/merge-audit-into-codex`
+Branch auditada: `phase13/13.1b-baseline-consolidation`
 
 ## Resultado executivo
 
@@ -38,7 +38,7 @@ dessas fronteiras cair abaixo de 70%.
 | Classe | Linhas | Margem até 500 | Situação |
 |---|---:|---:|---|
 | `editor.phase1_editor.ZennityPhase1Editor` | 458 | 42 | ✅ Abaixo de 500 |
-| `engine.logic.runtime.core.LogicGraphRuntime` | 410 | 90 | ✅ Abaixo de 500 |
+| `engine.logic.runtime.core.LogicGraphRuntime` | 433 | 67 | ✅ Abaixo de 500 |
 | `editor.widgets.phase1_viewport.Phase1ViewportWidget` | 387 | 113 | ✅ Abaixo de 500 |
 | `editor.windows.main_window.MainWindow` | 485 | 15 | ⚠️ Legado abaixo de 500; crescimento congelado |
 | `editor.widgets.viewport_widget.ViewportWidget` | 491 | 9 | ⚠️ Abaixo de 500; extração preventiva planejada |
@@ -53,10 +53,13 @@ da medição para não ser interpretada como estado permanente do código.
   passou a desfazer a inscrição no dispatcher global de UI e a liberar as
   referências de owner da sessão, e a inscrição saiu de `__init__` para
   `_subscribe_to_ui_dispatcher`. Sem isso cada Play deixava um runtime vivo
-  permanentemente. Margem restante até 500: 90 linhas.
-- `LogicGraphRuntime` possui somente 6 linhas de margem. Novas responsabilidades
-  não devem ser adicionadas à classe; qualquer crescimento exige extração prévia
-  para os mixins ou serviços de runtime existentes.
+  permanentemente.
+- Depois disso cresceu de 410 para 433 linhas com o depurador visual:
+  `0fa4c7e5` adicionou o visualizador de execução ao vivo e `b0cde6e5` os
+  valores de pino e os watches de dados. Margem restante até 500: 67 linhas.
+- Novas responsabilidades não devem ser adicionadas à classe; qualquer
+  crescimento exige extração prévia para os mixins ou serviços de runtime
+  existentes.
 - `MainWindow` possui 18 linhas de margem, mas pertence ao stack legado com sunset
   previsto para v2.0. A decisão é congelar funcionalidades nesse entrypoint e
   aceitar somente correções essenciais, evitando uma refatoração sem retorno.
