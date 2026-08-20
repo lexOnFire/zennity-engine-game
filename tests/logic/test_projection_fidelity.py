@@ -23,6 +23,7 @@ passes is indistinguishable from one that checks nothing.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -213,19 +214,31 @@ def test_the_guard_detects_a_dropped_field():
 
     The file is restored in a finally block, so a failure here cannot leave the
     working tree modified.
+
+    Read and write in *binary*. ``Path.read_text`` decodes universal newlines to
+    ``\\n`` and ``Path.write_text`` re-encodes them with ``os.linesep``, so on
+    Windows the restore rewrote a LF-committed file as CRLF: same content, every
+    line ending changed, working tree dirty after every suite run. The file
+    mutated here is production source, so the restore has to give back the exact
+    bytes it read, not an equivalent decoding of them.
     """
-    original = CATALOGUE.read_text(encoding="utf-8")
-    old, new = DROPPED_FIELD_MUTATION
+    original = CATALOGUE.read_bytes()
+    digest_before = hashlib.sha256(original).hexdigest()
+    old, new = (text.encode("utf-8") for text in DROPPED_FIELD_MUTATION)
     assert old in original, "the mutation anchor moved; this check is vacuous"
     try:
-        CATALOGUE.write_text(original.replace(old, new, 1), encoding="utf-8")
+        CATALOGUE.write_bytes(original.replace(old, new, 1))
         result = subprocess.run(
             [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-q", "--tb=no",
              str(Path(__file__).relative_to(REPO_ROOT))],
             cwd=str(REPO_ROOT), capture_output=True, text=True, timeout=900,
         )
     finally:
-        CATALOGUE.write_text(original, encoding="utf-8")
+        CATALOGUE.write_bytes(original)
+    assert hashlib.sha256(CATALOGUE.read_bytes()).hexdigest() == digest_before, (
+        "the restore did not return the exact bytes it read: the content is "
+        "unchanged but the file on disk differs, which leaves the tree dirty"
+    )
     assert result.returncode != 0, (
         "the projection dropped a field and the fidelity suite still passed:\n"
         f"{result.stdout[-3000:]}"
