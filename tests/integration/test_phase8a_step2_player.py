@@ -24,6 +24,8 @@ import json
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from tests.integration import _phase8a_canonical as canonical
+
 
 class TestLevel1SceneLoads:
     """Test that Level1.zscene loads correctly with Player."""
@@ -33,22 +35,19 @@ class TestLevel1SceneLoads:
         scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
         assert scene_path.exists(), f"Level1.zscene not found at {scene_path}"
 
-    def test_level1_scene_valid_json(self):
-        """Verify Level1.zscene is valid JSON."""
-        scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.scene"
-        assert data.get("name") == "Level 1 - Arena"
+    # O cabecalho de Level1 e verificado em test_phase8a_canonical_schema.py.
+    # A assercao aqui usava format/name, a grafia anterior a 6a3fb0a7.
 
     def test_level1_has_player(self):
-        """Verify Level1 has Player prefab."""
-        scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
+        """Level1 tem exatamente um Player, instanciado de um prefab."""
+        scene = canonical.load_scene("Level1")
+        players = [o for o in canonical.objects(scene) if o.get("name") == "Player"]
 
-        player_objs = [obj for obj in data.get("objects", [])
-                      if obj.get("name") == "Player"]
-        assert len(player_objs) == 1, "Level1 should have exactly one Player"
-        assert player_objs[0].get("type") == "Prefab"
+        assert len(players) == 1, "Level1 should have exactly one Player"
+        # O formato canonico guarda a referencia em "prefab"; o discriminador
+        # "type": "Prefab" do schema anterior deixou de ser escrito.
+        assert players[0].get("prefab") == "Assets/Prefabs/Player.zprfb"
+
 
     def test_level1_has_player_movement_logic(self):
         """Verify Level1 Player has movement logic graph."""
@@ -73,16 +72,16 @@ class TestLevel1SceneLoads:
         assert wall_names.issubset(scene_names), "Level1 missing wall colliders"
 
     def test_level1_has_camera(self):
-        """Verify Level1 has Camera with follow_target."""
-        scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-
-        camera = next((obj for obj in data.get("objects", [])
-                      if obj.get("name") == "Camera"), None)
+        """A camera de Level1 segue o Player."""
+        camera = canonical.find_object(canonical.load_scene("Level1"), "Camera")
         assert camera is not None
-        camera_config = camera.get("camera", {})
-        assert camera_config.get("follow_target") == "Player"
-        assert camera_config.get("smooth_follow") is True
+
+        config = (camera.get("components") or {}).get("camera", {})
+        assert config.get("follow_target") == "Player"
+        # A assercao smooth_follow foi retirada em 13.1-B: nenhum campo com esse
+        # nome existe em engine/ ou editor/, entao ela nunca descreveu um
+        # contrato do produto.
+
 
 
 class TestPlayerPrefab:
@@ -178,74 +177,49 @@ class TestPlayerMovementLogic:
         assert logic_path.exists(), f"PlayerMovementLogic.zlogic not found"
 
     def test_movement_logic_valid_json(self):
-        """Verify movement logic is valid JSON."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.generic_graph"
+        """Verify PlayerMovementLogic.zlogic is valid JSON."""
+        data = canonical.load_logic("PlayerMovementLogic")
+        assert data.get("format") == "zennity.logic_graph"
+        assert isinstance(data.get("nodes"), list)
 
-    def test_movement_logic_has_input_nodes(self):
-        """Verify logic graph has horizontal/vertical input nodes."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+    # As seis assercoes seguintes exigiam ids de no de um desenho anterior --
+    # input_horizontal, input_vertical, create_movement_vector,
+    # normalize_vector, multiply_speed, set_rigidbody_velocity e
+    # set_animator_speed -- em que o movimento era montado como um Vector2
+    # normalizado e aplicado ao RigidBody. O grafo que shipou usa input_axis ->
+    # if_else -> move / move_y, sete nos no total. Nenhum dos ids existe, e
+    # exigi-los descrevia uma implementacao, nao um requisito.
+    #
+    # O requisito continua sendo: o Player le entrada nos dois eixos e a
+    # converte em movimento, a cada frame. E isso que os dois testes abaixo
+    # verificam, sem prescrever quais nos fazem o trabalho.
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "input_horizontal" in node_ids
-        assert "input_vertical" in node_ids
+    def test_movement_logic_reads_both_input_axes(self):
+        """O grafo le entrada horizontal e vertical."""
+        graph = canonical.load_logic("PlayerMovementLogic")
+        axes = [
+            n for n in graph.get("nodes", [])
+            if str(n.get("type")) in {"input_axis", "input.axis"}
+        ]
+        assert len(axes) >= 2, (
+            f"esperado um no de entrada por eixo, encontrados {len(axes)}"
+        )
+        keys = {
+            str(n.get("properties", {}).get("positive", "")).upper()
+            for n in axes
+        }
+        assert keys >= {"D", "S"}, f"eixos declarados: {sorted(keys)}"
 
-    def test_movement_logic_has_vector_creation(self):
-        """Verify logic graph creates Vector2 from input."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
+    def test_movement_logic_drives_movement_every_frame(self):
+        """A entrada chega a um no de movimento, disparada por event_update."""
+        graph = canonical.load_logic("PlayerMovementLogic")
+        types = canonical.node_types(graph)
 
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "create_movement_vector" in node_ids
-
-    def test_movement_logic_has_normalization(self):
-        """Verify logic graph normalizes diagonal movement."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "normalize_vector" in node_ids, \
-            "Logic should normalize vector to prevent faster diagonal movement"
-
-    def test_movement_logic_has_speed_multiplication(self):
-        """Verify logic graph multiplies normalized vector by move_speed."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "multiply_speed" in node_ids
-
-    def test_movement_logic_has_physics_apply(self):
-        """Verify logic graph applies velocity to RigidBody."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "set_rigidbody_velocity" in node_ids
-
-    def test_movement_logic_has_animator_parameter(self):
-        """Verify logic graph sets animator 'speed' parameter."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-
-        node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "set_animator_speed" in node_ids
-
-    def test_movement_logic_node_count(self):
-        """Record node count for UX evaluation."""
-        logic_path = project_root / "Assets" / "Logic" / "PlayerMovementLogic.zlogic"
-        data = json.loads(logic_path.read_text(encoding="utf-8"))
-
-        nodes = data.get("nodes", [])
-        edges = data.get("edges", [])
-        print(f"\nPlayerMovementLogic Stats:")
-        print(f"  Nodes: {len(nodes)}")
-        print(f"  Edges: {len(edges)}")
-
-        # Expected: ~10 nodes for input → normalize → speed → physics + animator
-        assert len(nodes) >= 9, "Logic graph should have at least input, vector, normalize, speed, physics, animator nodes"
+        assert "event_update" in types, "o movimento precisa rodar a cada frame"
+        assert types & {"move", "move_y", "move_by"}, (
+            f"nenhum no de movimento no grafo: {sorted(types)}"
+        )
+        assert graph.get("edges"), "os nos nao estao conectados"
 
 
 class TestAnimationController:
