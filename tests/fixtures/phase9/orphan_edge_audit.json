@@ -1,13 +1,13 @@
 {
   "_comment": "Phase 9 Recovery Item 16A. Final orphan edge audit and root-cause classification. Inventory only; not an allow-list and does not weaken tools/audit_node_system.py --ci.",
-  "_provenance": "Phase 9 Recovery Item 16A; base 3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8 | Item 16B removed only the numeric RC-01 edges it resolved. | Item 17 restored boss combat state progression and remeasured. | Item 18 restored the boss damage pipeline and remeasured.",
+  "_provenance": "Phase 9 Recovery Item 16A; base 3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8 | Item 16B removed only the numeric RC-01 edges it resolved. | Item 17 restored boss combat state progression and remeasured. | Item 18 restored the boss damage pipeline and remeasured. | Phase 13 item 13.1-B removed the variable/variable.increment phantom entries: 41709d87 migrated the shipping graphs off the dotted legacy spellings, so neither id appears in any .zlogic any more.",
   "base_commit": "3c6b5b1732c2bafaa30cfaa0702a951e3fd857c8",
   "baseline_after_pre16a": {
     "shipping_graphs": 55,
     "orphan_occurrences": 9,
     "unique_orphan_edges": 9,
-    "phantom_ids": 11,
-    "phantom_instances": 17,
+    "phantom_ids": 9,
+    "phantom_instances": 14,
     "assets_with_orphans": 6,
     "assets_with_phantoms": 13
   },
@@ -103,20 +103,6 @@
         "Assets/Logic/Movimentar2D.zlogic"
       ],
       "item14b_classification": "NEVER_IMPLEMENTED"
-    },
-    "variable": {
-      "instances": 2,
-      "assets": [
-        "Assets/Logic/EnemyHealth.zlogic"
-      ],
-      "item14b_classification": "H_UNKNOWN"
-    },
-    "variable.increment": {
-      "instances": 1,
-      "assets": [
-        "Assets/Logic/EnemyAILogic.zlogic"
-      ],
-      "item14b_classification": "H_UNKNOWN"
     }
   },
   "root_causes": [
