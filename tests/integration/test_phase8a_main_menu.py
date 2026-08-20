@@ -18,6 +18,7 @@ import json
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from tests.integration import _phase8a_canonical as canonical
 from engine.core.engine import Engine
 from engine.logic.event_bus import LogicEventBus
 from engine.logic.blackboard import BlackboardStore
@@ -31,36 +32,34 @@ class TestMainMenuSceneLoads:
         scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
         assert scene_path.exists(), f"MainMenu.zscene not found at {scene_path}"
 
-    def test_main_menu_scene_valid_json(self):
-        """Verify MainMenu.zscene is valid JSON."""
-        scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.scene"
-        assert data.get("name") == "Main Menu"
+    # O cabecalho serializado das cinco cenas e verificado em
+    # test_phase8a_canonical_schema.py (format_version / scene_name /
+    # engine_version). A assercao que existia aqui usava a grafia anterior a
+    # 6a3fb0a7 e foi retirada em 13.1-B.
 
     def test_main_menu_has_ui_asset_reference(self):
         """Verify MainMenu references MainMenu.zui."""
         scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
         data = json.loads(scene_path.read_text(encoding="utf-8"))
 
-        ui_objects = [obj for obj in data.get("objects", []) if "ui" in obj]
-        assert len(ui_objects) > 0, "MainMenu should have UI object"
-
-        ui_ref = ui_objects[0]["ui"]["asset"]
-        assert ui_ref == "Assets/UI/MainMenu.zui"
+        scene = canonical.load_scene("MainMenu")
+        bound = [canonical.ui_asset_of(o) for o in canonical.objects(scene)]
+        assert any(bound), "MainMenu should bind a .zui"
+        assert "Assets/UI/MainMenu.zui" in bound
 
     def test_main_menu_has_logic_graph_reference(self):
         """Verify MainMenu references MainMenuLogic graph."""
         scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
         data = json.loads(scene_path.read_text(encoding="utf-8"))
 
-        logic_objects = [obj for obj in data.get("objects", [])
-                        if "logic_graphs" in obj]
-        assert len(logic_objects) > 0, "MainMenu should have logic graph"
-
-        graphs = logic_objects[0]["logic_graphs"]
-        assert any(g["path"] == "Assets/Logic/MainMenuLogic.zlogic"
-                  for g in graphs)
+        scene = canonical.load_scene("MainMenu")
+        bound = {
+            path
+            for obj in canonical.objects(scene)
+            for path in canonical.logic_graph_paths(obj)
+        }
+        assert bound, "MainMenu should bind a logic graph"
+        assert "Assets/Logic/MainMenuLogic.zlogic" in bound
 
 
 class TestMainMenuUILoads:
@@ -73,31 +72,26 @@ class TestMainMenuUILoads:
 
     def test_main_menu_ui_valid_json(self):
         """Verify MainMenu.zui is valid JSON."""
-        ui_path = project_root / "Assets" / "UI" / "MainMenu.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
+        data = canonical.load_ui("MainMenu")
         assert data.get("format") == "zennity.ui"
-        assert isinstance(data.get("widgets"), list)
+        # Um .zui e uma arvore a partir de canvas, nao uma lista plana widgets.
+        assert isinstance(data.get("canvas"), dict)
+        assert canonical.widgets(data), "o canvas nao declara nenhum widget"
 
     def test_main_menu_ui_has_required_buttons(self):
         """Verify MainMenu UI has New Game, Continue, Exit buttons."""
-        ui_path = project_root / "Assets" / "UI" / "MainMenu.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-
-        widget_names = [w.get("name") for w in data.get("widgets", [])]
-        assert "NewGameButton" in widget_names, "Missing New Game button"
-        assert "ContinueButton" in widget_names, "Missing Continue button"
-        assert "ExitButton" in widget_names, "Missing Exit button"
+        names = canonical.widget_names(canonical.load_ui("MainMenu"))
+        assert "NewGameButton" in names, "Missing New Game button"
+        assert "ContinueButton" in names, "Missing Continue button"
+        assert "ExitButton" in names, "Missing Exit button"
 
     def test_main_menu_ui_continue_button_initially_disabled(self):
         """Verify Continue button starts disabled (until save is detected)."""
-        ui_path = project_root / "Assets" / "UI" / "MainMenu.zui"
-        data = json.loads(ui_path.read_text(encoding="utf-8"))
-
-        continue_btn = next((w for w in data.get("widgets", [])
-                           if w.get("name") == "ContinueButton"), None)
+        continue_btn = canonical.find_widget(canonical.load_ui("MainMenu"), "ContinueButton")
         assert continue_btn is not None
-        assert continue_btn.get("enabled") is False, \
+        assert continue_btn.get("enabled") is False, (
             "Continue button should start disabled until save exists"
+        )
 
 
 class TestMainMenuLogicGraph:
@@ -112,8 +106,10 @@ class TestMainMenuLogicGraph:
         """Verify MainMenuLogic.zlogic is valid JSON."""
         logic_path = project_root / "Assets" / "Logic" / "MainMenuLogic.zlogic"
         data = json.loads(logic_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.generic_graph"
-        assert data.get("category") == "Logic"
+        # LOGIC_GRAPH_FORMAT desde b3a24b71; "zennity.generic_graph" era a
+        # grafia anterior e nenhum .zlogic do repositorio a usa.
+        assert data.get("format") == "zennity.logic_graph"
+        assert isinstance(data.get("nodes"), list)
 
     def test_main_menu_logic_has_button_listeners(self):
         """Verify logic graph has listeners for all three buttons."""
@@ -156,52 +152,41 @@ class TestLevel1Placeholder:
         scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
         assert scene_path.exists(), f"Level1.zscene not found at {scene_path}"
 
-    def test_level1_scene_valid_json(self):
-        """Verify Level1.zscene is valid JSON."""
-        scene_path = project_root / "Assets" / "Scenes" / "Level1.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-        assert data.get("format") == "zennity.scene"
-        assert data.get("name") == "Level 1 - Arena"
+    # Idem para Level1: cabecalho coberto por test_phase8a_canonical_schema.py.
 
 
 class TestMainMenuProjectState:
     """Test that MainMenu scene initializes project variables."""
 
-    def test_main_menu_initializes_coins(self):
-        """Verify MainMenu initializes coins variable."""
-        scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
+    @pytest.mark.parametrize("variable, value", [
+        ("coins", 0),
+        ("score", 0),
+        ("has_key", False),
+        ("health", 100),
+    ])
+    def test_new_game_resets_project_state(self, variable, value):
+        """Starting a new game must clear the previous run's state.
 
-        variables = data.get("variables", {})
-        assert "coins" in variables
-        assert variables["coins"] == 0
+        The scene used to carry a root-level ``variables`` mapping. The
+        canonical scene keeps its blackboard under ``blackboard.variables`` and
+        the reset itself belongs to the New Game flow, so the requirement is
+        checked where it now lives: MainMenuLogic must author a variables.set
+        that writes the initial value.
+        """
+        graph = canonical.load_logic("MainMenuLogic")
 
-    def test_main_menu_initializes_score(self):
-        """Verify MainMenu initializes score variable."""
-        scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
+        writes = [
+            node.get("properties", {})
+            for node in graph.get("nodes", [])
+            if str(node.get("type")) in {"variables.set", "set_variable"}
+        ]
+        matching = [w for w in writes if w.get("name") == variable]
 
-        variables = data.get("variables", {})
-        assert "score" in variables
-        assert variables["score"] == 0
-
-    def test_main_menu_initializes_has_key(self):
-        """Verify MainMenu initializes has_key variable."""
-        scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-
-        variables = data.get("variables", {})
-        assert "has_key" in variables
-        assert variables["has_key"] is False
-
-    def test_main_menu_initializes_health(self):
-        """Verify MainMenu initializes health variable."""
-        scene_path = project_root / "Assets" / "Scenes" / "MainMenu.zscene"
-        data = json.loads(scene_path.read_text(encoding="utf-8"))
-
-        variables = data.get("variables", {})
-        assert "health" in variables
-        assert variables["health"] == 100
+        assert matching, f"MainMenuLogic never resets {variable!r}"
+        assert any(w.get("value") == value for w in matching), (
+            f"MainMenuLogic resets {variable!r} to "
+            f"{[w.get('value') for w in matching]}, expected {value!r}"
+        )
 
 
 class TestMainMenuNoPhythonGameplay:
