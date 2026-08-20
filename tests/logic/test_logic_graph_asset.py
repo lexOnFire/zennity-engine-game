@@ -295,7 +295,10 @@ def test_the_player_graph_moves_the_player_both_ways_and_not_at_rest():
 
 def test_condition_nodes_expose_named_typed_ports():
     ports = node_port_definitions("if_else")
-    assert ("condition", "bool") in ports["inputs"]
+    # ``any``, not ``bool``: b3a24b71 unified the definition sources onto the
+    # catalogue and widened this pin so a branch can take a truthy value from
+    # any node. ``and``/``or``/``not`` still declare ``bool`` on both sides.
+    assert ("condition", "any") in ports["inputs"]
     assert ports["outputs"] == [("true", "flow"), ("false", "flow")]
     assert ("value", "number") in node_port_definitions("input_axis")["outputs"]
 
@@ -365,7 +368,7 @@ def test_runtime_resolves_boolean_nodes_and_branch():
 
     game = Game()
     LogicGraphRuntime(graph).update(game, 0.016)
-    assert game.jumps == [420.0]
+    assert game.jumps == [create_logic_node("jump")["properties"]["force"]]
 
 
 def test_runtime_connected_value_overrides_property_and_variable_persists():
@@ -479,6 +482,10 @@ def test_runtime_breakpoint_and_step_keep_exact_flow_continuation():
     amount = create_logic_node("number_value")
     amount["properties"]["value"] = 1.0
     move = create_logic_node("move")
+    # The declared default is 100.0 since b3a24b71 unified the definition
+    # sources; author the speed here so the arithmetic below belongs to the
+    # test rather than to whatever the catalogue currently defaults to.
+    move["properties"]["speed"] = 200.0
     jump = create_logic_node("jump")
     graph = default_logic_graph("BreakpointFlow")
     graph["nodes"] = [event, setter, amount, move, jump]
@@ -519,7 +526,7 @@ def test_runtime_breakpoint_and_step_keep_exact_flow_continuation():
     assert runtime.debug_paused is True
     assert runtime.pause_node == ""
     assert game.x == 100.0
-    assert game.jumps == [420.0]
+    assert game.jumps == [jump["properties"]["force"]]
 
     runtime.continue_execution()
     runtime.update(game, 0.5)
@@ -532,6 +539,10 @@ def test_conditional_breakpoint_watches_and_restart_are_beginner_safe():
     amount = create_logic_node("number_value")
     amount["properties"]["value"] = 1.0
     move = create_logic_node("move")
+    # The declared default is 100.0 since b3a24b71 unified the definition
+    # sources; author the speed here so the arithmetic below belongs to the
+    # test rather than to whatever the catalogue currently defaults to.
+    move["properties"]["speed"] = 200.0
     graph = default_logic_graph("ConditionalDebug")
     graph["nodes"] = [event, amount, move]
     graph["edges"] = [
@@ -633,6 +644,10 @@ def test_get_and_set_variable_nodes_respect_selected_scope():
     getter = create_logic_node("get_variable")
     getter["properties"].update({"scope": "scene", "name": "score"})
     move = create_logic_node("move")
+    # The declared default is 100.0 since b3a24b71 unified the definition
+    # sources; author the speed here so the arithmetic below belongs to the
+    # test rather than to whatever the catalogue currently defaults to.
+    move["properties"]["speed"] = 200.0
     graph = default_logic_graph("ScopedNodes")
     graph["variables"] = {"score": {"type": "number", "scope": "scene", "default": 0}}
     graph["nodes"] = [event, setter, getter, move]
