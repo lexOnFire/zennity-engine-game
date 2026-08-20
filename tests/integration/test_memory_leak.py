@@ -23,40 +23,91 @@ EVIDÊNCIA:
   - Processo isolado (``pytest tests/integration/test_memory_leak.py``): passa
     consistentemente (crescimento < 200 objetos, limite = 1.200).
 
-SOLUÇÃO ADOTADA (pragmática):
-  - Suíte principal: usa ``--ignore=tests/integration/test_memory_leak.py``.
-  - CI: job ``memory-stability`` separado roda este arquivo em processo limpo
-    e é a fonte de verdade para regressões de memória.
+SOLUÇÃO ANTERIOR (pragmática, substituída no item 13.1-A):
+  - Suíte principal: ``--ignore=tests/integration/test_memory_leak.py``.
+  - CI: job ``memory-stability`` separado.
+  Isso funcionava no CI mas não estava replicado em ``pytest.ini``, então quem
+  rodasse ``pytest tests`` localmente herdava o falso positivo.
 
-SOLUÇÃO DEFINITIVA PENDENTE (próxima sessão de manutenção):
-  Reescrever o corpo do teste para executar os 500 ciclos num subprocesso
-  Python separado via ``subprocess.run([sys.executable, ...])``. Isso garante
-  um heap limpo independentemente do que rodou antes, e resolve o problema
-  de forma definitiva tanto no CI quanto localmente.
-  Ver: https://github.com/<org>/zennity-engine-game/issues/<N>
-  (ou buscar "test_memory_leak subprocess" em PRE_V1_FINAL_AUDIT.md)
+SOLUÇÃO ADOTADA (item 13.1-A) -- a "definitiva pendente" descrita acima:
+  A medição roda num subprocesso Python limpo (``python <este arquivo>``). O
+  heap medido é sempre virgem, independentemente do que rodou antes, então o
+  resultado é o mesmo isolado, na suíte completa e no CI. O limite de 1.200
+  objetos NÃO foi alterado; o corpo da medição é o mesmo, só mudou onde ele
+  executa. O job dedicado do CI continua válido e passa a ser redundante em vez
+  de obrigatório.
 ===========================================================================
 """
 from __future__ import annotations
 
 import gc
+import os
+import subprocess
+import sys
 from collections import Counter
+from pathlib import Path
+
 import pytest
-from PySide6.QtWidgets import QApplication
-from editor.phase1_editor import ZennityPhase1Editor
 
+#: Crescimento máximo de objetos aceito ao fim dos 500 ciclos. Inalterado.
+GROWTH_THRESHOLD = 1200
 
-@pytest.fixture(scope="session")
-def qapp() -> QApplication:
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication([])
-    return app
+#: Marca o processo filho. Presente, o teste mede; ausente, ele delega.
+CHILD_MARKER = "ZENNITY_MEMORY_LEAK_CHILD"
 
 
 @pytest.mark.xdist_group(name="memory_leak")
-def test_editor_play_stop_cycle_memory_stability(qapp: QApplication) -> None:
-    """Valida a estabilidade de memória por 500 ciclos de Play/Stop."""
+def test_editor_play_stop_cycle_memory_stability() -> None:
+    """Mede num processo limpo, reentrando neste mesmo teste via pytest.
+
+    O filho é lançado como ``pytest <este teste>``, não como ``python <este
+    arquivo>``. O conftest da raiz chama ``pygame.init()`` e envolve
+    ``pygame.draw`` em mocks; um filho lançado fora do pytest não recebe nada
+    disso e passa a exercitar rasterização real -- os 500 ciclos saltaram de
+    segundos para mais de 15 minutos, medindo algo que a suíte nunca mede.
+    """
+    if os.environ.get(CHILD_MARKER) == "1":
+        growth = _measure_growth()
+        assert growth < GROWTH_THRESHOLD, (
+            f"Potencial vazamento de memória detectado: +{growth} objetos retidos."
+        )
+        return
+
+    environment = dict(os.environ)
+    environment.update(
+        {
+            CHILD_MARKER: "1",
+            "SDL_VIDEODRIVER": "dummy",
+            "SDL_AUDIODRIVER": "dummy",
+            "PYGAME_HIDE_SUPPORT_PROMPT": "1",
+            "QT_QPA_PLATFORM": "offscreen",
+        }
+    )
+    target = f"{Path(__file__).name}::test_editor_play_stop_cycle_memory_stability"
+    result = subprocess.run(
+        [
+            sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-q", "--tb=short",
+            str(Path(__file__).resolve().parent / target),
+        ],
+        cwd=str(Path(__file__).resolve().parents[2]),
+        capture_output=True,
+        text=True,
+        env=environment,
+        timeout=900,
+    )
+    assert result.returncode == 0, (
+        "a medição de estabilidade de memória falhou num processo limpo, "
+        "portanto não é contaminação de contexto:\n"
+        f"{result.stdout[-3000:]}\n{result.stderr[-2000:]}"
+    )
+
+
+def _measure_growth() -> int:
+    """Os 500 ciclos de Play/Stop. Só faz sentido num heap limpo."""
+    from PySide6.QtWidgets import QApplication
+    from editor.phase1_editor import ZennityPhase1Editor
+
+    qapp = QApplication.instance() or QApplication([])
     editor = ZennityPhase1Editor()
     import pygame
 
@@ -120,13 +171,12 @@ def test_editor_play_stop_cycle_memory_stability(qapp: QApplication) -> None:
     growth = sum(count for type_name, count in final_types.items() if type_name not in mock_types) - sum(count for type_name, count in initial_types.items() if type_name not in mock_types)
     
     # Se houver crescimento excessivo, imprime a diferença por tipo de objeto
-    if growth >= 1200:
+    if growth >= GROWTH_THRESHOLD:
         diff = {k: final_types[k] - initial_types[k] for k in final_types if final_types[k] > initial_types[k] and k not in mock_types}
         sorted_diff = sorted(diff.items(), key=lambda x: x[1], reverse=True)
         print("\nLEAKED TYPES:", sorted_diff[:15])
-        
-    assert growth < 1200, f"Potencial vazamento de memória detectado: +{growth} objetos retidos."
 
     editor.close()
     editor.deleteLater()
     qapp.processEvents()
+    return growth
