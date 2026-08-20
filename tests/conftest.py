@@ -10,7 +10,9 @@ Este arquivo fornece dois contratos válidos para toda a suíte:
 * nenhum teste pode abrir um diálogo modal do Qt
   (ver tests/_headless_dialogs.py);
 * nenhum teste pode deixar estado do editor dentro do repositório
-  (ver tests/_isolated_project_state.py).
+  (ver tests/_isolated_project_state.py);
+* nenhum módulo pode deixar widgets Qt de topo vivos para o módulo seguinte
+  (ver tests/_qt_widget_lifetime.py).
 """
 
 from tests._headless_dialogs import (  # noqa: F401
@@ -24,6 +26,9 @@ from tests._isolated_project_state import (  # noqa: F401
     _isolated_project_state,
 )
 from tests._isolated_project_state import pytest_configure as _configure_project_state
+from tests._qt_widget_lifetime import (  # noqa: F401
+    _qt_widget_lifetime,
+)
 
 
 def pytest_configure(config):
