@@ -17,6 +17,7 @@ These tests fail loudly rather than letting that come back silently.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import subprocess
@@ -34,6 +35,38 @@ def _git(*args: str) -> str:
     if result.returncode != 0:
         pytest.skip(f"git unavailable or not a repository: {result.stderr.strip()}")
     return result.stdout
+
+
+#: Source trees the suite must never leave modified. ``Assets/`` is covered by
+#: its own helper below; everything here is code and configuration.
+SOURCE_TREES = ("engine/", "editor/", "tests/", "tools/", "scripts/")
+
+#: Modules that deliberately rewrite a file *outside* ``Assets/`` and are
+#: required to restore it byte for byte.  ``test_projection_fidelity`` mutates
+#: ``engine/logic/node_definitions/catalogue.py`` to prove its own guard can go
+#: red; that is legitimate, restoring it as CRLF was not.
+SOURCE_MUTATING_MODULES = (
+    "tests/logic/test_projection_fidelity.py",
+)
+
+
+def _porcelain(*pathspecs: str) -> list[str]:
+    """Tracked files under ``pathspecs`` that differ from HEAD.
+
+    Untracked entries are dropped: ``__pycache__``, ``.pytest_cache`` and every
+    other build artefact is either ignored by git or shows up as ``??``, and
+    neither is a repository mutation.
+    """
+    return [
+        line[3:].strip().strip('"')
+        for line in _git("status", "--porcelain", "--", *pathspecs).splitlines()
+        if line and not line.startswith("??")
+    ]
+
+
+def _tracked_source_changes() -> list[str]:
+    """Tracked code/config files that differ from HEAD."""
+    return _porcelain(*SOURCE_TREES)
 
 
 def _tracked_asset_changes() -> list[str]:
@@ -124,6 +157,124 @@ def test_running_the_asset_writing_modules_leaves_the_tree_untouched():
     assert not newly_dirty, (
         "running the asset-writing test modules modified tracked repository "
         f"assets: {newly_dirty}"
+    )
+
+
+def test_running_the_source_mutating_modules_restores_every_byte():
+    """The same contract as the asset guard, for code instead of assets.
+
+    ``_tracked_asset_changes`` scopes ``git status`` to ``Assets/``, so a test
+    that rewrote a *source* file passed through it unseen.  That is exactly what
+    happened: ``test_projection_fidelity`` restored
+    ``engine/logic/node_definitions/catalogue.py`` through ``Path.write_text``,
+    which re-encodes newlines with ``os.linesep`` and turned a LF file into CRLF
+    on Windows.  Same content, whole file rewritten, tree dirty after every run.
+
+    Differential rather than absolute: a developer's own edits are already dirty
+    before this runs, so only files that become dirty *because of* the subprocess
+    are reported.
+    """
+    import os
+    import sys
+
+    before = set(_tracked_source_changes())
+
+    environment = dict(os.environ)
+    environment.update(
+        SDL_VIDEODRIVER="dummy",
+        SDL_AUDIODRIVER="dummy",
+        PYGAME_HIDE_SUPPORT_PROMPT="1",
+        QT_QPA_PLATFORM="offscreen",
+    )
+    existing = [name for name in SOURCE_MUTATING_MODULES if (REPO_ROOT / name).is_file()]
+    assert existing, "no source-mutating modules found; this guard would be vacuous"
+
+    subprocess.run(
+        [sys.executable, "-m", "pytest", "-p", "no:cacheprovider", "-q", "--tb=no", *existing],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        env=environment,
+        timeout=900,
+    )
+
+    newly_dirty = sorted(set(_tracked_source_changes()) - before)
+    assert not newly_dirty, (
+        "running the source-mutating test modules left tracked code modified: "
+        f"{newly_dirty}. A test may rewrite a source file to prove a guard "
+        "works, but it must restore the exact bytes it read -- use "
+        "read_bytes()/write_bytes(), not read_text()/write_text()."
+    )
+
+
+#: Roots a test uses to address the checkout itself.
+_REPOSITORY_ROOTS = {"REPO_ROOT", "ROOT", "PROJECT_ROOT", "project_root"}
+_SOURCE_TREE_NAMES = {tree.rstrip("/") for tree in SOURCE_TREES} - {"tests"}
+_MUTATING_METHODS = {"write_text", "write_bytes", "unlink", "rename", "touch", "chmod"}
+
+
+def _addresses_a_source_file(node: ast.AST) -> bool:
+    """True for ``REPO_ROOT / "engine" / ...`` and any longer chain from it.
+
+    Matching the expression rather than the file's text is what separates a test
+    that rewrites the checkout from one that merely reads a reference file and
+    writes its output into ``tmp_path`` -- the majority, and the reason a plain
+    substring scan reports them all.
+    """
+    root_seen = False
+    tree_seen = False
+    while isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+        right = node.right
+        if isinstance(right, ast.Constant) and right.value in _SOURCE_TREE_NAMES:
+            tree_seen = True
+        node = node.left
+        if isinstance(node, ast.Name) and node.id in _REPOSITORY_ROOTS:
+            root_seen = True
+    return root_seen and tree_seen
+
+
+def test_a_test_that_writes_into_a_source_tree_is_declared():
+    """Keep the executed guard above from going stale as tests are added.
+
+    The differential check only covers the modules it is told about.  This finds
+    the ones it should be told about: a module that calls a mutating method on a
+    path built from the repository root into a source tree, whether written
+    inline or bound to a module constant first.
+    """
+    undeclared: list[str] = []
+    for path in sorted((REPO_ROOT / "tests").rglob("test_*.py")):
+        relative = path.relative_to(REPO_ROOT).as_posix()
+        if relative == Path(__file__).relative_to(REPO_ROOT).as_posix():
+            continue  # this file names the pattern in order to document it
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8", errors="ignore"))
+        except SyntaxError:
+            continue
+
+        bound: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and _addresses_a_source_file(node.value):
+                bound.update(
+                    target.id for target in node.targets if isinstance(target, ast.Name)
+                )
+
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)):
+                continue
+            if node.func.attr not in _MUTATING_METHODS:
+                continue
+            receiver = node.func.value
+            hits_source = _addresses_a_source_file(receiver) or (
+                isinstance(receiver, ast.Name) and receiver.id in bound
+            )
+            if hits_source and relative not in SOURCE_MUTATING_MODULES:
+                undeclared.append(relative)
+                break
+
+    assert not undeclared, (
+        "these test modules call a mutating method on a path inside a source "
+        f"tree but are not listed in SOURCE_MUTATING_MODULES: {undeclared}. Add "
+        "them so the executed guard covers them, or stop writing into the checkout."
     )
 
 
