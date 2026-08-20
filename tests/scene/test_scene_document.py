@@ -9,12 +9,23 @@ from engine.scene import SceneDocument, load_scene_document, serialize_scene
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SCENE_PATHS = sorted(
+ALL_SCENE_PATHS = sorted(
     [
         *ROOT.glob("Assets/Scenes/*.zscene"),
         *ROOT.glob("examples/*/Assets/Scenes/*.zscene"),
     ]
 )
+
+#: Pre-migration backups kept by 6a3fb0a7 when the benchmark scenes moved to the
+#: canonical format. They are still on the old schema (``format``/``name``, no
+#: ``format_version``), which is the whole reason they were kept, so the loader
+#: upgrades them on read and byte-identity is the wrong contract for them.
+#: They get their own test below.
+LEGACY_SCENE_PATHS = [p for p in ALL_SCENE_PATHS if p.stem.endswith("_legacy")]
+SCENE_PATHS = [p for p in ALL_SCENE_PATHS if p not in LEGACY_SCENE_PATHS]
+
+#: What the migration is allowed to add to a pre-canonical document.
+MIGRATION_HEADER_FIELDS = {"format_version", "scene_name", "engine_version"}
 
 
 @pytest.mark.parametrize("scene_path", SCENE_PATHS, ids=lambda path: path.stem)
@@ -25,6 +36,28 @@ def test_repository_scenes_have_lossless_document_round_trip(scene_path) -> None
 
     assert document.to_dict() == source
     assert json.loads(document.to_json()) == source
+
+
+@pytest.mark.parametrize("scene_path", LEGACY_SCENE_PATHS, ids=lambda path: path.stem)
+def test_legacy_scenes_migrate_without_losing_anything(scene_path) -> None:
+    """Reading a pre-canonical scene may add the header, never drop content.
+
+    The strict gate above cannot cover these: ``SceneDocument.load`` exists to
+    upgrade them, so it necessarily returns something the file does not contain.
+    What must still hold is that the upgrade is purely additive -- every key and
+    every value present before the migration survives it.
+    """
+    source = json.loads(scene_path.read_text(encoding="utf-8"))
+
+    migrated = SceneDocument.load(scene_path).to_dict()
+
+    assert set(migrated) - set(source) <= MIGRATION_HEADER_FIELDS, (
+        "the migration invented fields beyond the canonical header: "
+        f"{sorted((set(migrated) - set(source)) - MIGRATION_HEADER_FIELDS)}"
+    )
+    for key, value in source.items():
+        assert key in migrated, f"the migration dropped {key!r}"
+        assert migrated[key] == value, f"the migration rewrote {key!r}"
 
 
 def test_unknown_fields_survive_round_trip() -> None:
