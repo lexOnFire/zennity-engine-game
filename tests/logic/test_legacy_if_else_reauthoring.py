@@ -257,39 +257,16 @@ def test_death_check_is_inclusive_at_zero(health: int, expected: str):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("asset,node_id", sorted(HELD_BACK.items()))
-def test_the_held_back_comparisons_are_still_recorded(asset: str, node_id: str):
-    """Debt, not exemption. If one is fixed, this fails and must be updated.
+def test_the_held_back_comparisons_were_recovered_in_phase13():
+    """Phase 13 item 13.1-H reauthored CoinCollectionLogic and KeyCollectionLogic onto get_tag -> compare_text."""
+    from engine.logic.graph_asset import NODE_DEFINITIONS
+    assert "get_tag" in NODE_DEFINITIONS and "compare_text" in NODE_DEFINITIONS
 
-    Keeping them asserted is what stops "we did the if_else item" from reading
-    as "there are no legacy comparisons left".
-    """
-    legacy = _legacy_if_else_edges(graph(asset))
-    assert legacy, f"{asset} no longer has a legacy comparison -- update this item's record"
-    assert all(target == node_id for target, _port in legacy), legacy
-
-
-def test_the_tag_comparisons_are_not_numeric():
-    """Why Coin and Key were not transformed: their operand is not a number.
-
-    ``event_trigger_enter.other`` is an object and the authored comparison is
-    against the text "Player". ``compare_number`` floats its input, so the
-    authorized transformation does not apply. ``get_tag`` -> ``compare_text``
-    is the canonical path, and it is a different change.
-    """
     for asset in ("CoinCollectionLogic", "KeyCollectionLogic"):
         g = graph(asset)
-        node = next(n for n in g["nodes"] if str(n["id"]) == "check_player")
-        assert isinstance(node["properties"].get("compare_value"), str)
-        source = next(
-            str(e["from_port"]) for e in g["edges"]
-            if str(e["to_node"]) == "check_player" and str(e["to_port"]) == "value"
-        )
-        assert source == "other", "the operand is the colliding object, not a number"
-
-    from engine.logic.graph_asset import NODE_DEFINITIONS
-
-    assert "get_tag" in NODE_DEFINITIONS and "compare_text" in NODE_DEFINITIONS
+        types = {str(n["type"]) for n in g["nodes"]}
+        assert "compare_text" in types
+        assert not _legacy_if_else_edges(g), f"{asset} should not have legacy if_else edges"
 
 
 def test_the_enemy_attack_comparison_is_blocked_by_a_phantom_source():
@@ -303,9 +280,9 @@ def test_the_enemy_attack_comparison_is_blocked_by_a_phantom_source():
     assert "if_else" not in types
 
 
-def test_exactly_three_legacy_comparisons_remain_repository_wide():
-    """8 at item 16A, minus 5 at item 16B, minus 1 at item 19."""
+def test_exactly_zero_legacy_comparisons_remain_repository_wide():
+    """8 at item 16A, minus 5 at item 16B, minus 1 at item 19, minus 2 at item 13.1-H."""
     total = 0
     for path in sorted((REPO_ROOT / "Assets").rglob("*.zlogic")):
         total += len(_legacy_if_else_edges(normalize_logic_graph(load_logic_graph(path))))
-    assert total == 2
+    assert total == 0

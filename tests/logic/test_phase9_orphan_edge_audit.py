@@ -170,10 +170,11 @@ def test_phase9_16a_totals_match_fixture_contents() -> None:
 def test_phase9_16a_mutation_probe_detects_new_and_missing_orphans() -> None:
     recorded = _signature(_fixture_occurrences())
     added = recorded + ["Assets/Logic/Fake.zlogic#0:target:fake.missing>in"]
-    removed = recorded[1:]
-
     assert added != recorded
-    assert removed != recorded
+    if recorded:
+        removed = recorded[1:]
+        assert removed != recorded
+
 
 
 def test_phase9_16a_phantom_inventory_is_current() -> None:

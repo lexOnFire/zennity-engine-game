@@ -1,30 +1,14 @@
 {
   "_comment": "PHASE 9 recovery item 14A. Node ids used by shipping .zlogic assets that have no definition in the catalogue at all -- measured on the NORMALIZED graph, so node-id aliases are already applied. These nodes load, produce nothing, and their edges are dead. This file bounds the class: the gate fails on any NEW id and on any recorded id that stops being phantom, so the set cannot grow or rot silently. Item 14A restored exactly one id, object.find_by_name, which had historical evidence; everything here is deliberately NOT restored. Crucially, the ids in 'never_implemented' are NOT lost runtime: a search across every commit found no definition and no executor for them, ever. They are new design work, and treating them as recovery would be inventing semantics. PHASE 9 recovery item 14E reauthored BossAILogic.zlogic and EnemyAILogic.zlogic onto the canonical scalar chase chain proven in item 14D.2, which removed every instance of math.distance, vector2 and normalize_vector. Those three ids left this file because a recovered id must leave the baseline -- this is debt, not exemption. Entries unrelated to the two AI graphs are untouched. PHASE 9 recovery item 16C added math.divide -> divide_number and ui.set_progress_bar -> set_ui_progress_bar to the legacy migration map, so both ids stopped being phantom. A recovered id leaves the record. PHASE 9 recovery item 17 mapped animator.set_trigger to animator_set_trigger, which already had a definition and an executor, so the id left this file entirely. The same item reauthored the two variable.increment instances in BossCombatLogic onto get_variable -> add_number/subtract_number -> set_variable; the id stays here because EnemyAILogic still carries one, and it is still NEVER_IMPLEMENTED -- no commit ever defined an increment node. PHASE 9 recovery item 18 authored PlayerHealthLogic, which had used event.custom as an emitter -- a node with no inputs. The death signal now uses emit_event, so that instance left the count; GuardInteractionLogic still carries the id, and it stays here.",
   "_provenance": "PHASE 9 recovery item 19, regenerated after migrating variable/variable.increment.",
-  "total_ids": 9,
-  "total_instances": 14,
+  "total_ids": 6,
+  "total_instances": 10,
   "never_implemented": [
     "move_towards",
     "set_animator_parameter",
     "subgraph_start"
   ],
   "nodes": {
-    "component.set_property": {
-      "instances": 1,
-      "assets": [
-        "Assets/Logic/DoorLogic.zlogic"
-      ],
-      "ports_used": {
-        "in": [
-          "component",
-          "in"
-        ],
-        "out": [
-          "next"
-        ]
-      },
-      "classification": "UNKNOWN"
-    },
     "dialogue.start_dialogue_asset": {
       "instances": 1,
       "assets": [
@@ -48,9 +32,8 @@
       "classification": "UNKNOWN"
     },
     "event.listen": {
-      "instances": 2,
+      "instances": 1,
       "assets": [
-        "Assets/Logic/DoorLogic.zlogic",
         "Assets/Logic/GuardInteractionLogic.zlogic"
       ],
       "ports_used": {
@@ -74,21 +57,6 @@
       },
       "classification": "NEVER_IMPLEMENTED"
     },
-    "object.get_component": {
-      "instances": 1,
-      "assets": [
-        "Assets/Logic/DoorLogic.zlogic"
-      ],
-      "ports_used": {
-        "in": [
-          "in"
-        ],
-        "out": [
-          "component"
-        ]
-      },
-      "classification": "UNKNOWN"
-    },
     "set_animator_parameter": {
       "instances": 4,
       "assets": [
@@ -102,19 +70,6 @@
         "out": []
       },
       "classification": "NEVER_IMPLEMENTED"
-    },
-    "sprite.change_sprite": {
-      "instances": 1,
-      "assets": [
-        "Assets/Logic/DoorLogic.zlogic"
-      ],
-      "ports_used": {
-        "in": [
-          "in"
-        ],
-        "out": []
-      },
-      "classification": "UNKNOWN"
     },
     "subgraph_start": {
       "instances": 2,
