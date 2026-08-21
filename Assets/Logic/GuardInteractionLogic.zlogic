@@ -1,11 +1,11 @@
 {
   "format": "zennity.logic_graph",
   "version": 1,
-  "enabled": false,
+  "enabled": true,
   "name": "GuardInteractionLogic",
   "target": {
     "type": "name",
-    "value": "Player"
+    "value": "Guard"
   },
   "debug": {
     "breakpoints": [],
@@ -20,10 +20,10 @@
   },
   "nodes": [
     {
-      "id": "interaction_trigger_enter",
-      "type": "physics.on_trigger_enter",
-      "title": "physics.on_trigger_enter",
-      "category": "Custom",
+      "id": "on_trigger_enter",
+      "type": "event_trigger_enter",
+      "title": "On Trigger Enter",
+      "category": "Events",
       "position": [
         50.0,
         50.0
@@ -36,12 +36,69 @@
       "properties": {}
     },
     {
-      "id": "check_player_in_range",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
+      "id": "get_tag",
+      "type": "get_tag",
+      "title": "Get Tag",
+      "category": "Objects",
       "position": [
         200.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
+    },
+    {
+      "id": "check_player",
+      "type": "compare_text",
+      "title": "Check Player Tag",
+      "category": "Logic",
+      "position": [
+        350.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "operator": "==",
+        "value": "Player"
+      }
+    },
+    {
+      "id": "get_has_key",
+      "type": "get_variable",
+      "title": "Obter Variável",
+      "category": "Variables",
+      "position": [
+        550.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "has_key",
+        "scope": "project",
+        "variable_name": "has_key"
+      }
+    },
+    {
+      "id": "check_has_key",
+      "type": "if_else",
+      "title": "Se / Senão",
+      "category": "Logic",
+      "position": [
+        750.0,
         50.0
       ],
       "editor": {
@@ -52,12 +109,12 @@
       "properties": {}
     },
     {
-      "id": "set_can_interact_true",
-      "type": "variable.set",
-      "title": "variable.set",
-      "category": "Custom",
+      "id": "emit_gate_opened",
+      "type": "emit_event",
+      "title": "Emitir Evento",
+      "category": "Events",
       "position": [
-        350.0,
+        950.0,
         50.0
       ],
       "editor": {
@@ -65,152 +122,75 @@
         "width": 210.0,
         "height": 0.0
       },
-      "properties": {}
-    },
-    {
-      "id": "interaction_trigger_exit",
-      "type": "physics.on_trigger_exit",
-      "title": "physics.on_trigger_exit",
-      "category": "Custom",
-      "position": [
-        50.0,
-        120.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "check_player_leaving",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
-      "position": [
-        200.0,
-        120.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "set_can_interact_false",
-      "type": "variable.set",
-      "title": "variable.set",
-      "category": "Custom",
-      "position": [
-        350.0,
-        120.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "e_key_down",
-      "type": "input.keyboard_key_down",
-      "title": "input.keyboard_key_down",
-      "category": "Custom",
-      "position": [
-        50.0,
-        200.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "check_can_interact",
-      "type": "variable.get",
-      "title": "variable.get",
-      "category": "Custom",
-      "position": [
-        200.0,
-        200.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "if_can_interact",
-      "type": "logic.branch",
-      "title": "logic.branch",
-      "category": "Custom",
-      "position": [
-        350.0,
-        200.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "start_dialogue",
-      "type": "dialogue.start_dialogue_asset",
-      "title": "dialogue.start_dialogue_asset",
-      "category": "Custom",
-      "position": [
-        500.0,
-        200.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "listen_open_gate_event",
-      "type": "event.listen",
-      "title": "event.listen",
-      "category": "Custom",
-      "position": [
-        650.0,
-        200.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
-    },
-    {
-      "id": "dispatch_gate_open",
-      "type": "event.custom",
-      "title": "event.custom",
-      "category": "Custom",
-      "position": [
-        800.0,
-        200.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {}
+      "properties": {
+        "event_name": "gate_opened",
+        "name": "gate_opened"
+      }
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "id": "e_trigger_flow_to_check_player",
+      "from_node": "on_trigger_enter",
+      "from_port": "next",
+      "to_node": "check_player",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "e_trigger_other_to_get_tag",
+      "from_node": "on_trigger_enter",
+      "from_port": "other",
+      "to_node": "get_tag",
+      "to_port": "target",
+      "kind": "data",
+      "order": 1
+    },
+    {
+      "id": "e_get_tag_to_check_player",
+      "from_node": "get_tag",
+      "from_port": "value",
+      "to_node": "check_player",
+      "to_port": "value",
+      "kind": "data",
+      "order": 2
+    },
+    {
+      "id": "e_player_true_to_get_key",
+      "from_node": "check_player",
+      "from_port": "true",
+      "to_node": "get_has_key",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "e_get_key_next_to_if_key",
+      "from_node": "get_has_key",
+      "from_port": "next",
+      "to_node": "check_has_key",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 4
+    },
+    {
+      "id": "e_get_key_val_to_if_key",
+      "from_node": "get_has_key",
+      "from_port": "value",
+      "to_node": "check_has_key",
+      "to_port": "condition",
+      "kind": "data",
+      "order": 5
+    },
+    {
+      "id": "e_key_true_to_emit_gate",
+      "from_node": "check_has_key",
+      "from_port": "true",
+      "to_node": "emit_gate_opened",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    }
+  ]
 }
