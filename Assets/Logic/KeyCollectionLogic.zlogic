@@ -36,12 +36,30 @@
       "properties": {}
     },
     {
-      "id": "check_player",
-      "type": "if_else",
-      "title": "Se/Senão",
-      "category": "Flow",
+      "id": "get_tag",
+      "type": "get_tag",
+      "title": "Get Tag",
+      "category": "Objects",
       "position": [
         200.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
+    },
+    {
+      "id": "check_player",
+      "type": "compare_text",
+      "title": "Check Player Tag",
+      "category": "Logic",
+      "position": [
+        350.0,
         50.0
       ],
       "editor": {
@@ -50,8 +68,8 @@
         "height": 0.0
       },
       "properties": {
-        "condition": "contains",
-        "compare_value": "Player"
+        "operator": "==",
+        "value": "Player"
       }
     },
     {
@@ -60,7 +78,7 @@
       "title": "Definir Variável",
       "category": "Variables",
       "position": [
-        350.0,
+        500.0,
         50.0
       ],
       "editor": {
@@ -81,7 +99,7 @@
       "title": "Definir Texto UI",
       "category": "UI",
       "position": [
-        500.0,
+        650.0,
         50.0
       ],
       "editor": {
@@ -103,7 +121,7 @@
       "title": "Tocar Som",
       "category": "Action",
       "position": [
-        650.0,
+        800.0,
         50.0
       ],
       "editor": {
@@ -122,7 +140,7 @@
       "title": "Destruir Objeto",
       "category": "Action",
       "position": [
-        800.0,
+        950.0,
         50.0
       ],
       "editor": {
@@ -140,8 +158,8 @@
       "title": "Sequência",
       "category": "Flow",
       "position": [
-        350.0,
-        150.0
+        500.0,
+        200.0
       ],
       "editor": {
         "collapsed": false,
@@ -155,58 +173,76 @@
   ],
   "edges": [
     {
-      "id": "be7c5edd189142b9a81342f7cb26ee53",
+      "id": "e_trigger_flow_to_check",
       "from_node": "on_trigger_enter",
-      "from_port": "other",
+      "from_port": "next",
       "to_node": "check_player",
-      "to_port": "value",
-      "kind": "any",
+      "to_port": "in",
+      "kind": "flow",
       "order": 0
     },
     {
-      "id": "b643e0a9e5b0443fbf6dda36ecea3045",
+      "id": "e_trigger_other_to_get_tag",
+      "from_node": "on_trigger_enter",
+      "from_port": "other",
+      "to_node": "get_tag",
+      "to_port": "target",
+      "kind": "data",
+      "order": 1
+    },
+    {
+      "id": "e_get_tag_to_check_player",
+      "from_node": "get_tag",
+      "from_port": "value",
+      "to_node": "check_player",
+      "to_port": "value",
+      "kind": "data",
+      "order": 2
+    },
+    {
+      "id": "e_check_true_set_has_key",
       "from_node": "check_player",
       "from_port": "true",
       "to_node": "set_has_key",
       "to_port": "exec",
       "kind": "flow",
-      "order": 1
+      "order": 3
     },
     {
-      "id": "83e6e67faf1344f4bf560edae5a43200",
+      "id": "e_set_has_key_to_ui",
       "from_node": "set_has_key",
       "from_port": "next",
       "to_node": "update_key_label",
       "to_port": "in",
       "kind": "flow",
-      "order": 2
+      "order": 4
     },
     {
-      "id": "c57b88c87b9a4a9aae4eb4da075ec6f6",
+      "id": "e_ui_to_sound",
       "from_node": "update_key_label",
       "from_port": "next",
       "to_node": "play_key_sound",
       "to_port": "in",
       "kind": "flow",
-      "order": 3
+      "order": 5
     },
     {
-      "id": "311605edf1f54b098c68fbdc5df19bfc",
+      "id": "e_sound_to_destroy",
       "from_node": "play_key_sound",
       "from_port": "next",
       "to_node": "destroy_key",
       "to_port": "in",
       "kind": "flow",
-      "order": 4
+      "order": 6
     },
     {
-      "id": "0ac563015c33484392e5c77236be5466",
+      "id": "e_check_false_noop",
       "from_node": "check_player",
       "from_port": "false",
       "to_node": "no_player_noop",
       "to_port": "in",
       "kind": "flow",
-      "order": 5
+      "order": 7
     }
   ]
 }

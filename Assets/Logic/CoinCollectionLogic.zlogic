@@ -36,12 +36,30 @@
       "properties": {}
     },
     {
-      "id": "check_player",
-      "type": "if_else",
-      "title": "Se/Senão",
-      "category": "Flow",
+      "id": "get_tag",
+      "type": "get_tag",
+      "title": "Get Tag",
+      "category": "Objects",
       "position": [
         200.0,
+        150.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "target": ""
+      }
+    },
+    {
+      "id": "check_player",
+      "type": "compare_text",
+      "title": "Check Player Tag",
+      "category": "Logic",
+      "position": [
+        350.0,
         50.0
       ],
       "editor": {
@@ -50,8 +68,8 @@
         "height": 0.0
       },
       "properties": {
-        "condition": "contains",
-        "compare_value": "Player"
+        "operator": "==",
+        "value": "Player"
       }
     },
     {
@@ -60,7 +78,7 @@
       "title": "Obter Variável",
       "category": "Variables",
       "position": [
-        350.0,
+        500.0,
         50.0
       ],
       "editor": {
@@ -80,8 +98,8 @@
       "title": "Somar",
       "category": "Math",
       "position": [
-        500.0,
-        50.0
+        650.0,
+        150.0
       ],
       "editor": {
         "collapsed": false,
@@ -99,7 +117,7 @@
       "title": "Definir Variável",
       "category": "Variables",
       "position": [
-        650.0,
+        800.0,
         50.0
       ],
       "editor": {
@@ -120,7 +138,7 @@
       "title": "Definir Texto UI",
       "category": "UI",
       "position": [
-        800.0,
+        950.0,
         50.0
       ],
       "editor": {
@@ -142,7 +160,7 @@
       "title": "Tocar Som",
       "category": "Action",
       "position": [
-        950.0,
+        1100.0,
         50.0
       ],
       "editor": {
@@ -161,7 +179,7 @@
       "title": "Destruir Objeto",
       "category": "Action",
       "position": [
-        1100.0,
+        1250.0,
         50.0
       ],
       "editor": {
@@ -179,8 +197,8 @@
       "title": "Sequência",
       "category": "Flow",
       "position": [
-        350.0,
-        150.0
+        500.0,
+        200.0
       ],
       "editor": {
         "collapsed": false,
@@ -194,76 +212,103 @@
   ],
   "edges": [
     {
-      "id": "5b532de2486f4a34a63c4bf11538b9c6",
+      "id": "e_trigger_flow_to_check",
       "from_node": "on_trigger_enter",
-      "from_port": "other",
+      "from_port": "next",
       "to_node": "check_player",
-      "to_port": "value",
-      "kind": "any",
+      "to_port": "in",
+      "kind": "flow",
       "order": 0
     },
     {
-      "id": "b797f1553c1240c6a416ab60dfa22e7e",
+      "id": "e_trigger_other_to_get_tag",
+      "from_node": "on_trigger_enter",
+      "from_port": "other",
+      "to_node": "get_tag",
+      "to_port": "target",
+      "kind": "data",
+      "order": 1
+    },
+    {
+      "id": "e_get_tag_to_check_player",
+      "from_node": "get_tag",
+      "from_port": "value",
+      "to_node": "check_player",
+      "to_port": "value",
+      "kind": "data",
+      "order": 2
+    },
+    {
+      "id": "e_check_true_get_coins",
       "from_node": "check_player",
       "from_port": "true",
       "to_node": "get_coins",
       "to_port": "in",
       "kind": "flow",
-      "order": 1
+      "order": 3
     },
     {
-      "id": "35c3fbb021054649b5518aa988a1a2d2",
+      "id": "e_get_coins_val_to_inc",
       "from_node": "get_coins",
       "from_port": "value",
       "to_node": "increment_coins",
       "to_port": "a",
-      "kind": "any",
-      "order": 2
+      "kind": "data",
+      "order": 4
     },
     {
-      "id": "8dc5b5af2aaf45ea8f4e46ce141b703b",
+      "id": "e_inc_val_to_set_coins_val",
       "from_node": "increment_coins",
       "from_port": "value",
       "to_node": "set_coins",
       "to_port": "value",
-      "kind": "any",
-      "order": 3
+      "kind": "data",
+      "order": 5
     },
     {
-      "id": "a2af86a422e34dcead067f4b0c8a195f",
+      "id": "e_get_coins_flow_to_set_coins",
+      "from_node": "get_coins",
+      "from_port": "next",
+      "to_node": "set_coins",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "e_set_coins_to_update_ui",
       "from_node": "set_coins",
       "from_port": "next",
       "to_node": "update_ui",
       "to_port": "in",
       "kind": "flow",
-      "order": 4
+      "order": 7
     },
     {
-      "id": "7008c97c1b3b417bb620316836b46cdc",
+      "id": "e_update_ui_to_sound",
       "from_node": "update_ui",
       "from_port": "next",
       "to_node": "play_pickup_sound",
       "to_port": "in",
       "kind": "flow",
-      "order": 5
+      "order": 8
     },
     {
-      "id": "f296a392175f4e028ce6365762cb1a60",
+      "id": "e_sound_to_destroy",
       "from_node": "play_pickup_sound",
       "from_port": "next",
       "to_node": "destroy_coin",
       "to_port": "in",
       "kind": "flow",
-      "order": 6
+      "order": 9
     },
     {
-      "id": "00f758f30ddf4a25a1b32c107e442315",
+      "id": "e_check_false_noop",
       "from_node": "check_player",
       "from_port": "false",
       "to_node": "no_player_noop",
       "to_port": "in",
       "kind": "flow",
-      "order": 7
+      "order": 10
     }
   ]
 }
