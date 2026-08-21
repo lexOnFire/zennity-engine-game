@@ -237,6 +237,22 @@
         "widget_name": "ContinueButton",
         "enabled": true
       }
+    },
+    {
+      "id": "start",
+      "type": "event_start",
+      "title": "event_start",
+      "category": "Events",
+      "position": [
+        -180.0,
+        590.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {}
     }
   ],
   "edges": [
@@ -311,6 +327,15 @@
       "to_port": "in",
       "kind": "flow",
       "order": 7
+    },
+    {
+      "id": "e_start_to_check_save",
+      "from_node": "start",
+      "from_port": "next",
+      "to_node": "check_save_exists",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 8
     }
   ]
 }

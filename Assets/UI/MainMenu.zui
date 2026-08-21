@@ -46,9 +46,7 @@
         "visible": true,
         "children": [],
         "text": "NEW GAME",
-        "hover_color": "#3B3B48",
-        "event": "load_scene",
-        "scene_path": "Assets/Scenes/Level1.zscene"
+        "hover_color": "#3B3B48"
       },
       {
         "name": "ContinueButton",
@@ -58,12 +56,11 @@
         "width": 250.0,
         "height": 60.0,
         "visible": true,
+        "enabled": false,
         "children": [],
         "text": "CONTINUE",
         "hover_color": "#3B3B48",
-        "render_mode": "Screen Space",
-        "event": "load_scene",
-        "scene_path": "Assets/Scenes/Level1.zscene"
+        "render_mode": "Screen Space"
       },
       {
         "name": "ExitButton",
