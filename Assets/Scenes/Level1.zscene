@@ -90,12 +90,21 @@
             "properties": {
               "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerHealthLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerHealthLogic.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/PlayerMovementLogic.zlogic",
-        "Assets/Logic/PlayerCombatLogic.zlogic"
+        "Assets/Logic/PlayerCombatLogic.zlogic",
+        "Assets/Logic/PlayerHealthLogic.zlogic"
       ],
       "layer": "Default",
       "variables": {
@@ -116,6 +125,10 @@
           {
             "path": "Assets/Logic/PlayerCombatLogic.zlogic",
             "name": "PlayerCombatLogic"
+          },
+          {
+            "path": "Assets/Logic/PlayerHealthLogic.zlogic",
+            "name": "PlayerHealthLogic"
           }
         ],
         "parent": null,
@@ -129,6 +142,10 @@
         {
           "path": "Assets/Logic/PlayerCombatLogic.zlogic",
           "name": "PlayerCombatLogic"
+        },
+        {
+          "path": "Assets/Logic/PlayerHealthLogic.zlogic",
+          "name": "PlayerHealthLogic"
         }
       ]
     },

@@ -215,6 +215,104 @@
       "properties": {
         "scene_path": "Assets/Scenes/Victory.zscene"
       }
+    },
+    {
+      "id": "receive_damage",
+      "type": "event_custom",
+      "title": "Evento Personalizado",
+      "category": "Custom",
+      "position": [
+        50.0,
+        420.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "boss_damage"
+      }
+    },
+    {
+      "id": "get_health_for_damage",
+      "type": "get_variable",
+      "title": "Obter Variavel",
+      "category": "Variables",
+      "position": [
+        200.0,
+        420.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "health",
+        "scope": "object",
+        "variable_name": "health"
+      }
+    },
+    {
+      "id": "apply_damage",
+      "type": "subtract_number",
+      "title": "Subtrair",
+      "category": "Math",
+      "position": [
+        350.0,
+        480.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "a": 0.0,
+        "b": 0.0
+      }
+    },
+    {
+      "id": "clamp_health",
+      "type": "clamp_number",
+      "title": "Limitar",
+      "category": "Math",
+      "position": [
+        500.0,
+        480.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "value": 0.0,
+        "minimum": 0.0,
+        "maximum": 9999.0
+      }
+    },
+    {
+      "id": "set_health",
+      "type": "set_variable",
+      "title": "Definir Variavel",
+      "category": "Variables",
+      "position": [
+        650.0,
+        420.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 210.0,
+        "height": 0.0
+      },
+      "properties": {
+        "name": "health",
+        "scope": "object",
+        "variable_name": "health",
+        "value": 0
+      }
     }
   ],
   "edges": [
@@ -325,6 +423,60 @@
       "to_port": "in",
       "kind": "flow",
       "order": 11
+    },
+    {
+      "id": "43598273ace0415fb1a3b6fa99c57372",
+      "from_node": "receive_damage",
+      "from_port": "next",
+      "to_node": "get_health_for_damage",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "d3a30bf4ed704a20891caee2eacbe632",
+      "from_node": "get_health_for_damage",
+      "from_port": "next",
+      "to_node": "set_health",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 0
+    },
+    {
+      "id": "56eb8e8f23f64ff285550ab3e1b695cc",
+      "from_node": "get_health_for_damage",
+      "from_port": "value",
+      "to_node": "apply_damage",
+      "to_port": "a",
+      "kind": "any",
+      "order": 0
+    },
+    {
+      "id": "01f47675a7a648dba25e842136004f0d",
+      "from_node": "receive_damage",
+      "from_port": "payload",
+      "to_node": "apply_damage",
+      "to_port": "b",
+      "kind": "any",
+      "order": 0
+    },
+    {
+      "id": "d1fe9e8c8a44441b81b007fed0fb5205",
+      "from_node": "apply_damage",
+      "from_port": "value",
+      "to_node": "clamp_health",
+      "to_port": "value",
+      "kind": "any",
+      "order": 0
+    },
+    {
+      "id": "746fb361de824c3fa34d79b9efaf997c",
+      "from_node": "clamp_health",
+      "from_port": "value",
+      "to_node": "set_health",
+      "to_port": "value",
+      "kind": "any",
+      "order": 0
     }
   ]
 }

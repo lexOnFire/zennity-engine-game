@@ -5,7 +5,7 @@
   "name": "VictoryLogic",
   "target": {
     "type": "name",
-    "value": "Player"
+    "value": "Canvas"
   },
   "debug": {
     "breakpoints": [],

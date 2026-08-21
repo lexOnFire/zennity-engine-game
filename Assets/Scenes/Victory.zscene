@@ -87,10 +87,29 @@
             "z_order": 0,
             "render_mode": "Screen Space",
             "layer_mask": 4294967295
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/VictoryLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/VictoryLogic.zlogic"
+            }
           }
         ]
       },
-      "enabled": true
+      "enabled": true,
+      "logic_assets": [
+        "Assets/Logic/VictoryLogic.zlogic"
+      ],
+      "editor_data": {
+        "logic_graphs": [
+          {
+            "path": "Assets/Logic/VictoryLogic.zlogic",
+            "name": "VictoryLogic"
+          }
+        ]
+      }
     }
   ]
 }

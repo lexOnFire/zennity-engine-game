@@ -80,12 +80,21 @@
             "properties": {
               "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerCombatLogic.zlogic"
+            }
           }
         ]
       },
       "logic_assets": [
         "Assets/Logic/PlayerMovementLogic.zlogic",
-        "Assets/Logic/PlayerHealthLogic.zlogic"
+        "Assets/Logic/PlayerHealthLogic.zlogic",
+        "Assets/Logic/PlayerCombatLogic.zlogic"
       ],
       "variables": {
         "move_speed": 200,
@@ -104,6 +113,10 @@
           {
             "path": "Assets/Logic/PlayerHealthLogic.zlogic",
             "name": "PlayerHealthLogic"
+          },
+          {
+            "path": "Assets/Logic/PlayerCombatLogic.zlogic",
+            "name": "PlayerCombatLogic"
           }
         ]
       },
