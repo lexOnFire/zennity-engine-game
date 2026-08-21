@@ -21,9 +21,9 @@
   "nodes": [
     {
       "id": "listen_gate_opened",
-      "type": "event.listen",
-      "title": "event.listen",
-      "category": "Custom",
+      "type": "event_custom",
+      "title": "On Custom Event",
+      "category": "Events",
       "position": [
         50.0,
         50.0
@@ -34,7 +34,7 @@
         "height": 0.0
       },
       "properties": {
-        "event_name": "gate_opened"
+        "name": "gate_opened"
       }
     },
     {
@@ -43,7 +43,7 @@
       "title": "Definir Variável",
       "category": "Variables",
       "position": [
-        200.0,
+        250.0,
         50.0
       ],
       "editor": {
@@ -59,49 +59,12 @@
       }
     },
     {
-      "id": "get_collider",
-      "type": "object.get_component",
-      "title": "object.get_component",
-      "category": "Custom",
-      "position": [
-        350.0,
-        50.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "component_type": "BoxCollider2D"
-      }
-    },
-    {
-      "id": "disable_collider",
-      "type": "component.set_property",
-      "title": "component.set_property",
-      "category": "Custom",
-      "position": [
-        500.0,
-        50.0
-      ],
-      "editor": {
-        "collapsed": false,
-        "width": 210.0,
-        "height": 0.0
-      },
-      "properties": {
-        "property": "enabled",
-        "value": false
-      }
-    },
-    {
       "id": "play_door_sound",
       "type": "play_sound",
       "title": "Tocar Som",
       "category": "Action",
       "position": [
-        650.0,
+        450.0,
         50.0
       ],
       "editor": {
@@ -115,12 +78,12 @@
       }
     },
     {
-      "id": "change_door_sprite",
-      "type": "sprite.change_sprite",
-      "title": "sprite.change_sprite",
-      "category": "Custom",
+      "id": "destroy_door",
+      "type": "destroy_object",
+      "title": "Destruir Objeto",
+      "category": "Action",
       "position": [
-        800.0,
+        650.0,
         50.0
       ],
       "editor": {
@@ -129,55 +92,37 @@
         "height": 0.0
       },
       "properties": {
-        "sprite_path": "Assets/Sprites/MyPlatformer/tile_platform.png"
+        "target": ""
       }
     }
   ],
   "edges": [
     {
-      "id": "9f73f9965cbd4d99af057249f78567cb",
+      "id": "e_event_to_set_unlocked",
       "from_node": "listen_gate_opened",
-      "from_port": "event_received",
+      "from_port": "next",
       "to_node": "set_unlocked",
       "to_port": "exec",
-      "kind": "any",
+      "kind": "flow",
       "order": 0
     },
     {
-      "id": "0035a24947a94242a7e0b100d8656f54",
+      "id": "e_set_unlocked_to_sound",
       "from_node": "set_unlocked",
-      "from_port": "next",
-      "to_node": "get_collider",
-      "to_port": "exec",
-      "kind": "flow",
-      "order": 1
-    },
-    {
-      "id": "e0826d1e01604164977bec7b1822db07",
-      "from_node": "get_collider",
-      "from_port": "component",
-      "to_node": "disable_collider",
-      "to_port": "component",
-      "kind": "any",
-      "order": 2
-    },
-    {
-      "id": "c056feb5c53144f3ba6deaa186d7312b",
-      "from_node": "disable_collider",
       "from_port": "next",
       "to_node": "play_door_sound",
       "to_port": "in",
       "kind": "flow",
-      "order": 3
+      "order": 1
     },
     {
-      "id": "7f38f4cf280e443da8aa3b6042f11c64",
+      "id": "e_sound_to_destroy",
       "from_node": "play_door_sound",
       "from_port": "next",
-      "to_node": "change_door_sprite",
-      "to_port": "exec",
+      "to_node": "destroy_door",
+      "to_port": "in",
       "kind": "flow",
-      "order": 4
+      "order": 2
     }
   ]
 }
