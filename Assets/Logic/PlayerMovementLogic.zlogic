@@ -95,6 +95,84 @@
       }
     },
     {
+      "id": "check_horizontal_movement",
+      "type": "compare_number",
+      "title": "Check Moving Right",
+      "category": "Logic",
+      "position": [
+        1350.0,
+        100.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "operator": ">",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "set_facing_right",
+      "type": "set_variable",
+      "title": "Set Facing Right",
+      "category": "Variables",
+      "position": [
+        1650.0,
+        50.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "name": "facing_x",
+        "scope": "object",
+        "value": 1.0
+      }
+    },
+    {
+      "id": "check_moving_left",
+      "type": "compare_number",
+      "title": "Check Moving Left",
+      "category": "Logic",
+      "position": [
+        1650.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 184.0
+      },
+      "properties": {
+        "operator": "<",
+        "value": 0.0
+      }
+    },
+    {
+      "id": "set_facing_direction",
+      "type": "set_variable",
+      "title": "Set Facing Left",
+      "category": "Variables",
+      "position": [
+        1950.0,
+        250.0
+      ],
+      "editor": {
+        "collapsed": false,
+        "width": 220.0,
+        "height": 156.0
+      },
+      "properties": {
+        "name": "facing_x",
+        "scope": "object",
+        "value": -1.0
+      }
+    },
+    {
       "id": "014870958b9a45b3abdb75799bf0f684",
       "type": "input_axis",
       "title": "Read Input Axis",
@@ -181,13 +259,67 @@
       "order": 2
     },
     {
+      "id": "edge_move_to_check_facing_right",
+      "from_node": "move",
+      "from_port": "next",
+      "to_node": "check_horizontal_movement",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 3
+    },
+    {
+      "id": "edge_axis_val_to_check_right",
+      "from_node": "axis",
+      "from_port": "value",
+      "to_node": "check_horizontal_movement",
+      "to_port": "value",
+      "kind": "data",
+      "order": 4
+    },
+    {
+      "id": "edge_check_right_true_set",
+      "from_node": "check_horizontal_movement",
+      "from_port": "true",
+      "to_node": "set_facing_right",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 5
+    },
+    {
+      "id": "edge_check_right_false_check_left",
+      "from_node": "check_horizontal_movement",
+      "from_port": "false",
+      "to_node": "check_moving_left",
+      "to_port": "in",
+      "kind": "flow",
+      "order": 6
+    },
+    {
+      "id": "edge_axis_val_to_check_left",
+      "from_node": "axis",
+      "from_port": "value",
+      "to_node": "check_moving_left",
+      "to_port": "value",
+      "kind": "data",
+      "order": 7
+    },
+    {
+      "id": "edge_check_left_true_set",
+      "from_node": "check_moving_left",
+      "from_port": "true",
+      "to_node": "set_facing_direction",
+      "to_port": "exec",
+      "kind": "flow",
+      "order": 8
+    },
+    {
       "id": "84c30490e0834bc182a9ed516bd9e800",
       "from_node": "014870958b9a45b3abdb75799bf0f684",
       "from_port": "value",
       "to_node": "f1980060c6c242f0bfc081c42cd8d236",
       "to_port": "condition",
       "kind": "any",
-      "order": 1
+      "order": 9
     },
     {
       "id": "a091c627b9bd4a6384dc9f695c6f680f",
@@ -196,7 +328,7 @@
       "to_node": "f1980060c6c242f0bfc081c42cd8d236",
       "to_port": "in",
       "kind": "flow",
-      "order": 4
+      "order": 10
     },
     {
       "id": "7060f6e3bdf34403a036d184f583359a",
@@ -205,7 +337,7 @@
       "to_node": "e0e70d39ebd54e18add11764089392ac",
       "to_port": "in",
       "kind": "flow",
-      "order": 5
+      "order": 11
     }
   ]
 }
