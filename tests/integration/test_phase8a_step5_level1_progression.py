@@ -174,16 +174,16 @@ class TestGuardInteractionLogic:
         data = json.loads(logic_path.read_text(encoding="utf-8"))
 
         node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "interaction_trigger_enter" in node_ids
+        assert "on_trigger_enter" in node_ids
 
-    def test_logic_has_dialogue_start(self):
-        """Verify logic starts dialogue on E key."""
+    def test_logic_has_gate_event_emission(self):
+        """Verify logic emits gate_opened event."""
         logic_path = project_root / "Assets" / "Logic" / "GuardInteractionLogic.zlogic"
         data = json.loads(logic_path.read_text(encoding="utf-8"))
 
         node_ids = [n.get("id") for n in data.get("nodes", [])]
-        assert "e_key_down" in node_ids
-        assert "start_dialogue" in node_ids
+        assert "emit_gate_opened" in node_ids
+
 
 
 class TestGuardDialogue:

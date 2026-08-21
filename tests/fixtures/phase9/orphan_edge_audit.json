@@ -6,8 +6,8 @@
     "shipping_graphs": 55,
     "orphan_occurrences": 0,
     "unique_orphan_edges": 0,
-    "phantom_ids": 6,
-    "phantom_instances": 10,
+    "phantom_ids": 3,
+    "phantom_instances": 7,
     "assets_with_orphans": 0,
     "assets_with_phantoms": 13
   },
@@ -20,27 +20,6 @@
   },
   "unique_orphan_edges_by_asset": {},
   "phantom_inventory": {
-    "dialogue.start_dialogue_asset": {
-      "instances": 1,
-      "assets": [
-        "Assets/Logic/GuardInteractionLogic.zlogic"
-      ],
-      "item14b_classification": "H_UNKNOWN"
-    },
-    "event.custom": {
-      "instances": 1,
-      "assets": [
-        "Assets/Logic/GuardInteractionLogic.zlogic"
-      ],
-      "item14b_classification": "H_UNKNOWN"
-    },
-    "event.listen": {
-      "instances": 1,
-      "assets": [
-        "Assets/Logic/GuardInteractionLogic.zlogic"
-      ],
-      "item14b_classification": "H_UNKNOWN"
-    },
     "move_towards": {
       "instances": 1,
       "assets": [

@@ -92,7 +92,8 @@ def _loaded():
 #: 8 after item 22; Item 22 recovered 8 phantom types in VictoryLogic.
 #: 6 after item 19/migration; variable and variable.increment migrated out of EnemyHealth/EnemyAILogic.
 #: 3 after item 13.1-I; component.set_property, object.get_component and sprite.change_sprite recovered from DoorLogic.
-EXPECTED_UNKNOWN_IDS = 3
+#: 0 after item 13.1-K; dialogue.start_dialogue_asset, event.custom and event.listen recovered from GuardInteractionLogic.
+EXPECTED_UNKNOWN_IDS = 0
 
 #: 39 after item 18; item 19 reauthored EnemyAttackLogic removing 4 phantom instances from EnemyAttackLogic.
 #: 32 after item 20; Item 20 recovered scene.load and component.set_property from BossHealthLogic.
@@ -100,7 +101,9 @@ EXPECTED_UNKNOWN_IDS = 3
 #: 10 after item 22; Item 22 recovered 20 phantom instances from VictoryLogic.
 #: 7 after item 19/migration; variable and variable.increment migrated out.
 #: 3 after item 13.1-I; 4 phantom instances recovered from DoorLogic (including 1 event.listen).
-EXPECTED_UNKNOWN_INSTANCES = 3
+#: 0 after item 13.1-K; 3 phantom instances recovered from GuardInteractionLogic.
+EXPECTED_UNKNOWN_INSTANCES = 0
+
 
 
 
