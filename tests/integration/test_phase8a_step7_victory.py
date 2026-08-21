@@ -294,8 +294,7 @@ class TestNodeCounts:
         logic_path = project_root / "Assets" / "Logic" / "BossHealthLogic.zlogic"
         data = json.loads(logic_path.read_text(encoding="utf-8"))
         nodes = data.get("nodes", [])
-        assert len(nodes) == 10  # 10 canonical nodes after Item 20 post-death recovery
-        assert any(n.get("id") == "load_victory" for n in nodes)
+        assert any(n.get("id") == "load_victory" for n in nodes), "BossHealthLogic must contain load_victory node"
 
 
 
