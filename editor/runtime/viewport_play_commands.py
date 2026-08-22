@@ -105,19 +105,21 @@ class ViewportPlayCommandHandler:
                 self.pause_audio(state.paused)
                 self.emit({"type": "play_state", "state": "pause" if state.paused else "play"})
         elif command_type == "stop":
-            self.stop_audio()
             if state.playing:
+                state.playing = False
+                state.paused = False
+                self.emit({"type": "play_state", "state": "edit"})
+                self.stop_audio()
                 self.stop_logic()
                 self.objects.clear()
                 self.objects.update(deepcopy(state.edit_snapshot))
-                state.playing = False
-                state.paused = False
                 state.velocities_y = {}
                 state.grounded = {}
                 self.reset_physics()
                 self.clear_hud()
-                self.emit({"type": "play_state", "state": "edit"})
                 self.emit({"type": "scene_snapshot", "objects": list(self.objects.values())})
+            else:
+                self.stop_audio()
         elif command_type == "logic_hot_reload":
             self._handle_logic_hot_reload(command, state)
         return state

@@ -40,6 +40,34 @@ def test_play_commands_own_session_transition_and_restore_edit_snapshot() -> Non
     assert [event["state"] for event in events if event["type"] == "play_state"] == ["play", "edit"]
 
 
+def test_stop_emits_edit_state_before_heavy_cleanup() -> None:
+    objects = {"Player": {"name": "Player", "x": 99}}
+    order = []
+    handler = ViewportPlayCommandHandler(
+        objects, {}, {},
+        lambda event: order.append(("event", event["type"], event.get("state"))),
+        lambda width, height: (width, height),
+        lambda: 1.0,
+        lambda paused: order.append(("audio_pause", paused)),
+        lambda: order.append("audio_stop"),
+        lambda: order.append("physics_reset"),
+        lambda: order.append("hud_clear"),
+        lambda config: order.append(("logic_start", config)),
+        lambda: order.append("audio_start"),
+        lambda: order.append("logic_stop"),
+    )
+    state = _state(
+        playing=True,
+        paused=False,
+        edit_snapshot={"Player": {"name": "Player", "x": 1}},
+    )
+
+    handler.handle({"type": "stop"}, state)
+
+    assert order[:3] == [("event", "play_state", "edit"), "audio_stop", "logic_stop"]
+    assert objects["Player"]["x"] == 1
+
+
 def test_play_commands_resize_and_bound_camera_to_world_origin() -> None:
     handler = _handler({}, [], [])
     state = handler.handle({"type": "viewport_size", "w": 800, "h": 600}, _state())
@@ -50,4 +78,3 @@ def test_play_commands_resize_and_bound_camera_to_world_origin() -> None:
 
 def test_play_commands_ignore_unowned_commands() -> None:
     assert _handler({}, [], []).handle({"type": "set_tool"}, _state()) is None
-

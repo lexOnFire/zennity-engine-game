@@ -4,6 +4,7 @@ from queue import SimpleQueue
 from types import SimpleNamespace
 
 from editor.editor_command_controller import EditorCommandController
+from editor.runtime.play_session import EditorPlaySession
 
 
 class _Status:
@@ -101,8 +102,31 @@ class _Tabs:
 
 def test_stop_command_enters_stopping_state_until_viewport_confirms_edit() -> None:
     host, status = _host()
-    host._scene_snapshot = [{"name": "Player"}]
+    host._scene_snapshot = [{"id": "player", "name": "Player"}]
+    host._objects_by_name = {"Player": host._scene_snapshot[0]}
+    host._selected_name = "Player"
     host._scene_document = {}
+    host._runtime_playing = True
+    host._runtime_objects_by_name = {"Player": {"name": "Player", "x": 99}}
+    host._runtime_animator_states = {"Player": {"state": "Run"}}
+    host._runtime_keys = {"left": True, "right": False}
+    host._play_session = EditorPlaySession()
+    host._play_session.begin(host._scene_snapshot, "Player")
+    host._play_session.set_runtime_state("play")
+    host.logic_workspace = SimpleNamespace(
+        clear_runtime_trace=lambda: setattr(host, "trace_cleared", True),
+        set_play_state=lambda _running: None,
+    )
+    host._animator_controller_dialog = None
+    host.refreshed = 0
+    host.selected = []
+    host.inspected = []
+    host._refresh_hierarchy = lambda: setattr(host, "refreshed", host.refreshed + 1)
+    host._scene_controller = SimpleNamespace(select=host.selected.append)
+    host._update_inspector = lambda name: host.inspected.append(name)
+    host.inspector_panel = _Action()
+    host.hierarchy_tree = SimpleNamespace(setDragEnabled=lambda enabled: setattr(host, "drag_enabled", enabled))
+    host.editor_menus = {"Criar": SimpleNamespace(actions=lambda: [])}
     host._play_controller = SimpleNamespace(
         blocks=lambda _command: False,
         plan=lambda *_args, **_kwargs: SimpleNamespace(commands=({"type": "stop"},)),
@@ -117,9 +141,17 @@ def test_stop_command_enters_stopping_state_until_viewport_confirms_edit() -> No
     EditorCommandController(host).dispatch({"type": "stop"})
 
     assert host._runtime_stopping is True
+    assert host._runtime_playing is False
+    assert host._play_session.state == "edit"
+    assert host._runtime_objects_by_name == {}
+    assert host._runtime_keys == {"left": False, "right": False}
+    assert host.refreshed == 1
+    assert host.selected == ["Player"]
+    assert host.inspected == ["Player"]
     assert host.viewport_tabs.index == 0
-    assert host.toolbar_actions["Play"].enabled is False
+    assert host.toolbar_actions["Play"].enabled is True
     assert host.toolbar_actions["Pause"].enabled is False
     assert host.toolbar_actions["Stop"].enabled is False
-    assert status.messages[-1] == "Encerrando Play Mode..."
+    assert status.messages[-1] == "Play Mode parado — limpando runtime em segundo plano..."
+    assert host._commands.get_nowait()["type"] == "runtime_input"
     assert host._commands.get_nowait() == {"type": "stop"}

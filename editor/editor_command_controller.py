@@ -151,12 +151,36 @@ class EditorCommandController:
         elif command_type == "stop":
             h._runtime_stopping = True
             h.viewport_tabs.setCurrentIndex(0)
-            h.toolbar_actions["Play"].setEnabled(False)
+            self._restore_editor_after_stop_request()
+            h.toolbar_actions["Play"].setEnabled(True)
             h.toolbar_actions["Pause"].setEnabled(False)
             h.toolbar_actions["Stop"].setEnabled(False)
-            h.statusBar().showMessage("Encerrando Play Mode...")
+            h.statusBar().showMessage("Play Mode parado — limpando runtime em segundo plano...")
         for command in plan.commands:
             h._commands.put(command)
+
+    def _restore_editor_after_stop_request(self) -> None:
+        """Restaura a UI imediatamente, sem esperar o processo da viewport terminar a limpeza."""
+        h = self.host
+        play_session = getattr(h, "_play_session", None)
+        if play_session is None or not getattr(play_session, "is_running", False):
+            return
+        h._runtime_objects_by_name.clear()
+        h.logic_workspace.clear_runtime_trace()
+        h._runtime_animator_states.clear()
+        animator_dialog = getattr(h, "_animator_controller_dialog", None)
+        if animator_dialog is not None:
+            animator_dialog.set_runtime_state(None, {})
+        h._scene_snapshot, h._selected_name = play_session.finish()
+        h._objects_by_name = {item["name"]: item for item in h._scene_snapshot}
+        h._runtime_playing = False
+        h._runtime_keys = {key: False for key in h._runtime_keys}
+        h._commands.put({"type": "runtime_input", "keys": dict(h._runtime_keys)})
+        h._refresh_hierarchy()
+        if h._selected_name in h._objects_by_name:
+            h._scene_controller.select(h._selected_name)
+            h._update_inspector(h._selected_name)
+        self.set_editing_locked(False)
 
     def set_editing_locked(self, locked: bool) -> None:
         h = self.host
