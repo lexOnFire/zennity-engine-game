@@ -29,3 +29,14 @@ def test_command_queue_bounds_work_per_frame_without_dropping_commands() -> None
 def test_command_queue_accepts_missing_source() -> None:
     assert list(ViewportCommandQueue(None).drain()) == []
 
+
+def test_command_queue_prioritizes_scene_snapshot_behind_input_backlog() -> None:
+    source = Queue()
+    for index in range(300):
+        source.put({"type": "runtime_input", "index": index})
+    source.put({"type": "scene_snapshot", "objects": [{"name": "Level2"}]})
+
+    commands = list(ViewportCommandQueue(source, maximum_per_frame=4).drain())
+
+    assert commands[0]["type"] == "scene_snapshot"
+    assert commands[0]["objects"][0]["name"] == "Level2"

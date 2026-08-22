@@ -80,6 +80,14 @@
             "properties": {
               "graph_path": "Assets/Logic/PlayerMovementLogic.zlogic"
             }
+          },
+          {
+            "type": "LogicGraph",
+            "enabled": true,
+            "graph_path": "Assets/Logic/PlayerHealthLogic.zlogic",
+            "properties": {
+              "graph_path": "Assets/Logic/PlayerHealthLogic.zlogic"
+            }
           }
         ]
       },
@@ -316,7 +324,7 @@
       "visual": {
         "enabled": true,
         "material": "Default_Material",
-        "mesh_type": null,
+        "mesh_type": "UI",
         "color": [
           1.0,
           0.3,
@@ -354,6 +362,47 @@
             "enabled": true,
             "controller": "Assets/Animations/BossController.zcontroller",
             "speed": 1.0
+          },
+          {
+            "type": "Canvas",
+            "enabled": true,
+            "properties": {
+              "visible": true,
+              "x": 16.0,
+              "y": 16.0,
+              "width": 180.0,
+              "height": 42.0,
+              "z_order": 0.0,
+              "text": "",
+              "font_size": 24.0,
+              "color": [
+                255,
+                255,
+                255
+              ],
+              "alpha": 255.0,
+              "interactable": true,
+              "event": "click",
+              "target": "",
+              "anchor": "",
+              "margin_x": 16.0,
+              "margin_y": 16.0,
+              "value": 100.0,
+              "max_value": 100.0,
+              "fill_color": [
+                46,
+                204,
+                113
+              ],
+              "bg_color": [
+                28,
+                35,
+                48
+              ],
+              "layout_path": "Assets/UI/HUD_Boss.zui",
+              "render_mode": "World Space",
+              "sprite_path": ""
+            }
           },
           {
             "type": "LogicGraph",

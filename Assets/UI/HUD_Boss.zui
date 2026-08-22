@@ -3,7 +3,7 @@
   "version": 1,
   "canvas": {
     "name": "HUDCanvas",
-    "type": "canvas",
+    "type": "UICanvas",
     "x": 0.0,
     "y": 0.0,
     "width": 1280.0,
@@ -13,61 +13,61 @@
       {
         "name": "HealthLabel",
         "type": "UILabel",
-        "x": 20.0,
-        "y": 20.0,
-        "width": 200.0,
+        "x": 24.0,
+        "y": 24.0,
+        "width": 220.0,
         "height": 30.0,
         "visible": true,
         "children": [],
         "text": "Health: 100",
-        "font_size": 16,
+        "font_size": 20,
         "text_color": "#FFFFFF"
       },
       {
         "name": "CoinsLabel",
         "type": "UILabel",
-        "x": 20.0,
-        "y": 60.0,
-        "width": 200.0,
+        "x": 24.0,
+        "y": 64.0,
+        "width": 220.0,
         "height": 30.0,
         "visible": true,
         "children": [],
         "text": "Coins: 0",
-        "font_size": 16,
-        "text_color": "#FFFF00"
+        "font_size": 20,
+        "text_color": "#FFE600"
       },
       {
         "name": "KeyLabel",
         "type": "UILabel",
-        "x": 20.0,
-        "y": 100.0,
-        "width": 200.0,
+        "x": 24.0,
+        "y": 104.0,
+        "width": 220.0,
         "height": 30.0,
         "visible": true,
         "children": [],
         "text": "Key: No",
-        "font_size": 16,
-        "text_color": "#CCCCCC"
+        "font_size": 20,
+        "text_color": "#D8D8D8"
       },
       {
         "name": "HealthBar",
         "type": "UIProgressBar",
-        "x": 20.0,
-        "y": 140.0,
+        "x": 24.0,
+        "y": 144.0,
         "width": 300.0,
         "height": 30.0,
         "visible": true,
         "children": [],
         "value": 100.0,
         "max_value": 100.0,
-        "fill_color": "#33CC33",
+        "fill_color": "#2ECC71",
         "bg_color": "#4D4D4D"
       },
       {
         "name": "BossNameLabel",
         "type": "UILabel",
-        "x": 1000.0,
-        "y": 20.0,
+        "x": 479.7948717948718,
+        "y": 67.28205128205128,
         "width": 250.0,
         "height": 30.0,
         "visible": true,
@@ -79,17 +79,15 @@
       {
         "name": "BossHealthBar",
         "type": "UIProgressBar",
-        "x": 900.0,
-        "y": 60.0,
+        "x": 473.3333333333333,
+        "y": 27.179487179487182,
         "width": 350.0,
         "height": 40.0,
         "visible": true,
         "children": [],
-        "value": 100.0,
-        "max_value": 100.0,
-        "fill_color": "#FF3333",
         "bg_color": "#4D4D4D"
       }
-    ]
+    ],
+    "render_mode": "Screen Space"
   }
 }

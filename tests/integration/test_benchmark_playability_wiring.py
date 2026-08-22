@@ -37,10 +37,14 @@ def test_level1_player_and_door_have_clear_official_logic_bindings() -> None:
 
     assert player["tag"] == "Player"
     assert "Assets/Logic/PlayerMovementLogic.zlogic" in player["logic_assets"] or "Assets/Logic/PlayerMovement_wasd.zlogic" in player["logic_assets"]
-    assert player["editor_data"].get("logic_graphs") in (
-        [{"path": "Assets/Logic/PlayerMovementLogic.zlogic", "name": "PlayerMovementLogic"}],
-        [{"path": "Assets/Logic/PlayerMovement_wasd.zlogic", "name": "PlayerMovement_wasd"}]
+    editor_graph_paths = {
+        graph["path"] for graph in player["editor_data"].get("logic_graphs", [])
+    }
+    assert (
+        "Assets/Logic/PlayerMovementLogic.zlogic" in editor_graph_paths
+        or "Assets/Logic/PlayerMovement_wasd.zlogic" in editor_graph_paths
     )
+    assert "Assets/Logic/PlayerCombatLogic.zlogic" in editor_graph_paths
     assert door["tag"] == "Door"
     assert door["logic_assets"] == ["Assets/Logic/DoorLogic.zlogic"]
     assert door["variables"]["requires_key"] is True
@@ -232,5 +236,4 @@ def test_player_requires_logic_graph_for_movement() -> None:
 
     hydrate_logic_graphs(objects, PROJECT_ROOT)
     assert len(objects["Player"].get("logic_graphs", [])) == 0
-
 
