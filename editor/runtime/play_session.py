@@ -30,7 +30,21 @@ class EditorPlaySession:
         return deepcopy(self._edit_objects or objects)
 
     def update_scene(self, new_objects: list[dict[str, Any]]) -> None:
-        """Atualiza a cópia da cena de edição quando uma nova cena é carregada (e.g. via load_scene)."""
+        """Move o ponto de restauração ao abrir outra cena -- fora do Play.
+
+        Durante uma sessão isso é destrutivo. Um ``load_scene`` disparado por um
+        grafo troca a cena que está *rodando*, não a que o usuário estava
+        editando, e o Play existe para ser descartável: o Stop precisa devolver a
+        cena de onde partiu. Sobrescrever aqui fazia um playtest que atravessa
+        uma transição de nível descartar a cena original -- e as edições não
+        salvas dela -- sem aviso nenhum.
+
+        A cena em execução continua chegando ao editor por
+        ``consume_scene_snapshot``, que durante o Play repassa os objetos do
+        runtime; a hierarquia acompanha o jogo normalmente.
+        """
+        if self.is_running:
+            return
         self._edit_objects = deepcopy(new_objects)
         self._selected_id = None
         self._selected_name = None
@@ -49,7 +63,13 @@ class EditorPlaySession:
         return restored, selected
 
     def consume_scene_snapshot(self, runtime_objects: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], str | None]:
-        """Descarta o snapshot mutado que o runtime envia logo após Stop."""
+        """Descarta o snapshot mutado que o runtime envia logo após Stop.
+
+        A cópia é liberada assim que serve -- ``tests/runtime/test_lifecycle_soak``
+        exige isso a cada ciclo. Por consequência um ``finish`` seguinte não teria
+        o que restaurar e devolveria lista vazia; quem impede que isso chegue à
+        cena do editor é a guarda em ``ViewportEventController.play_state``.
+        """
         if self._restore_pending and self._edit_objects is not None:
             objects = deepcopy(self._edit_objects)
             self._restore_pending = False

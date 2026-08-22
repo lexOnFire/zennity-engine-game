@@ -77,8 +77,13 @@ class ViewportEventController:
             h._runtime_animator_states.clear()
             if h._animator_controller_dialog is not None:
                 h._animator_controller_dialog.set_runtime_state(None, {})
-            h._scene_snapshot, h._selected_name = h._play_session.finish()
-            h._objects_by_name = {item["name"]: item for item in h._scene_snapshot}
+            # Só restaura quando havia mesmo uma sessão. Um segundo "edit" --
+            # de um viewport reiniciado, ou de qualquer emissor futuro -- chegava
+            # aqui depois de a cópia de edição já ter sido consumida, e finish()
+            # devolvia lista vazia: o editor ficava sem nenhum objeto.
+            if h._play_session.is_running:
+                h._scene_snapshot, h._selected_name = h._play_session.finish()
+                h._objects_by_name = {item["name"]: item for item in h._scene_snapshot}
             h._runtime_keys = {key: False for key in h._runtime_keys}
             h._commands.put({"type": "runtime_input", "keys": dict(h._runtime_keys)})
             h._refresh_hierarchy()

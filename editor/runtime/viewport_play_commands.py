@@ -14,6 +14,12 @@ class ViewportProcessState:
     camera_x: float
     camera_y: float
     edit_snapshot: dict[str, dict[str, Any]]
+    #: A cena de onde este Play partiu. ``edit_snapshot`` segue o nível corrente
+    #: porque o "restart" no meio do jogo recarrega o nível atual; o Stop precisa
+    #: de outra coisa -- a cena que o usuário estava editando quando apertou
+    #: Play. Um único campo servindo aos dois fazia o Stop, depois de uma
+    #: transição de nível, devolver o nível novo e descartar o original.
+    session_origin: dict[str, dict[str, Any]]
     selected_name: str | None
     playing: bool
     paused: bool
@@ -77,6 +83,9 @@ class ViewportPlayCommandHandler:
                 self.objects.clear()
                 self.objects.update({item["name"]: dict(item) for item in new_objects})
                 state.edit_snapshot = deepcopy(self.objects)
+                # Fora do Play as duas coisas coincidem: abrir uma cena no editor
+                # move tanto o alvo do restart quanto a origem do próximo Play.
+                state.session_origin = deepcopy(self.objects)
                 state.selected_name = None
                 state.playing = False
                 state.paused = False
@@ -109,7 +118,7 @@ class ViewportPlayCommandHandler:
             if state.playing:
                 self.stop_logic()
                 self.objects.clear()
-                self.objects.update(deepcopy(state.edit_snapshot))
+                self.objects.update(deepcopy(state.session_origin))
                 state.playing = False
                 state.paused = False
                 state.velocities_y = {}
@@ -133,6 +142,7 @@ class ViewportPlayCommandHandler:
                     if object_name in self.objects and isinstance(audio_config, dict):
                         self.objects[object_name]["audio"] = dict(audio_config)
             state.edit_snapshot = deepcopy(self.objects)
+            state.session_origin = deepcopy(self.objects)
             state.playing = True
             state.paused = False
             state.velocities_y = {}

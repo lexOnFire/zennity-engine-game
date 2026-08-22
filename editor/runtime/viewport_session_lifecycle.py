@@ -262,6 +262,7 @@ class ViewportSessionLifecycleMixin:
         for collection_name in (
             "objects",
             "edit_snapshot",
+            "session_origin",
             "velocities_y",
             "grounded",
             "scene_blackboard_config",

@@ -27,6 +27,9 @@ class ViewportSessionOrchestrator:
         self.play_audio = play_audio
         self.pause_audio = pause_audio
         self.state_hook = state_hook
+        #: Falhas consecutivas por grafo. Um erro pontual num frame não é motivo
+        #: para desligar o grafo pelo resto da sessão.
+        self._logic_failures: dict[tuple[str, str], int] = {}
 
     def update_logic(
         self, input_state: dict[str, bool], delta_time: float, last_trace: float,
@@ -49,10 +52,10 @@ class ViewportSessionOrchestrator:
                     if runtime.debug_paused or trace_due:
                         pause_requested = pause_requested or runtime.debug_paused
                         self._emit_trace(name, graph_path, runtime)
+                    self._logic_failures.pop((name, graph_path), None)
                 except Exception as exc:
                     self._emit_trace(name, graph_path, runtime, exc)
-                    runtimes.remove((graph_path, runtime))
-                    self.emit({"type": "runtime_log", "level": "ERROR", "message": f"{name}:{graph_path}: {exc}"})
+                    self._record_logic_failure(name, graph_path, runtime, runtimes, exc)
             restart_requested = self._apply_logic_instructions(name, obj) or restart_requested
             self._apply_jump(name, obj, velocities_y, grounded)
         if trace_due:
@@ -61,6 +64,48 @@ class ViewportSessionOrchestrator:
             self.pause_audio(True)
             self.emit({"type": "play_state", "state": "pause"})
         return last_trace, pause_requested, restart_requested
+
+
+    #: Quantos frames seguidos um grafo pode falhar antes de ser desligado.
+    MAX_CONSECUTIVE_LOGIC_FAILURES = 5
+
+    def _record_logic_failure(
+        self, name: str, graph_path: str, runtime: Any,
+        runtimes: list[tuple[str, Any]], exc: Exception,
+    ) -> None:
+        """Tolera falhas transitórias; desliga o grafo só se elas persistirem.
+
+        Antes, a primeira exceção removia o grafo da sessão e não havia caminho
+        de volta -- o único ``append`` está na inicialização, que só roda no Play.
+        Um ``None`` momentâneo num frame desligava, por exemplo, o grafo de
+        movimento do player para o resto da sessão, e a única evidência era uma
+        linha de log entre outras.
+
+        O contador zera a cada frame bem-sucedido, então só uma falha realmente
+        persistente chega ao limite -- e quando chega, diz isso com todas as
+        letras em vez de somar mais uma linha de erro igual às anteriores.
+        """
+        key = (name, graph_path)
+        failures = self._logic_failures.get(key, 0) + 1
+        self._logic_failures[key] = failures
+        self.emit({
+            "type": "runtime_log", "level": "ERROR",
+            "message": f"{name}:{graph_path}: {exc}",
+        })
+        if failures < self.MAX_CONSECUTIVE_LOGIC_FAILURES:
+            return
+        try:
+            runtimes.remove((graph_path, runtime))
+        except ValueError:
+            pass
+        self._logic_failures.pop(key, None)
+        self.emit({
+            "type": "runtime_log", "level": "ERROR",
+            "message": (
+                f"{name}:{graph_path}: desligado após {failures} falhas seguidas; "
+                "este Logic Graph não roda mais até o próximo Play"
+            ),
+        })
 
     def update_behaviors(self, input_state: dict[str, bool], delta_time: float, last_trace: float = 0.0) -> tuple[float, bool]:
         import time

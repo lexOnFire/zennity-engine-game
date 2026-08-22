@@ -180,6 +180,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
         self.playing = False
         self.paused = False
         self.edit_snapshot = deepcopy(self.objects)
+        self.session_origin = deepcopy(self.objects)
         self.velocities_y = {}
         self.grounded = {}
         self.logic_modules = {}
@@ -530,7 +531,8 @@ class ViewportSession(ViewportSessionLifecycleMixin):
             process_state = self.play_commands.handle(
                 command,
                 ViewportProcessState(
-                    self.running, self.screen, self.camera_x, self.camera_y, self.edit_snapshot, self.selected_name,
+                    self.running, self.screen, self.camera_x, self.camera_y, self.edit_snapshot,
+                    self.session_origin, self.selected_name,
                     self.playing, self.paused, self.velocities_y, self.grounded, self.scene_blackboard_config,
                 ),
             )
@@ -539,6 +541,7 @@ class ViewportSession(ViewportSessionLifecycleMixin):
                 self.screen = process_state.screen
                 self.camera_x, self.camera_y = process_state.camera_x, process_state.camera_y
                 self.edit_snapshot = process_state.edit_snapshot
+                self.session_origin = process_state.session_origin
                 self.selected_name = process_state.selected_name
                 self.playing, self.paused = process_state.playing, process_state.paused
                 self.velocities_y, self.grounded = process_state.velocities_y, process_state.grounded

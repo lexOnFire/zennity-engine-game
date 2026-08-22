@@ -4,7 +4,7 @@ from editor.runtime.viewport_play_commands import ViewportPlayCommandHandler, Vi
 def _state(**changes):
     values = dict(
         running=True, screen=object(), camera_x=0.0, camera_y=0.0,
-        edit_snapshot={}, selected_name=None, playing=False, paused=False,
+        edit_snapshot={}, session_origin={}, selected_name=None, playing=False, paused=False,
         velocities_y={}, grounded={}, scene_blackboard_config={},
     )
     values.update(changes)
