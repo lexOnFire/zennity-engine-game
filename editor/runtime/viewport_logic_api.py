@@ -7,13 +7,19 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from engine.animation.clip_asset import animation_asset_to_clip, load_animation_asset
+    from editor.runtime.viewport_logic_api_behavior import PlayBehaviorTreeMixin
+    from editor.runtime.viewport_logic_api_dialogue import PlayDialogueRuntimeMixin
+    from editor.runtime.viewport_logic_api_media import PlayMediaMixin
+except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
+    from .viewport_logic_api_behavior import PlayBehaviorTreeMixin
+    from .viewport_logic_api_dialogue import PlayDialogueRuntimeMixin
+    from .viewport_logic_api_media import PlayMediaMixin
+
+try:
     from engine.behavior.controller_asset import BehaviorControllerRunner, load_behavior_controller
     from engine.behavior.graph_runtime import BehaviorGraphRunner
-    from engine.dialogue.runtime import DialogueSession
     from engine.runtime.runtime_world import RuntimeWorld
 except ModuleNotFoundError:  # Runtime autocontido criado pelo exportador.
-    from .clip_asset import animation_asset_to_clip, load_animation_asset
     from .behavior_controller import BehaviorControllerRunner, load_behavior_controller
     from .behavior_graph_runtime import BehaviorGraphRunner
     from .runtime_world import RuntimeWorld
@@ -133,7 +139,7 @@ class PlayDialogueAPI:
         return state
 
 
-class PlayLogicAPI:
+class PlayLogicAPI(PlayBehaviorTreeMixin, PlayMediaMixin, PlayDialogueRuntimeMixin):
     """API pequena e estável entregue aos grafos durante o Play Mode."""
 
     _KEY_ALIASES = {
@@ -293,53 +299,6 @@ class PlayLogicAPI:
         self.obj["_jump_requested"] = True
         self.obj["_jump_force"] = float(force)
 
-    def start_behavior_tree(self, path: str) -> bool:
-        """Carrega e executa uma Behavior Tree (.zbehavior) no objeto atual."""
-        import json
-        behavior = self.obj.setdefault("behavior", {})
-        clean_path = str(path).strip() or str(behavior.get("controller_path", "")).strip()
-        if not clean_path:
-            _send(self._events, {"type": "runtime_log", "level": "ERROR", "message": f"{self.name}: nenhum Behavior Tree vinculado"})
-            return False
-        behavior["controller_path"] = clean_path
-        p = Path(clean_path)
-        if not p.is_absolute():
-            p = self._project_root / p
-        try:
-            if p.suffix.lower() != ".zbehavior" or not p.is_file():
-                raise ValueError(f"asset não encontrado: {clean_path}")
-            resolved_path = str(p.resolve())
-            existing = self._behavior_runners.get(self.name) if self._behavior_runners is not None else None
-            if existing is not None and behavior.get("_active_path") == resolved_path:
-                return True
-            raw = json.loads(p.read_text(encoding="utf-8"))
-            if not isinstance(raw, dict):
-                raise ValueError("documento inválido")
-            if raw.get("format") == "zennity.generic_graph":
-                runner = BehaviorGraphRunner(raw, project_root=self._project_root)
-                behavior["graph"] = raw
-                behavior.pop("controller", None)
-            else:
-                controller = load_behavior_controller(p)
-                runner = BehaviorControllerRunner(
-                    controller, self._project_root, behavior.get("parameters", {})
-                )
-                behavior["controller"] = controller
-                behavior.pop("graph", None)
-            previous = existing
-            if previous is not None:
-                previous.stop(self)
-            self.behavior.bind(runner, self)
-            runner.start(self)
-            if self._behavior_runners is not None:
-                self._behavior_runners[self.name] = runner
-            behavior["_active_path"] = resolved_path
-            self.obj["_behavior_state"] = runner.current_state
-            return True
-        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-            _send(self._events, {"type": "runtime_log", "level": "ERROR", "message": f"{self.name}: falha ao iniciar Behavior Tree '{clean_path}': {exc}"})
-            return False
-
     def find(self, tag: str) -> "PlayLogicAPI | None":
         wanted = str(tag).lower()
         for name, obj in self._world.items():
@@ -453,139 +412,12 @@ class PlayLogicAPI:
     def play_animation(self, clip_name: str) -> None:
         self.obj.setdefault("logic_events", []).append({"command": "play_animation", "value": clip_name})
 
-    def play_animation_asset(self, asset_path: str) -> None:
-        """Carrega e inicia um ``.zanim`` durante o Play Mode."""
-        path = Path(str(asset_path))
-        if not path.is_absolute():
-            path = Path.cwd() / path
-        asset = load_animation_asset(path)
-        relative = path.relative_to(Path.cwd()).as_posix() if path.is_relative_to(Path.cwd()) else str(path)
-        clip = animation_asset_to_clip(asset, relative)
-        name = str(asset.get("name", path.stem))
-        animator = self.obj.setdefault("animator", {"active_clip": name, "speed": 1.0, "clips": {}})
-        animator.setdefault("clips", {})[name] = clip
-        animator["active_clip"] = name
-        self.obj["_current_animation_name"] = name
-        self.obj["_animation_time"] = 0.0
-        self.obj["_animation_frame"] = 0
-        self.obj["_animation_raw_frame"] = -1
-
     def stop_animation(self) -> None:
         self.obj.setdefault("logic_events", []).append({"command": "stop_animation", "value": None})
 
     @property
     def current_animation(self) -> str:
         return str(self.obj.get("_current_animation_name", "Nenhum"))
-
-    def play_sound(self, sound_path: str, volume: float = 1.0, loop: bool = False) -> bool:
-        """Play a sound effect."""
-        if not sound_path:
-            return False
-        self.send("play_sound", {
-            "path": str(sound_path),
-            "volume": float(volume),
-            "loop": bool(loop)
-        })
-        return True
-
-    def play_music(self, music_path: str, volume: float = 1.0, loop: bool = True, fade_in: float = 0.0) -> bool:
-        """Play background music."""
-        if not music_path:
-            return False
-        self.send("play_music", {
-            "path": str(music_path),
-            "volume": float(volume),
-            "loop": bool(loop),
-            "fade_in": float(fade_in)
-        })
-        return True
-
-    def stop_sound(self, sound_path: str = None) -> bool:
-        """Stop a playing sound."""
-        self.send("stop_sound", {"path": str(sound_path) if sound_path else None})
-        return True
-
-    def stop_music(self, fade_out: float = 0.0) -> bool:
-        """Stop background music."""
-        self.send("stop_music", {"fade_out": float(fade_out)})
-        return True
-
-    def stop_all_sounds(self) -> bool:
-        """Stop all audio playback."""
-        self.send("stop_all_sounds")
-        return True
-
-    def set_master_volume(self, volume: float) -> bool:
-        """Set master volume level (0.0 to 1.0)."""
-        volume = max(0.0, min(1.0, float(volume)))
-        self.send("set_master_volume", {"volume": volume})
-        return True
-
-    def set_music_volume(self, volume: float) -> bool:
-        """Set music volume level (0.0 to 1.0)."""
-        volume = max(0.0, min(1.0, float(volume)))
-        self.send("set_music_volume", {"volume": volume})
-        return True
-
-    def set_sfx_volume(self, volume: float) -> bool:
-        """Set SFX volume level (0.0 to 1.0)."""
-        volume = max(0.0, min(1.0, float(volume)))
-        self.send("set_sfx_volume", {"volume": volume})
-        return True
-
-    def get_master_volume(self) -> float:
-        """Get current master volume (pure getter)."""
-        try:
-            from engine.audio import AudioManager
-            manager = AudioManager.get_instance()
-            return manager.get_master_volume() if manager else 1.0
-        except Exception:
-            return 1.0
-
-    def set_sprite(self, image_path: str) -> None:
-        """Troca a textura principal do objeto sem recriá-lo."""
-        self.obj["texture"] = str(image_path)
-        self.obj["renderer_enabled"] = True
-
-    def start_texture_scroll(
-        self,
-        speed_x: float = 0.0,
-        speed_y: float = 80.0,
-        *,
-        repeat_x: bool = False,
-        repeat_y: bool = True,
-        parallax: float = 1.0,
-        image_path: str = "",
-        send_to_background: bool = True,
-    ) -> None:
-        """Inicia uma textura repetida no plano sem mover o objeto físico."""
-        if image_path:
-            self.set_sprite(image_path)
-        if send_to_background:
-            self.obj["render_layer"] = "Background"
-        previous = self.obj.get("_texture_scroll")
-        state = previous if isinstance(previous, dict) else {}
-        state.update({
-            "enabled": True,
-            "speed_x": float(speed_x),
-            "speed_y": float(speed_y),
-            "repeat_x": bool(repeat_x),
-            "repeat_y": bool(repeat_y),
-            "parallax": max(0.0, float(parallax)),
-        })
-        state.setdefault("offset_x", 0.0)
-        state.setdefault("offset_y", 0.0)
-        self.obj["_texture_scroll"] = state
-
-    def stop_texture_scroll(self, reset: bool = False) -> None:
-        """Interrompe o fundo rolante; opcionalmente retorna à origem."""
-        state = self.obj.get("_texture_scroll")
-        if not isinstance(state, dict):
-            return
-        state["enabled"] = False
-        if reset:
-            state["offset_x"] = 0.0
-            state["offset_y"] = 0.0
 
     def send(self, command: str, value: Any = None) -> None:
         self.obj.setdefault("logic_events", []).append({"command": str(command), "value": value})
@@ -743,158 +575,11 @@ class PlayLogicAPI:
         state = self.obj.get("_camera_state", {})
         return float(state.get("zoom", 1.0))
 
-    # ==================== DIALOGUE SYSTEM (Phase 7B.7.1 - Consolidated) ====================
-
-    def show_dialogue(self, dialog_id: str, speaker: str, text: str, choices: list[str] = None) -> bool:
-        """
-        Show inline dialogue with speaker and text.
-
-        Canonical path: DialogueManager → DialogueSession
-        """
-        try:
-            if choices is None:
-                choices = []
-
-            from engine.dialogue.manager import get_dialogue_manager
-
-            manager = get_dialogue_manager()
-            owner_id = self.name  # Use object name as owner for routing
-
-            # Start dialogue via DialogueManager (canonical runtime)
-            success = manager.start_inline(
-                session_id=dialog_id,
-                speaker=speaker,
-                text=text,
-                choices=choices,
-                owner_id=owner_id
-            )
-
-            if success:
-                # Cache choices for get_choice_text() lookup
-                # (DialogueSession options only visible at choice node)
-                self.obj.setdefault("_dialogue_choices", {})[dialog_id] = choices
-
-                # Get state for UI display (with owner_id for composite key)
-                state = manager.get_state(dialog_id, owner_id=owner_id)
-
-                # Queue UI update
-                self.obj.setdefault("logic_events", []).append({
-                    "command": "show_dialogue_panel",
-                    "value": {
-                        "dialog_id": dialog_id,
-                        "speaker": state.get("speaker", speaker),
-                        "text": state.get("text", text),
-                        "choices": choices,
-                    }
-                })
-
-            return success
-        except Exception as e:
-            print(f"[PlayLogicAPI.show_dialogue] Error: {e}")
-            return False
-
-    def wait_dialogue_choice(self, dialog_id: str) -> int | None:
-        """
-        Check if dialogue choice was selected (pure getter).
-
-        Returns choice index if last choice was made, None if still active.
-        Tracks via internal _pending_choices dict for synchronization.
-        """
-        try:
-            # Check if choice is pending (set externally by UI)
-            pending = self.obj.get("_pending_choices", {}).get(dialog_id)
-            if pending is not None:
-                return pending
-
-            # No pending choice
-            return None
-        except Exception as e:
-            print(f"[PlayLogicAPI.wait_dialogue_choice] Error: {e}")
-            return None
-
-    def set_dialogue_choice(self, dialog_id: str, choice_index: int) -> bool:
-        """
-        Set dialogue choice programmatically.
-
-        For testing, AI, keyboard shortcuts.
-        Routes through DialogueManager with owner isolation.
-        """
-        try:
-            owner_id = self.name  # Use object name as owner for routing
-            # Store pending choice for wait_dialogue_choice to find
-            self.obj.setdefault("_pending_choices", {})[dialog_id] = int(choice_index)
-
-            # Delegate to DialogueManager with composite key (owner_id, dialog_id)
-            from engine.dialogue.manager import get_dialogue_manager
-            manager = get_dialogue_manager()
-            return manager.choose(dialog_id, choice_index, owner_id=owner_id)
-        except Exception as e:
-            print(f"[PlayLogicAPI.set_dialogue_choice] Error: {e}")
-            return False
-
-    def get_choice_text(self, dialog_id: str, choice_index: int) -> str:
-        """
-        Get text of specific choice (pure getter).
-
-        Reads from cached dialogue choices.
-        """
-        try:
-            # Check if we have cached choices (set by show_dialogue)
-            choices_cache = self.obj.get("_dialogue_choices", {})
-            choices = choices_cache.get(dialog_id, [])
-
-            if 0 <= choice_index < len(choices):
-                return str(choices[choice_index])
-
-            return ""
-        except Exception as e:
-            print(f"[PlayLogicAPI.get_choice_text] Error: {e}")
-            return ""
-
-    def get_pending_choice(self, dialog_id: str) -> int | None:
-        """
-        Get pending choice index (internal helper for nodes).
-
-        DEPRECATED: Use wait_dialogue_choice() or check DialogueSession directly.
-        """
-        return self.wait_dialogue_choice(dialog_id)
-
-    def clear_pending_choice(self, dialog_id: str) -> None:
-        """
-        Clear pending choice (no-op for DialogueSession).
-
-        DialogueSession manages state automatically.
-        """
-        pass
-
-    def close_dialogue(self, dialog_id: str) -> bool:
-        """
-        Close dialogue session and clean up UI.
-
-        Routes through DialogueManager with owner isolation.
-        """
-        try:
-            owner_id = self.name  # Use object name as owner for routing
-            from engine.dialogue.manager import get_dialogue_manager
-
-            manager = get_dialogue_manager()
-            # Use composite key (owner_id, dialog_id)
-            success = manager.close(dialog_id, owner_id=owner_id)
-
-            if success:
-                # Queue UI cleanup
-                self.obj.setdefault("logic_events", []).append({
-                    "command": "hide_dialogue_panel",
-                    "value": dialog_id
-                })
-
-            return success
-        except Exception as e:
-            print(f"[PlayLogicAPI.close_dialogue] Error: {e}")
-            return False
-
     def log(self, message: str) -> None:
         _send(self._events, {"type": "runtime_log", "level": "INFO", "message": f"{self.name}: {message}"})
+
+    def _emit_runtime_log(self, level: str, message: str) -> None:
+        _send(self._events, {"type": "runtime_log", "level": str(level), "message": str(message)})
 
 
 def _send(events: Any, payload: dict[str, Any]) -> None:

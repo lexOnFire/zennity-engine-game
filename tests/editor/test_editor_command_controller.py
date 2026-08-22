@@ -81,3 +81,45 @@ def test_editor_command_controller_delegates_reset_to_scene_objects() -> None:
 
     assert host.reset_calls == 1
     assert host._commands.empty()
+
+
+class _Action:
+    def __init__(self) -> None:
+        self.enabled = True
+
+    def setEnabled(self, enabled: bool) -> None:
+        self.enabled = bool(enabled)
+
+
+class _Tabs:
+    def __init__(self) -> None:
+        self.index = None
+
+    def setCurrentIndex(self, index: int) -> None:
+        self.index = int(index)
+
+
+def test_stop_command_enters_stopping_state_until_viewport_confirms_edit() -> None:
+    host, status = _host()
+    host._scene_snapshot = [{"name": "Player"}]
+    host._scene_document = {}
+    host._play_controller = SimpleNamespace(
+        blocks=lambda _command: False,
+        plan=lambda *_args, **_kwargs: SimpleNamespace(commands=({"type": "stop"},)),
+    )
+    host.toolbar_actions = {
+        "Play": _Action(),
+        "Pause": _Action(),
+        "Stop": _Action(),
+    }
+    host.viewport_tabs = _Tabs()
+
+    EditorCommandController(host).dispatch({"type": "stop"})
+
+    assert host._runtime_stopping is True
+    assert host.viewport_tabs.index == 0
+    assert host.toolbar_actions["Play"].enabled is False
+    assert host.toolbar_actions["Pause"].enabled is False
+    assert host.toolbar_actions["Stop"].enabled is False
+    assert status.messages[-1] == "Encerrando Play Mode..."
+    assert host._commands.get_nowait() == {"type": "stop"}

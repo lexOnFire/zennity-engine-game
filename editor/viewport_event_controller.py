@@ -72,6 +72,7 @@ class ViewportEventController:
         if state in {"play", "pause"}:
             h._play_session.set_runtime_state(state)
         if state == "edit":
+            h._runtime_stopping = False
             h._runtime_objects_by_name.clear()
             h.logic_workspace.clear_runtime_trace()
             h._runtime_animator_states.clear()
@@ -87,6 +88,8 @@ class ViewportEventController:
                 h._update_inspector(h._selected_name)
         h._runtime_playing = h._play_session.is_running
         running = state in {"play", "pause"}
+        if running:
+            h._runtime_stopping = False
         h._set_play_mode_editing_locked(running)
         h.toolbar_actions["Play"].setEnabled(state != "play")
         h.toolbar_actions["Pause"].setEnabled(running)

@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from queue import Queue
 
 from editor.controllers.selection_controller import EditorSelectionController
+from editor.runtime.play_session import EditorPlaySession
 from editor.viewport_event_controller import ViewportEventController
 
 
@@ -106,3 +107,44 @@ def test_tool_changed_event_activates_editor_tool_controller() -> None:
     ViewportEventController(host).tool_changed({"tool": "rotate"})
 
     assert activated == ["rotate"]
+
+
+class _Action:
+    def __init__(self) -> None:
+        self.enabled = None
+
+    def setEnabled(self, value: bool) -> None:
+        self.enabled = bool(value)
+
+
+def test_edit_play_state_clears_stopping_and_reenables_play() -> None:
+    host, status = _host()
+    session = EditorPlaySession()
+    session.begin(host._scene_snapshot, "Player")
+    session.set_runtime_state("play")
+    host._play_session = session
+    host._runtime_stopping = True
+    host.logic_workspace = SimpleNamespace(
+        clear_runtime_trace=lambda: None,
+        set_play_state=lambda _running: None,
+    )
+    host._runtime_animator_states = {}
+    host._animator_controller_dialog = None
+    host._runtime_keys = {"left": True}
+    host._commands = Queue()
+    host.toolbar_actions = {
+        "Play": _Action(),
+        "Pause": _Action(),
+        "Stop": _Action(),
+    }
+    host._set_play_mode_editing_locked = lambda _running: None
+    host._log = lambda *_args: None
+
+    ViewportEventController(host).play_state({"state": "edit"})
+
+    assert host._runtime_stopping is False
+    assert host._runtime_playing is False
+    assert host.toolbar_actions["Play"].enabled is True
+    assert host.toolbar_actions["Pause"].enabled is False
+    assert host.toolbar_actions["Stop"].enabled is False
+    assert status.messages[-1] == "Viewport: EDIT — cena restaurada"

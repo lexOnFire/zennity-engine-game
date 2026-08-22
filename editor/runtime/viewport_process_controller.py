@@ -85,6 +85,10 @@ class ViewportProcessController:
                 cancel_join = getattr(queue, "cancel_join_thread", None)
                 if callable(cancel_join):
                     cancel_join()
+                else:
+                    join_thread = getattr(queue, "join_thread", None)
+                    if callable(join_thread):
+                        join_thread()
                 close = getattr(queue, "close", None)
                 if callable(close):
                     close()

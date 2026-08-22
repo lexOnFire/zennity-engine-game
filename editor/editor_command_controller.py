@@ -149,7 +149,12 @@ class EditorCommandController:
                     f"{len(enabled_audio)} configurado(s) para iniciar",
                 )
         elif command_type == "stop":
+            h._runtime_stopping = True
             h.viewport_tabs.setCurrentIndex(0)
+            h.toolbar_actions["Play"].setEnabled(False)
+            h.toolbar_actions["Pause"].setEnabled(False)
+            h.toolbar_actions["Stop"].setEnabled(False)
+            h.statusBar().showMessage("Encerrando Play Mode...")
         for command in plan.commands:
             h._commands.put(command)
 

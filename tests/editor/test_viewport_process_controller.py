@@ -8,12 +8,16 @@ class FakeQueue:
         self.items = []
         self.closed = False
         self.joined = False
+        self.cancelled_join = False
 
     def put_nowait(self, item) -> None:
         self.items.append(item)
 
     def close(self) -> None:
         self.closed = True
+
+    def cancel_join_thread(self) -> None:
+        self.cancelled_join = True
 
     def join_thread(self) -> None:
         self.joined = True
@@ -86,7 +90,8 @@ def test_shutdown_requests_graceful_exit_then_forces_stuck_process() -> None:
     assert process.join_timeouts == [1.5, 2.0]
     assert process.terminated
     assert queue.closed
-    assert queue.joined
+    assert queue.cancelled_join
+    assert not queue.joined
 
 
 def test_shutdown_is_idempotent() -> None:
@@ -94,6 +99,33 @@ def test_shutdown_is_idempotent() -> None:
     controller = ViewportProcessController.from_queues(queue, FakeQueue())
 
     controller.shutdown()
+    controller.shutdown()
+
+    assert [item["type"] for item in queue.items] == ["shutdown"]
+    assert queue.closed
+    assert queue.cancelled_join
+    assert not queue.joined
+
+
+def test_shutdown_falls_back_to_join_thread_when_cancel_join_is_unavailable() -> None:
+    class JoinOnlyQueue:
+        def __init__(self) -> None:
+            self.items = []
+            self.closed = False
+            self.joined = False
+
+        def put_nowait(self, item) -> None:
+            self.items.append(item)
+
+        def close(self) -> None:
+            self.closed = True
+
+        def join_thread(self) -> None:
+            self.joined = True
+
+    queue = JoinOnlyQueue()
+    controller = ViewportProcessController.from_queues(queue, JoinOnlyQueue())
+
     controller.shutdown()
 
     assert [item["type"] for item in queue.items] == ["shutdown"]
