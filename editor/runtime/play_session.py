@@ -18,6 +18,10 @@ class EditorPlaySession:
     def is_running(self) -> bool:
         return self.state in {"starting", "play", "pause"}
 
+    @property
+    def has_restore_pending(self) -> bool:
+        return self._restore_pending and self._edit_objects is not None
+
     def begin(self, objects: list[dict[str, Any]], selected_name: str | None) -> list[dict[str, Any]]:
         """Captura a cena editável uma única vez, antes do primeiro frame."""
         if not self.is_running:
@@ -66,4 +70,3 @@ class EditorPlaySession:
         if self._selected_name and any(obj.get("name") == self._selected_name for obj in objects):
             return self._selected_name
         return None
-

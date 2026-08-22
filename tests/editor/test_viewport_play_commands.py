@@ -38,6 +38,7 @@ def test_play_commands_own_session_transition_and_restore_edit_snapshot() -> Non
     state = handler.handle({"type": "stop"}, state)
     assert not state.playing and objects["Player"]["x"] == 1
     assert [event["state"] for event in events if event["type"] == "play_state"] == ["play", "edit"]
+    assert events[-1]["source"] == "stop_restore"
 
 
 def test_stop_emits_edit_state_before_heavy_cleanup() -> None:

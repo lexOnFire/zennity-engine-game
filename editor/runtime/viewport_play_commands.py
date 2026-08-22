@@ -117,7 +117,11 @@ class ViewportPlayCommandHandler:
                 state.grounded = {}
                 self.reset_physics()
                 self.clear_hud()
-                self.emit({"type": "scene_snapshot", "objects": list(self.objects.values())})
+                self.emit({
+                    "type": "scene_snapshot",
+                    "source": "stop_restore",
+                    "objects": list(self.objects.values()),
+                })
             else:
                 self.stop_audio()
         elif command_type == "logic_hot_reload":

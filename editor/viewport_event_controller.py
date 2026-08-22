@@ -8,8 +8,10 @@ from typing import Any
 class ViewportEventController:
     """Owns viewport event state transitions and presentation updates."""
 
-    MAX_EVENTS_PER_POLL = 64
+    MAX_EVENTS_PER_POLL = 256
+    PRIORITY_SCAN_LIMIT = 1024
     COALESCED_EVENT_TYPES = frozenset({"runtime_objects", "stats", "runtime_metrics", "transform"})
+    PRIORITY_EVENT_TYPES = frozenset({"load_scene", "open_scene"})
 
     def __init__(self, host: Any) -> None:
         self.host = host
@@ -109,6 +111,12 @@ class ViewportEventController:
 
     def scene_snapshot(self, message: dict) -> None:
         h = self.host
+        if (
+            message.get("source") == "stop_restore"
+            and not h._play_session.is_running
+            and not h._play_session.has_restore_pending
+        ):
+            return
         h._scene_snapshot, restored_selection = h._play_session.consume_scene_snapshot(
             [deepcopy(item) for item in message.get("objects", [])]
         )
@@ -210,7 +218,7 @@ class ViewportEventController:
                 h._viewport_events.dispatch(queued_message)
             pending.clear()
 
-        while processed < self.MAX_EVENTS_PER_POLL:
+        while processed < self.PRIORITY_SCAN_LIMIT:
             try:
                 message = h._events.get_nowait()
             except Exception:

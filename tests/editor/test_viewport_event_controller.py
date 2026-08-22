@@ -86,8 +86,48 @@ def test_poll_is_bounded_and_coalesces_high_frequency_runtime_updates() -> None:
     controller.poll()
 
     assert len(dispatched) == 1
-    assert dispatched[0]["objects"][0]["x"] == 3
-    assert host._events.qsize() == 2
+    assert dispatched[0]["objects"][0]["x"] == 5
+    assert host._events.qsize() == 0
+
+
+def test_poll_reaches_load_scene_even_behind_runtime_backlog() -> None:
+    host, _ = _host()
+    host._events = Queue()
+    dispatched = []
+    host._viewport_events = SimpleNamespace(dispatch=dispatched.append)
+    controller = ViewportEventController(host)
+    for x in range(300):
+        host._events.put({"type": "runtime_objects", "objects": [{"name": "Player", "x": x}]})
+    host._events.put({"type": "load_scene", "scene_path": "Assets/Scenes/Level2.zscene"})
+
+    controller.poll()
+
+    assert any(message.get("type") == "load_scene" for message in dispatched)
+    assert dispatched[-1]["type"] == "load_scene"
+
+
+def test_stop_restore_snapshot_is_ignored_after_editor_already_restored() -> None:
+    host, _ = _host()
+    host._play_session = EditorPlaySession()
+    controller = ViewportEventController(host)
+
+    controller.scene_snapshot({"type": "scene_snapshot", "source": "stop_restore", "objects": []})
+
+    assert host._scene_snapshot[0]["name"] == "Player"
+    assert host.refreshed == 0
+
+
+def test_stop_restore_snapshot_consumes_pending_restore_when_needed() -> None:
+    host, _ = _host()
+    host._play_session = EditorPlaySession()
+    host._play_session.begin(host._scene_snapshot, "Player")
+    host._play_session.finish()
+    controller = ViewportEventController(host)
+
+    controller.scene_snapshot({"type": "scene_snapshot", "source": "stop_restore", "objects": []})
+
+    assert host._scene_snapshot[0]["name"] == "Player"
+    assert host.refreshed == 1
 
 
 def test_selected_event_updates_inspector_and_status() -> None:
